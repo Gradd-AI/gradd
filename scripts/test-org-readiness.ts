@@ -18,7 +18,8 @@ import {
 } from '../lib/org/readiness';
 // Pure exports only. queries.ts imports createServiceClient, but that is a FUNCTION — no client
 // is constructed and no env is read at module load, so this stays a pure, env-free fixture.
-import { scopeDrillRows, cohortPaper } from '../lib/org/queries';
+import { scopeDrillRows, scopeMarkRows, scopeMockRows, cohortPaper } from '../lib/org/queries';
+import { MOCK_PAPERS } from '../lib/acca/mocks';
 
 let failures = 0;
 const T = 1_700_000_000_000; // fixed "now" (arbitrary fixed epoch — determinism, not date-sensitive)
@@ -261,6 +262,57 @@ const ROWS = [
   check('T20a: recognised paper passes through', cohortPaper('AFM') === 'AFM');
   check('T20b: null falls back to APM (= totalSubAreas default)', cohortPaper(null) === 'APM');
   check('T20c: unrecognised free text falls back to APM', cohortPaper('apm ') === 'APM');
+}
+
+// ── T21–T29: the CASE-BASED scope (marks + mocks) ─────────────────────────────
+// `acca_case_marking` and `acca_mock_attempts` carry no drill_id, so scopeDrillRows above
+// never reached them and they fed readiness UNSCOPED until 2026-09-04: a trainee's AFM case
+// marks and AFM mock sittings counted into an APM cohort's score, through caseMarkRatios and
+// mockScores.
+//
+// BOTH DIRECTIONS on every rule (P-G3(a)). "The cross-paper row is dropped" passes against a
+// filter that drops everything, which deletes the assessment component entirely and is the
+// worse failure — a trainee who sat a mock reported as having sat nothing.
+{
+  const APM_CASE = 'a6000000-0000-4000-8000-0000000000b1';   // Halworth  (APM, real)
+  const AFM_CASE = 'aa000000-0000-4000-8000-00000000a001';   // Solenne   (AFM, real)
+  const GONE_CASE = 'ffffffff-0000-4000-8000-ffffffffffff';  // a mark whose case no longer exists
+  const CASE_PAPERS = new Map<string, string>([[APM_CASE, 'APM'], [AFM_CASE, 'AFM']]);
+  const MARKS = [{ case_id: APM_CASE }, { case_id: AFM_CASE }, { case_id: GONE_CASE }];
+
+  const apmMarks = scopeMarkRows(MARKS, CASE_PAPERS, 'APM');
+  check('T21: a SAME-paper mark counts', apmMarks.some((m) => m.case_id === APM_CASE));
+  check('T22: a CROSS-paper mark does not', !apmMarks.some((m) => m.case_id === AFM_CASE));
+  check('T23: an unresolvable mark is dropped, never counted into the asking paper',
+    !apmMarks.some((m) => m.case_id === GONE_CASE));
+  check('T24: exactly one of the three survives', apmMarks.length === 1,
+    `kept ${apmMarks.length}`);
+
+  const afmMarks = scopeMarkRows(MARKS, CASE_PAPERS, 'AFM');
+  check('T25: asking for AFM keeps the AFM mark and drops the APM one (the other direction)',
+    afmMarks.length === 1 && afmMarks[0].case_id === AFM_CASE);
+
+  // THE PRE-FIX READER, PINNED WRONG. This is what both org readers did, and it is what the
+  // measurement caught: 4 completed mocks where 3 were APM, mockAvg 0.8125 against a true 1.0.
+  const legacy = MARKS;
+  check('T26: pre-fix org read (no scope at all) is pinned WRONG — it kept the AFM mark',
+    legacy.length === 3 && legacy.length !== apmMarks.length,
+    `unscoped kept ${legacy.length}, scoped kept ${apmMarks.length}`);
+
+  // Mocks resolve through the REAL registry, not a supplied map — an id that is not in
+  // MOCK_PAPERS resolves to nothing, and both papers' real ids are exercised.
+  const APM_MOCK = MOCK_PAPERS.find((p) => p.paper === 'APM')!.id;
+  const AFM_MOCK = MOCK_PAPERS.find((p) => p.paper === 'AFM')!.id;
+  const ATTEMPTS = [{ mock_id: APM_MOCK }, { mock_id: AFM_MOCK }, { mock_id: 'paper-99' }];
+
+  const apmMocks = scopeMockRows(ATTEMPTS, 'APM');
+  check('T27: a SAME-paper attempt counts, a CROSS-paper one does not',
+    apmMocks.length === 1 && apmMocks[0].mock_id === APM_MOCK);
+  check('T28: an unregistered mock_id is dropped',
+    !scopeMockRows(ATTEMPTS, 'AFM').some((a) => a.mock_id === 'paper-99'));
+  check('T29: asking for AFM keeps the AFM attempt (the other direction)',
+    scopeMockRows(ATTEMPTS, 'AFM').length === 1
+    && scopeMockRows(ATTEMPTS, 'AFM')[0].mock_id === AFM_MOCK);
 }
 
 console.log(`

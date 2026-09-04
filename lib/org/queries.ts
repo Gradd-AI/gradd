@@ -203,6 +203,40 @@ export function scopeDrillRows<T extends { drill_id: string }>(
   return rows.filter((r) => servable.get(r.drill_id) === paper);
 }
 
+// ── THE CASE-BASED ROWS NEED THEIR OWN SCOPING, AND IT IS NOT THE DRILL RULE ──
+// `acca_case_marking` and `acca_mock_attempts` carry no `drill_id`, so `scopeDrillRows` does
+// not reach them. That is why they went unscoped for as long as they did, and the cost was a
+// trainee's AFM case marks and AFM mock sittings feeding an APM cohort's readiness — through
+// `caseMarkRatios` and `mockScores` in `buildInput`.
+//
+// Both are PURE and both take their resolution as an argument, so the rules are fixtured
+// without a DB (scripts/test-org-readiness.ts T20–T29) — the same discipline `scopeDrillRows`
+// carries, for the same reason: a `.filter()` can be tested and a query builder cannot.
+//
+// Failure direction is EXCLUSION in both, matching the drill rule. A row that does not resolve
+// is dropped rather than counted into a paper it may not belong to: a readiness score built
+// from a mark nobody can attribute is worse than one built from fewer marks.
+
+/** Keep only markings whose CASE resolves, through `casePapers`, to THIS paper. */
+export function scopeMarkRows<T extends { case_id: string }>(
+  rows: readonly T[],
+  casePapers: ReadonlyMap<string, string>,
+  paper: AccaPaper,
+): T[] {
+  return rows.filter((r) => casePapers.get(r.case_id) === paper);
+}
+
+/** Keep only attempts whose MOCK belongs to THIS paper. Resolved through the code registry
+ *  rather than a lookup map: `mock_id`s are unique across both papers by construction (asserted
+ *  at MOCK_PAPERS load), which is the same fact `mockPaperCaseIds` relies on to stop an open APM
+ *  attempt unlocking AFM content. An unregistered `mock_id` resolves to nothing and drops. */
+export function scopeMockRows<T extends { mock_id: string }>(
+  rows: readonly T[],
+  paper: AccaPaper,
+): T[] {
+  return rows.filter((r) => getMockPaper(r.mock_id)?.paper === paper);
+}
+
 /** A cohort's paper, resolved for bucketing. `cohorts.paper` is free text (`string | null`),
  *  so an unrecognised or absent value falls back to 'APM' — DELIBERATELY the same default as
  *  `totalSubAreas()`/`allSubAreas()`, because the numerator and the denominator must agree on
@@ -235,6 +269,8 @@ async function rawRowsForUsers(userIds: string[], paper: AccaPaper): Promise<Raw
   ]);
   const attempts = (a.data as RawRows['attempts'] | null) ?? [];
   const progress = (p.data as RawRows['progress'] | null) ?? [];
+  const rawMarks = (m.data as RawRows['marks'] | null) ?? [];
+  const rawMocks = (k.data as RawRows['mocks'] | null) ?? [];
 
   // ONE join for both drill-based tables — see servableDrills' header for the three row
   // classes this excludes and why an unjoined read is wrong.
@@ -242,17 +278,31 @@ async function rawRowsForUsers(userIds: string[], paper: AccaPaper): Promise<Raw
     [...new Set([...attempts.map((r) => r.drill_id), ...progress.map((r) => r.drill_id)])].filter(Boolean),
   );
 
-  // marks/mocks are CASE-based (acca_case_marking / acca_mock_attempts): they carry their own
-  // real foreign keys and no drill_id, so the join does not apply to them. Both are returned
-  // UNSCOPED here and each caller scopes them — `getMyProgress` resolves mocks through the
-  // registry and marks through `casePaperCodes` (2026-09-04). The ORG readers still take them
-  // unscoped, which is unchanged behaviour and remains a separate open item: scoping them
-  // there moves live coordinator readiness scores and is not a change to make in passing.
+  // ── marks/mocks ARE PAPER-SCOPED HERE TOO (2026-09-04) ──────────────────────
+  // They are CASE-based (acca_case_marking / acca_mock_attempts): they carry their own real
+  // foreign keys and no drill_id, so the DRILL join above does not apply — which is why they
+  // were left unscoped when it was written, and why they stayed unscoped when `getMyProgress`
+  // was fixed. That left the same defect in two org readers: a trainee's AFM case marks fed
+  // an APM cohort's readiness, through `caseMarkRatios` and `mockScores`.
+  //
+  // Scoped in THIS function rather than in each caller, so there is one site and no caller can
+  // forget. Two different resolutions because the two tables answer the question differently:
+  //   • mocks — the REGISTRY, pure. `mock_id`s are unique across both papers by construction,
+  //     the same fact `mockPaperCaseIds` relies on to keep an open APM attempt from unlocking
+  //     AFM content. No query, no failure mode.
+  //   • marks — the case's own `paper_code`, one id-addressed lookup. Mock cases could have
+  //     come from the registry, but STANDALONE practice cases are not in it, and a rule that
+  //     covers half the rows is how the next reader concludes the other half do not exist.
+  //
+  // Failure direction is EXCLUSION, matching the drill join: a mark whose case does not
+  // resolve is dropped rather than counted into a paper it may not belong to.
+  const casePapers = await casePaperCodes([...new Set(rawMarks.map((r) => r.case_id))]);
+
   return {
     attempts: scopeDrillRows(attempts, servable, paper),
     progress: scopeDrillRows(progress, servable, paper),
-    marks: (m.data as RawRows['marks'] | null) ?? [],
-    mocks: (k.data as RawRows['mocks'] | null) ?? [],
+    marks: scopeMarkRows(rawMarks, casePapers, paper),
+    mocks: scopeMockRows(rawMocks, paper),
   };
 }
 
@@ -603,24 +653,17 @@ export async function getMyProgress(userId: string, now: number, paper: AccaPape
   const attempts = rows.attempts;
   const progress = rows.progress;
 
-  // ── 🔴 FIXED 2026-09-04 — THIS WAS `paper === 'APM' ? rows.mocks : []` ──────
+  // ── 🔴 FIXED 2026-09-04 — THIS WAS `paper === 'APM' ? rows.marks : []` ──────
   // The comment that justified it read "marks/mocks are APM-only artefacts today (no AFM
   // cases/mocks exist)". That was true when written and FALSE from 2026-07-29, the day AFM
   // Mock 1 was published — so for five weeks every AFM student's progress page showed no
   // mock and no case marks at all, and the one account holding real banded sit data is the
   // AFM one. A stale premise in a comment kept a live surface empty.
   //
-  // Scoped properly now rather than re-defaulted. A mock resolves to its paper through the
-  // registry, which is exact and pure — `mock_id`s are unique across both papers by
-  // construction, which is the same fact `mockPaperCaseIds` relies on.
-  const mocks = rows.mocks.filter((m) => getMockPaper(m.mock_id)?.paper === paper);
-
-  // Case marks resolve through the case's own `paper_code`. Mock cases could have come from
-  // the registry, but standalone practice cases are not in it, and a rule that covers half
-  // the rows is how the next reader concludes the other half do not exist. One id-addressed
-  // lookup, scoped to the ids actually present.
-  const casePapers = await casePaperCodes([...new Set(rows.marks.map((m) => m.case_id))]);
-  const marks = rows.marks.filter((m) => casePapers.get(m.case_id) === paper);
+  // Both are now scoped in `rawRowsForUsers`, alongside the drill join and for the same
+  // reason: one site, so no caller can forget. This function does nothing special with them.
+  const marks = rows.marks;
+  const mocks = rows.mocks;
 
   const input = buildInput(now, total, attempts, progress, marks, mocks);
   const readiness = computeReadiness(input);
