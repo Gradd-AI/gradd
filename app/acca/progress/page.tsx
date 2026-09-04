@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation';
 import { createServerClient, createServiceClient } from '@/lib/supabase/server';
 import { getMyProgress, type RecentAttempt, type AreaTrend } from '@/lib/org/queries';
 import { hasPaperAccess } from '@/lib/acca/access';
+import { listSitAttempts } from '@/lib/acca/sit-report';
 import { resolvePaper } from '@/lib/acca/paper';
 import { paperHref } from '@/lib/acca/paper-url';
 import { ORG_CSS, subAreaName, fmtDays, fmtDate, cellTone } from '@/components/org/orgTheme';
@@ -131,8 +132,13 @@ export default async function ProgressPage({
   const paid = await hasPaperAccess(createServiceClient(), user.id, paper, profile);
 
   const now = Date.now();
-  const p = await getMyProgress(user.id, now, paper);
-  const hasAssessment = p.marks.length > 0 || p.mocks.length > 0;
+  // `listSitAttempts` is the SHARED definition of a sitting a student can open — the same
+  // one /acca/results uses, so the index here and the index there can never disagree about
+  // which papers exist.
+  const [p, sitAttempts] = await Promise.all([
+    getMyProgress(user.id, now, paper),
+    listSitAttempts(createServiceClient(), user.id, paper),
+  ]);
 
   return (
     <div className="org">
@@ -272,31 +278,58 @@ export default async function ProgressPage({
         </div>
       )}
 
-      {/* Mock & case marks — paid only; free sees a single locked line (only when present) */}
-      {hasAssessment && (
+      {/* ── YOUR PAPERS — NOT behind the paid lock (ruled 2026-09-04) ──────────
+          This panel names papers the student sat and dates them; every mark, band and word
+          of feedback lives one click away on /acca/results/<attempt_id>, which applies the
+          same per-paper `hasPaperAccess` gate as app/api/acca/sit/results. Locking the index
+          as well would tell a lapsed student only that something exists, which sells worse
+          than showing them the shape of what they are being sold back.
+
+          It REPLACES a table that rendered the raw `mock_id` and "completed: yes/no" — a
+          thin index that named a sitting and could not open it, which is exactly the panel
+          the coordinator's trainee view deleted. The rows come from `listSitAttempts`, the
+          one definition of an openable sitting, rather than from `p.mocks`: 13 of 15
+          completed attempts in production hold no progress rows at all, and listing those
+          would offer blank papers. */}
+      {sitAttempts.length > 0 && (
         <div className="org-panel" style={{ marginTop: 28 }}>
-          <h2 style={{ margin: '0 0 10px' }}>Mock &amp; case marks</h2>
+          <h2 style={{ margin: '0 0 4px' }}>Your papers</h2>
+          <p className="org-note" style={{ marginTop: 0, marginBottom: 12 }}>
+            Timed papers you have sat. Your answers, the marker&rsquo;s feedback and the
+            debrief stay here — go back to them whenever you like.
+          </p>
+          <table className="org-list">
+            <thead><tr><th>Paper</th><th>Sat</th><th className="num">Answered</th><th>Marked</th><th /></tr></thead>
+            <tbody>{sitAttempts.map((a) => (
+              <tr key={a.attempt_id}>
+                <td>{a.title}</td>
+                <td className="date">{fmtDate(a.started_at)}</td>
+                <td className="num">{a.answered} of {a.total}</td>
+                <td>{a.banded > 0
+                  ? <span className="org-out ok">marked</span>
+                  : <span className="org-out miss">not marked</span>}</td>
+                <td><Link className="prog-open" href={`/acca/results/${a.attempt_id}`}>Open →</Link></td>
+              </tr>
+            ))}</tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Case professional-skills marks — paid only; free sees a single locked line. The
+          standalone-case marks that were the second half of the old panel, now on their own:
+          they are marks, not a document, so the lock still applies to them. */}
+      {p.marks.length > 0 && (
+        <div className="org-panel" style={{ marginTop: 28 }}>
+          <h2 style={{ margin: '0 0 10px' }}>Case marks</h2>
           {paid ? (
-            <>
-              {p.mocks.length > 0 && (
-                <table className="org-list" style={{ marginBottom: p.marks.length ? 16 : 0 }}>
-                  <thead><tr><th>Mock</th><th>Started</th><th>Completed</th></tr></thead>
-                  <tbody>{p.mocks.map((m, i) => (
-                    <tr key={i}><td>{m.mock_id}</td><td className="date">{fmtDate(m.started_at)}</td><td>{m.completed ? 'yes' : 'no'}</td></tr>
-                  ))}</tbody>
-                </table>
-              )}
-              {p.marks.length > 0 && (
-                <table className="org-list">
-                  <thead><tr><th>Case (professional-skills)</th><th className="num">Awarded</th><th className="num">Available</th><th>Marked</th></tr></thead>
-                  <tbody>{p.marks.map((m, i) => (
-                    <tr key={i}><td>{m.case_id.slice(0, 8)}…</td><td className="num">{m.awarded}</td><td className="num">{m.available}</td><td className="date">{fmtDate(m.marked_at)}</td></tr>
-                  ))}</tbody>
-                </table>
-              )}
-            </>
+            <table className="org-list">
+              <thead><tr><th>Case (professional-skills)</th><th className="num">Awarded</th><th className="num">Available</th><th>Marked</th></tr></thead>
+              <tbody>{p.marks.map((m, i) => (
+                <tr key={i}><td>{m.case_id.slice(0, 8)}…</td><td className="num">{m.awarded}</td><td className="num">{m.available}</td><td className="date">{fmtDate(m.marked_at)}</td></tr>
+              ))}</tbody>
+            </table>
           ) : (
-            <LockLine>Upgrade to see your mock &amp; case professional-skills marks.</LockLine>
+            <LockLine>Upgrade to see your case professional-skills marks.</LockLine>
           )}
         </div>
       )}
@@ -334,6 +367,10 @@ export default async function ProgressPage({
 
 // ── Student-view supplement to ORG_CSS (house tokens reused; student voice) ─────
 const PROG_CSS = `
+/* "Your papers" — the row action into /acca/results/<attempt_id> */
+.org .prog-open { font-size: 12.5px; font-weight: 700; color: var(--brand); text-decoration: none; white-space: nowrap; }
+.org .prog-open:hover { text-decoration: underline; }
+
 /* recency nudge + streak — trajectory framing, not a verdict */
 .org .prog-nudge { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 0 0 26px; }
 .org .prog-nudge-text { font-size: 15px; color: var(--text-muted); }

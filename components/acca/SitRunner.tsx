@@ -882,6 +882,7 @@ function Debrief({ data }: { data: ResultsData }) {
   const paper = data.paper.paper;
   const dashHref = paperHref('/acca', paper);
   const progressHref = paperHref('/acca/progress', paper);
+  const resultsHref = paperHref('/acca/results', paper);
 
   if (debrief.not_evaluated) {
     return (
@@ -1002,6 +1003,17 @@ function Debrief({ data }: { data: ResultsData }) {
         <a className="db-exit-primary" href={progressHref}>Practise my weak areas →</a>
         <a className="db-exit-secondary" href={dashHref}>Back to dashboard</a>
       </section>
+
+      {/* THIS SCREEN IS NO LONGER THE ONLY COPY, AND THE STUDENT HAS TO BE TOLD (2026-09-04).
+          It used to be: the debrief lived here, in a phase reachable only by loading the mock
+          surface, which resolves the LATEST attempt — so leaving the page was effectively
+          losing it, and asking for it by email was the rational response. /acca/results is
+          permanent. Said as a fact under the exit rather than as another button, because the
+          two actions above are the ones that should still win right now. */}
+      <p className="db-keep">
+        This debrief is saved. You can come back to it any time from{' '}
+        <a href={resultsHref}>your papers</a>.
+      </p>
 
       {/* LIMITATIONS — what this debrief could NOT establish, stated rather than hidden. */}
       {debrief.limitations.length > 0 && (
@@ -1232,6 +1244,8 @@ const CSS = `
 }
 .db-exit-secondary { font-size: 14px; color: var(--text-muted); text-decoration: none; }
 .db-exit-secondary:hover { color: var(--text); }
+.db-keep { font-size: 13px; color: var(--text-muted); margin: 4px 0 0; }
+.db-keep a { color: var(--brand); }
 .db-head { display: flex; flex-direction: column; gap: 18px; margin-bottom: 34px; }
 .db-title {
   font-family: var(--font-display); font-size: clamp(24px, 4vw, 32px); font-weight: 700;
