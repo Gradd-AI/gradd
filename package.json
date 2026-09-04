@@ -4,6 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "predev": "tsx scripts/check-env-flags.ts",
+    "check:env-flags": "tsx scripts/check-env-flags.ts",
+    "test:env-flags": "tsx scripts/test-env-flags.ts",
     "prebuild": "npm run verify",
     "build": "next build",
     "start": "next start",
