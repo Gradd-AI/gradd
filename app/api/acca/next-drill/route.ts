@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createServerClient, createServiceClient } from '@/lib/supabase/server';
+import { recordAuthFailure } from '@/lib/acca/error-recorder';
 import { resolvePaper, type AccaPaper } from '@/lib/acca/paper';
 import { pickEntryDrill } from '@/lib/acca/area-entry';
 import {
@@ -107,7 +108,11 @@ async function loadSelectionSignals(
 
 export async function GET(request: Request): Promise<Response> {
   const authClient = await createServerClient();
-  const { data: { user } } = await authClient.auth.getUser();
+  const { data: { user }, error: authError } = await authClient.auth.getUser();
+  // An OUTAGE records; a logged-out request does not. `recordAuthFailure` owns that
+  // distinction (`isAuthOutage`) — an unfiltered version would write a row on every
+  // anonymous hit, because no session is itself an AuthSessionMissingError.
+  if (authError) await recordAuthFailure('api/acca/next-drill', authError);
   if (!user) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 });
 
   const { searchParams } = new URL(request.url);

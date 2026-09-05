@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createServerClient, createServiceClient } from '@/lib/supabase/server';
+import { recordAuthFailure, recordServerError } from '@/lib/acca/error-recorder';
 import { hasPaperAccess } from '@/lib/acca/access';
 import { resolvePaper, strictPaper } from '@/lib/acca/paper';
 import { runCaseMarking } from '@/lib/acca/case-mark-run';
@@ -47,7 +48,11 @@ export async function POST(request: Request): Promise<Response> {
 
   // ── 1. Auth ──
   const authClient = await createServerClient();
-  const { data: { user } } = await authClient.auth.getUser();
+  const { data: { user }, error: authError } = await authClient.auth.getUser();
+  // An OUTAGE records; a logged-out request does not. `recordAuthFailure` owns that
+  // distinction (`isAuthOutage`) — an unfiltered version would write a row on every
+  // anonymous hit, because no session is itself an AuthSessionMissingError.
+  if (authError) await recordAuthFailure('api/acca/case/mark', authError);
   if (!user) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 });
 
   // ── 2. Parse body ──
@@ -90,6 +95,12 @@ export async function POST(request: Request): Promise<Response> {
   // ── 3. Mark it (shared core) ──
   const run = await runCaseMarking({ supabase, userId: user.id, caseId, paper, sitting });
   if (!run.ok) {
+    // 5xx ONLY — `runCaseMarking`'s 409s and 404s are legitimate refusals (an incomplete
+    // case, a case examining no skills, content that is not there), and recording correct
+    // behaviour would bury the model failures that are the finding. Same rule as the sit.
+    if (run.status >= 500) {
+      await recordServerError('case_mark', 'api/acca/case/mark', new Error(run.error), user.id);
+    }
     return NextResponse.json({ error: run.error }, { status: run.status });
   }
   const technical = run.technical;

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createServerClient, createServiceClient } from '@/lib/supabase/server';
+import { recordAuthFailure, recordServerError } from '@/lib/acca/error-recorder';
 import {
   sealPayload,
   openPayload,
@@ -52,7 +53,11 @@ export async function POST(request: Request): Promise<Response> {
 
   // ── 1. Auth ──
   const authClient = await createServerClient();
-  const { data: { user } } = await authClient.auth.getUser();
+  const { data: { user }, error: authError } = await authClient.auth.getUser();
+  // An OUTAGE records; a logged-out request does not. `recordAuthFailure` owns that
+  // distinction (`isAuthOutage`) — an unfiltered version would write a row on every
+  // anonymous hit, because no session is itself an AuthSessionMissingError.
+  if (authError) await recordAuthFailure('api/acca/case/turn', authError);
   if (!user) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 });
 
   // ── 2. Parse body ──
@@ -279,7 +284,11 @@ export async function POST(request: Request): Promise<Response> {
         // it here and the upsert keeps working.
         { onConflict: 'user_id,case_id,requirement_id,attempt_id' },
       );
-    } catch {
+    } catch (err) {
+      // The one instrumented surface where the student LOSES WRITTEN WORK — this is the sit's
+      // single write path, and what failed to land is an answer they will not retype from
+      // memory. Named apart from `case_turn` for that reason.
+      await recordServerError('case_answer_write', 'api/acca/case/turn', err, user.id);
       return NextResponse.json({ error: 'Failed to record answer' }, { status: 500 });
     }
 
@@ -431,7 +440,8 @@ export async function POST(request: Request): Promise<Response> {
     } else {
       try {
         modelAnswer = await call1_generate(question, fullContext);
-      } catch {
+      } catch (err) {
+        await recordServerError('case_reveal', 'api/acca/case/turn', err, user.id);
         return NextResponse.json({ error: 'Failed to generate model answer' }, { status: 500 });
       }
     }
@@ -503,7 +513,11 @@ export async function POST(request: Request): Promise<Response> {
       // paper is never loaded and the persona cannot be scoped to a paper the content is not from.
       paper,
     });
-  } catch {
+  } catch (err) {
+    // The whole teaching engine, one catch. `err` is the caught value and nothing else — the
+    // student's message and the model's reply are both in scope right here, and neither may
+    // reach the row. See `boundedDetail`.
+    await recordServerError('case_turn', 'api/acca/case/turn', err, user.id);
     return NextResponse.json({ error: 'Teaching engine error' }, { status: 500 });
   }
 

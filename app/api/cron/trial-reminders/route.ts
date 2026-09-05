@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
 import { buildIBTrialReminderEmail } from '@/lib/email/ib-trial-reminder-template';
+import { recordHeartbeat } from '@/lib/acca/error-recorder';
 
 const IB_SUBJECTS = ['IB_ECONOMICS', 'IB_BUSINESS', 'IB_BUNDLE'] as const;
 type IBSubject = typeof IB_SUBJECTS[number];
@@ -64,6 +65,32 @@ export async function GET(req: NextRequest) {
   }
 
   const supabase = getServiceClient();
+
+  // ── THE ERROR RECORDER'S HEARTBEAT ──────────────────────────────────────────
+  // One row a day, written through the SAME recorder as a real ACCA error, so that a table
+  // with no `server_error` rows in it means something. Without it, "the product ran and
+  // nothing failed", "the recorder is broken" and "nobody used the product" are one
+  // observation — an absence — and nothing inside the system can tell them apart. The
+  // argument in full is in `buildHeartbeatEvent` (lib/acca/error-events.ts).
+  //
+  // IT LIVES IN AN EXISTING CRON ON PURPOSE. This is the DAILY one (09:00 UTC); the other is
+  // weekly, which is too coarse to date an outage. A cron of its own would be a third
+  // schedule to keep alive and would itself need proving, and `vercel.json` is not the place
+  // to add moving parts for a single insert.
+  //
+  // ⚠️ IT RUNS BEFORE THIS CRON'S OWN WORK, NOT AFTER, AND THE ORDER IS LOAD-BEARING. Placed
+  // at the end it would sit behind an early `return` on the profiles query below, so a day
+  // when THAT query failed would leave no heartbeat — and a missing heartbeat is read as
+  // "the recorder is broken", which would be a false alarm about the wrong subsystem. It is
+  // also outside the send loop's try/catch: a Resend failure must never suppress it.
+  //
+  // It cannot throw and has no return value to check — see the recorder's header. This is
+  // one insert on a path that runs once a day.
+  //
+  // ⚠️ A MISSING HEARTBEAT DOES NOT ISOLATE THE RECORDER. It equally means this cron did not
+  // run, or ran and 401'd. Check the cron's own log before concluding the recorder is dead;
+  // what the heartbeat rules out is the reading "zero errors, therefore all is well".
+  await recordHeartbeat('api/cron/trial-reminders');
 
   // 47–49 hour window: catches trials expiring ~2 days from now regardless
   // of when exactly today's cron fires.

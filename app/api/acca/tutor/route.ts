@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createCipheriv, createDecipheriv, randomBytes, createHash, randomUUID } from 'node:crypto';
 import Anthropic from '@anthropic-ai/sdk';
 import { createServerClient, createServiceClient } from '@/lib/supabase/server';
+import { recordAuthFailure, recordServerError } from '@/lib/acca/error-recorder';
 import {
   systemFor,
   buildRevealWrapperUserPrompt,
@@ -1176,7 +1177,11 @@ export async function POST(request: Request): Promise<Response> {
 
   // ── 1. Auth ────────────────────────────────────────────────────────────────
   const authClient = await createServerClient();
-  const { data: { user } } = await authClient.auth.getUser();
+  const { data: { user }, error: authError } = await authClient.auth.getUser();
+  // An OUTAGE records; a logged-out request does not. `recordAuthFailure` owns that
+  // distinction (`isAuthOutage`) — an unfiltered version would write a row on every
+  // anonymous hit, because no session is itself an AuthSessionMissingError.
+  if (authError) await recordAuthFailure('api/acca/tutor', authError);
   if (!user) {
     return NextResponse.json({ error: 'Unauthorised' }, { status: 401 });
   }
@@ -1406,7 +1411,8 @@ export async function POST(request: Request): Promise<Response> {
     } else {
       try {
         modelAnswer = await call1_generate(question, context);
-      } catch {
+      } catch (err) {
+        await recordServerError('tutor_reveal', 'api/acca/tutor', err, user.id);
         return NextResponse.json({ error: 'Failed to generate model answer' }, { status: 500 });
       }
     }
@@ -1804,7 +1810,11 @@ export async function POST(request: Request): Promise<Response> {
         }
       }
     }
-  } catch {
+  } catch (err) {
+    // The whole teaching engine, one catch — the drill loop's single most-travelled failure
+    // path. `err` and nothing else: the student's message and the model's reply are both in
+    // scope here and neither may reach the row. See `boundedDetail`.
+    await recordServerError('tutor_turn', 'api/acca/tutor', err, user.id);
     return NextResponse.json({ error: 'Teaching engine error' }, { status: 500 });
   }
 

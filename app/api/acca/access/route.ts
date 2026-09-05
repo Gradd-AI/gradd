@@ -1,4 +1,5 @@
 import { createServerClient, createServiceClient } from '@/lib/supabase/server';
+import { recordAuthFailure } from '@/lib/acca/error-recorder';
 import { NextResponse } from 'next/server';
 import { hasPaperAccess } from '@/lib/acca/access';
 import { strictPaper } from '@/lib/acca/paper';
@@ -35,7 +36,11 @@ export async function GET(request: Request): Promise<Response> {
     }
 
     const authClient = await createServerClient();
-    const { data: { user } } = await authClient.auth.getUser();
+    const { data: { user }, error: authError } = await authClient.auth.getUser();
+    // An OUTAGE records; a logged-out request does not. `recordAuthFailure` owns that
+    // distinction (`isAuthOutage`) — an unfiltered version would write a row on every
+    // anonymous hit, because no session is itself an AuthSessionMissingError.
+    if (authError) await recordAuthFailure('api/acca/access', authError);
     if (!user) return NextResponse.json({ access: false, paper });
 
     const supabase = createServiceClient();

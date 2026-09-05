@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createServerClient, createServiceClient } from '@/lib/supabase/server';
+import { recordAuthFailure } from '@/lib/acca/error-recorder';
 import { parseSurfaceEvent } from '@/lib/acca/surface-events';
 import { getMockPaper } from '@/lib/acca/mocks';
 
@@ -67,7 +68,11 @@ import { getMockPaper } from '@/lib/acca/mocks';
 export async function POST(request: Request): Promise<Response> {
   // ── 1. Identity FIRST. No session, no row. ──
   const authClient = await createServerClient();
-  const { data: { user } } = await authClient.auth.getUser();
+  const { data: { user }, error: authError } = await authClient.auth.getUser();
+  // An OUTAGE records; a logged-out request does not. `recordAuthFailure` owns that
+  // distinction (`isAuthOutage`) — an unfiltered version would write a row on every
+  // anonymous hit, because no session is itself an AuthSessionMissingError.
+  if (authError) await recordAuthFailure('api/acca/surface-event', authError);
   if (!user) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 });
 
   let body: unknown;
