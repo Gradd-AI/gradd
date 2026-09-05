@@ -1022,6 +1022,69 @@ when the session ends on a branch.
   or every route 404s. It IS set for Production; confirm the flag from an UNAUTHENTICATED probe
   (`/api/acca/case/list?paper=AFM` → **401 = flag on**, 404 = flag off; both routes check the flag
   before auth).
+- **THE ERROR RECORDER — `lib/acca/error-events.ts` (pure) + `lib/acca/error-recorder.ts` (the
+  write path) + the heartbeat (built 2026-09-05).** Every 500 on an ACCA surface was a
+  `console.error` at best; the runtime log is not queryable by student and rolls off, so *"a
+  student's sit failed to mark"* and *"no student sat a paper"* were the same observation.
+  Extends **`acca_funnel_events`** — a fourth and fifth `event_type` (`server_error`,
+  `recorder_heartbeat`), no new table (already indexed on `event_type`/`created_at`, already
+  service-role-only, and a separate table would need a manual migration and then a join back
+  to answer anything).
+  ⚠️ **THE CLAIM CEILING, verbatim in the recorder's header and nowhere weaker:** *"a failure
+  that reaches one of the instrumented catch blocks, on a request where the DB is reachable,
+  leaves a durable row"* — **NEVER "failures are recorded"**. Three named gaps: an
+  uninstrumented site records nothing (a timeout, an OOM kill, a throw above the handler, any
+  un-instrumented catch); **if the DB is what is down, nothing is written** (the recorder
+  writes to the same Postgres the route was already failing against — the fallback is a log
+  line, not a row); and *"catch block"* is read to include the `if (error)` branches on a
+  Supabase result and `if (!run.ok)` in the sit marker.
+  **ELEVEN SURFACES, each cited to its site** — `auth` (1:many, `metadata.route`
+  disambiguates) · `tutor_turn`/`tutor_reveal` · `case_turn`/`case_reveal`/`case_answer_write`
+  (named apart: the one surface where the student **loses written work**) · `case_mark` ·
+  `case_list` · `sit_start` · **`sit_mark`** (highest value — marking has ONE trigger, no
+  queue, no sweep, no retry beyond a button, so a failure is a finished paper nothing comes
+  back for) · `mock_start`. A name with no call site would be a promise that such a failure is
+  recorded, so the fixture refuses a surface it cannot cite. Both marking sites record **5xx
+  ONLY** — `runCaseMarking`'s 409/404s are legitimate refusals and would bury the 502s.
+  🔴 **THE AUTH FOLD-IN, AND THE FILTER IS LOAD-BEARING.** All **TWELVE** ACCA routes (not the
+  eight the diagnosis named — measured) discarded `getUser()`'s error, so a GoTrue outage
+  reached the student as *"not signed in"* and left no trace. **`getUser()` does NOT return a
+  null error when logged out** — auth-js returns `AuthSessionMissingError` — so
+  `if (authError) record(...)` would write a row on **every anonymous hit to twelve routes**
+  and bury the outage under the one thing that is not an error; an expired/tampered cookie is
+  a 401/403 from a service that is UP, where "not signed in" is the honest answer.
+  `recordAuthFailure` owns the distinction (`isAuthOutage`) so no call site can forget it:
+  records an unreachable GoTrue (`AuthRetryableFetchError`, **status 0 — no status-range test
+  can catch it**), a 5xx, or anything unrecognised. Classified STRUCTURALLY on `{name,status}`
+  to keep the module pure; the fixture builds the REAL auth-js classes (P-G6) so a rename goes
+  red. An `auth` row carries a **NULL `user_id`** — the stated exception to the surface-event
+  sink's refusal of unattributable rows, because a failure whose whole content is "we could
+  not establish who this is" has nothing else to carry.
+  **DETAIL = error name + ~200 chars. THE SIGNATURE IS THE PRIVACY MECHANISM, NOT THE
+  TRUNCATION** — `boundedDetail` takes the caught error and nothing else, so a call site has
+  nowhere to put the student's answer (the tutor's catch block is holding the student's
+  message AND the model's reply when it fires). ⚠️ The bound limits VOLUME: a driver message
+  can still quote a fragment of a value it was handed, and 200 chars bounds that rather than
+  eliminating it.
+  **THE RECORDER CANNOT THROW AND HAS NO ERROR ARM** — it runs inside catch blocks, so a throw
+  would replace the original error with its own. It never records its own failure (that would
+  mean writing to the table that just refused a write); fallback is `console.error`. Awaited
+  at every site: an un-awaited promise can be dropped when the response returns.
+  💓 **THE HEARTBEAT IS PART OF THE MECHANISM, NOT A NICETY** (`api/cron/trial-reminders`,
+  daily 09:00 UTC). Without it, *the product ran and nothing failed* / *the recorder is broken*
+  / *nobody used the product* are ONE observation. Written **through the same recorder** — a
+  heartbeat proving a different code path works proves nothing. ⚠️ **It runs BEFORE the cron's
+  own work**: at the end it would sit behind the early `return` on the profiles query, so a
+  failure there would leave no heartbeat and read as a dead recorder. ⚠️ A missing heartbeat
+  does **not** isolate the recorder — the cron may not have run; what it rules out is *"zero
+  errors, therefore all is well"*.
+  **THREE DOORS, THREE DISJOINT VOCABULARIES.** `/api/acca/event` (auth-free drill funnel) now
+  refuses the recorder's two types explicitly; `/api/acca/surface-event` refuses them by
+  construction. Neither event type has an HTTP door at all — a client-posted error row is a
+  report from the one process that cannot say why it failed, and forgeable.
+  Fixtures `npm run test:error-events` (70, gate 80 → **81**) — the naive auth filter and naive
+  stringification pinned MUST-FAIL; the fail-path section **states before its checks that it
+  proves the SHAPE and not production behaviour**.
 - **The 6 gates:** GATE1 self-consistency+tolerance+OFR-wiring = `validateSchemaSelfConsistency`
   (`lib/acca/validate-schema.ts`); GATE2 answer↔schema figure integrity (1/2/3 dp) =
   model_answer must contain every `fmt1(expected_value)`; GATE3 distinct-factor seeded-OFR
