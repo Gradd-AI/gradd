@@ -1,0 +1,90 @@
+{
+  "walk": "ACCA error recorder — live PRODUCTION proof, and the answer-loss bug it exposed",
+  "date": "2026-09-05",
+  "environment": "PRODUCTION — https://www.gradd.ai (gradd.ai 307s here; a redirect would drop a POST body). Real routes, real session cookies, live Supabase uomxsbagekubfvkukokj. Not local dev, unlike the 2026-08-12 surface-events walk.",
+  "why_a_synthetic_user": "the lever is a rejected sit answer, which requires an AFM entitlement and an OPEN attempt on afm-paper-1. Doing that on a real account would consume that student's one mock paper.",
+
+  "the_lever": {
+    "what": "a NUL byte (U+0000) inside an otherwise ordinary sit answer",
+    "why_it_is_a_real_failure": "Postgres genuinely refuses a NUL in a text column (SQLSTATE 22P05, 'unsupported Unicode escape sequence'), and a NUL rides along in text pasted out of some PDFs. Real student-shaped input, real database rejection, real route, real catch block — no feature flag, no injected fault, no test hook, no code shipped to production for the purpose of being tested.",
+    "why_not_something_else": "every other instrumented surface fails only on a model call, a transport fault or a Supabase outage, none of which can be forced from outside without shipping a hook."
+  },
+
+  "walk_A_BEFORE_the_fix": {
+    "deployment": "eac9e73abae71ff2ef0910bb20fb843dbafba8f3 (the recorder, without the case/turn fix)",
+    "user": "2db8973e-9328-47aa-8792-551701efa1d3",
+    "GET /api/acca/sit?paper=AFM": "200, 3 cases",
+    "POST /api/acca/sit {action:start}": "200, attempt opened on afm-paper-1",
+    "POST /api/acca/case/turn (sitting, NUL byte)": "200 {\"recorded\":true,\"sitting\":true,...}",
+    "acca_case_progress rows after": 0,
+    "acca_funnel_events rows after": 0,
+    "FINDING": "THE STUDENT WAS TOLD THE ANSWER WAS RECORDED. IT WAS NOT WRITTEN, AND NOTHING LOGGED IT. On the sit's single write path, on the one surface where the work is not retypeable.",
+    "cause": "supabase-js does not throw on a database error — a PostgrestBuilder resolves with { data, error }. The `await supabase...upsert(...)` sat inside a try/catch, which READS as covered and catches only a transport-level throw, so every database-level rejection fell through to the success response.",
+    "how_it_was_found": "by instrumenting that exact catch block and asking what could reach it. The answer was: not this."
+  },
+
+  "walk_B_AFTER_the_fix": {
+    "deployment": "c82d1c54ddfae9d3cb02eb69cc12a7ba657b9baf",
+    "user": "e920e839-e0b0-410d-97f6-784095f16ad6",
+    "funnel_rows_before": 0,
+    "GET /api/acca/sit?paper=AFM": "200, 3 cases",
+    "POST /api/acca/sit {action:start}": "200, attempt 2026-09-05T07:24:14Z → ends_at 10:39:14Z (3h15m)",
+    "target": "case aa000000-0000-4000-8000-00000000a001, requirement 49830c65-679e-4929-9a3f-a84c81dcdcad, label '(i)'",
+    "POST /api/acca/case/turn (sitting, NUL byte)": "500 {\"error\":\"Failed to record answer\"}",
+    "acca_case_progress rows after": 0,
+    "note_on_the_zero": "still zero, and that is correct — the write genuinely cannot succeed. What changed is that the student is now TOLD, and the failure left a durable row. SitRunner's sitWriteOutcomeFor already maps a 500 to `failed` ('press submit again') rather than to a claimed save.",
+
+    "the_recorded_row": {
+      "count": 1,
+      "event_type": "server_error",
+      "user_id": "e920e839-e0b0-410d-97f6-784095f16ad6",
+      "anon_id": null,
+      "drill_lo": null,
+      "metadata": {
+        "surface": "case_answer_write",
+        "route": "api/acca/case/turn",
+        "detail": "22P05: unsupported Unicode escape sequence"
+      }
+    },
+
+    "assertions_checked": {
+      "attributed_to_the_student": "user_id is the walk user; anon_id null",
+      "drill_lo_untouched": "null — it is drill-shaped and existing funnel queries group by it",
+      "surface_is_the_right_one": "case_answer_write, not case_turn — the sit answer write is named apart because it is the one place the student loses written work",
+      "detail_within_the_bound": "42 chars, DETAIL_MAX is 200",
+      "detail_contains_no_student_answer": "checked explicitly against two fragments of the submitted text — false",
+      "the_PostgREST_object_branch_is_load_bearing": "the detail reads '22P05: unsupported Unicode escape sequence', which comes from boundedDetail's plain-object branch reading `code` + `message`. A naive String(err) would have stored '[object Object]' — that naive form is pinned MUST-FAIL in the fixture and this is the production confirmation of the same point."
+    }
+  },
+
+  "heartbeat_probe": {
+    "row": {
+      "id": "aeba34ba-aa59-4277-aa30-79354bdab976",
+      "created_at": "2026-09-05T07:24:58.945697+00:00",
+      "user_id": null,
+      "anon_id": null,
+      "event_type": "recorder_heartbeat",
+      "drill_lo": null,
+      "metadata": { "source": "api/cron/trial-reminders" }
+    },
+    "removed": true,
+    "WHAT_THIS_PROVES": "the real recordHeartbeat writes a valid row into the real production table — real schema, real RLS (service-role only, zero policies), real jsonb, real service key.",
+    "WHAT_IT_DOES_NOT_PROVE": "that the CRON calls it. The cron could not be triggered: invoking /api/cron/trial-reminders on production sends real trial-reminder emails to real students, which is not a thing to do for a probe. That last link is one awaited line at the top of the cron handler, and the next scheduled 09:00 UTC run is what confirms it. CHECK FOR A recorder_heartbeat ROW AFTER THE NEXT 09:00 UTC RUN."
+  },
+
+  "teardown": {
+    "order": "acca_funnel_events FIRST, then case_progress, mock_attempts, weak_areas, entitlements, profiles, then the auth user",
+    "why_that_order": "acca_funnel_events.user_id is ON DELETE SET NULL. Deleting the auth user does NOT remove the funnel rows — it silently converts them into rows attributable to nobody, which is worse than leaving them. Same hazard the surface-event teardown documents.",
+    "users_torn_down": [
+      "9e40aa5f-7bef-427c-8c1c-4cbed22954f0 (aborted setup run)",
+      "2db8973e-9328-47aa-8792-551701efa1d3 (walk A)",
+      "d22f750f-f568-4f4b-8f81-231f52a719f5 (walk B, first attempt — deploy had not flipped)",
+      "e920e839-e0b0-410d-97f6-784095f16ad6 (walk B)"
+    ],
+    "funnel_rows_deleted_for_walk_B_user": 1,
+    "rows_left_per_user": { "acca_funnel_events": 0, "acca_case_progress": 0, "acca_mock_attempts": 0, "acca_weak_areas": 0, "acca_entitlements": 0, "profiles": 0 },
+    "table_wide_residue_sweep": "SELECT event_type, count(*), count(*) FILTER (WHERE user_id IS NULL AND anon_id IS NULL) FROM acca_funnel_events GROUP BY event_type — NO server_error and NO recorder_heartbeat rows remain. The 87 historical unattributed rows (drill_shown 57 + teach_through_delivered 17 + tutor_intent 11 + try_another_clicked 2) are UNCHANGED, which is the proof the teardown orphaned nothing."
+  },
+
+  "claim_ceiling_restated": "a failure that reaches one of the instrumented catch blocks, on a request where the DB is reachable, leaves a durable row. This walk confirms exactly ONE surface (case_answer_write) end to end on production. The other ten are covered by the fixture's structural checks and by reading the call sites — not by this walk."
+}

@@ -498,7 +498,15 @@ when the session ends on a branch.
   APM route importing a component from the AFM route folder asserted an ownership it no longer had);
   `app/acca/mock/page.tsx` and `app/acca/afm/mock/page.tsx` differ ONLY in the `paper` prop.
   **READ + CLOCK** `app/api/acca/sit/route.ts`. **WRITE** `app/api/acca/case/turn` (`sitting:true`) —
-  the ONE sit write path, which owns the 409 immutability rule. **PAPER RESOLUTION**
+  the ONE sit write path, which owns the 409 immutability rule.
+  🔴 **AND ITS UPSERT'S ERROR WAS NEVER INSPECTED — FIXED 2026-09-05, PROVEN LIVE FIRST.** It
+  returned **`200 {"recorded":true}` with the answer not written and nothing logged**;
+  `acca_case_progress` held zero rows. **supabase-js does not throw on a database error** — a
+  `PostgrestBuilder` resolves with `{ data, error }` — so `await sb…upsert(…)` inside a
+  `try/catch` READS as covered and catches only a transport throw. Now thrown so the one catch
+  covers both shapes. 📐 **The pattern generalises and the repo is unswept** — but a sweep must
+  read INTENT: the practice-path upsert directly below it is deliberately unchecked best-effort
+  persistence that must never block a teaching response. **PAPER RESOLUTION**
   `lib/acca/sit-attempt.ts` (`resolvePaperConfig` — explicit `mock_id` → open attempt → `paper=`;
   the pure precedence rule is `resolveOrder`), shared by the sit and results routes so a student who
   sat AFM can never be handed the APM debrief. **RESULTS** `app/api/acca/sit/results/route.ts` —

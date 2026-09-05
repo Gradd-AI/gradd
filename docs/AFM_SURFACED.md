@@ -2,6 +2,41 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
+## 🟢 NEW 2026-09-05 — THE ERROR RECORDER SHIPPED, AND IT FOUND A LIVE ANSWER-LOSS BUG ON THE WAY IN
+
+`lib/acca/error-events.ts` (pure) + `lib/acca/error-recorder.ts` + a daily heartbeat. Eleven
+surfaces, twelve routes' discarded auth errors, `npm run test:error-events` (70, gate 80 → **81**).
+Full record in `CLAUDE.md`'s code map — including the claim ceiling, which is stated **verbatim** in
+the recorder's header and must never be paraphrased up to *"failures are recorded"*.
+
+🔴 **THE FIND: A REJECTED SIT ANSWER RETURNED `200 {"recorded":true}` AND THE ANSWER WAS GONE.**
+Proven on PRODUCTION before the fix (synthetic AFM student, real attempt, real route):
+`acca_case_progress` held **zero rows** after a submission the student was told had been recorded.
+supabase-js does not throw on a database error — a `PostgrestBuilder` resolves with `{ data, error }`
+— so the `await …upsert(…)` inside a `try/catch` **reads as covered and catches only a transport
+throw**. Every database-level rejection fell through to the success response. On the sit's SINGLE
+write path, on the one surface where the work is not retypeable, with nothing logging it.
+**It was found by instrumenting that exact catch block and asking what could reach it — the answer
+was: not this.** Fixed by throwing the returned error so the one catch covers both shapes.
+📐 **GENERALISES: `try { await sb.from(x).insert(y) } catch` IS NOT ERROR HANDLING ANYWHERE IN THIS
+REPO.** Worth a sweep — this one was found by accident. The practice-path upsert immediately below
+it is deliberately unchecked (documented best-effort persistence that must never block a teaching
+response), so a sweep must read intent, not just shape.
+
+**Open, deliberately:**
+
+1. 🟡 **THE OTHER `await sb…insert/upsert` SITES ARE UNSWEPT.** See the generalisation above. Not
+   done in this session because a sweep that cannot tell best-effort from load-bearing would either
+   churn or produce a list nobody can act on.
+2. 🟡 **NOTHING READS THE ERROR ROWS.** There is no alert, no digest and no dashboard — the rows are
+   read by hand in SQL, exactly like the surface-view events. The heartbeat makes a zero
+   *interpretable*; it does not make anyone *look*. A weekly line in the existing Monday cron is the
+   cheap next step, and is deliberately not built yet.
+3. 🟡 **THE HEARTBEAT PROVES THE RECORDER, NOT THE INSTRUMENTATION.** A route that stopped calling
+   `recordServerError` — deleted in a refactor, or a new catch block added without one — is
+   invisible to it, and the fixture's site table proves each surface HAS a declared home, not that
+   the call is still there. Only the live walk covers that, and only for the surface walked.
+
 ## 🟢 NEW 2026-09-04 — THE PERMANENT RESULTS PAGE SHIPPED, AND THREE THINGS ARE LEFT OPEN
 
 `/acca/results` + `/acca/results/[attemptId]`, one shared assembly (`lib/acca/sit-report.ts`) behind

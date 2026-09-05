@@ -5280,3 +5280,74 @@ what was reviewed — never that the review is still right. Written for its owne
 `docs/AFM_SURFACED.md` beside the SBL surface item, not only in the batch's own block.
 
 **Batch A is closed.**
+
+## SESSION BANK — 2026-09-05 — THE ERROR RECORDER, ITS HEARTBEAT, AND A LIVE ANSWER-LOSS BUG (`feat/acca-error-recorder`, `fix/sit-answer-write-unchecked`)
+
+**WHAT WAS BLIND.** Every 500 on an ACCA surface was a `console.error` at best. Vercel's runtime log
+is not queryable by student and rolls off, so *"a student's sit failed to mark"* and *"no student sat
+a paper"* were the same observation — an absence. `npm run audit:unmarked-sits` had been written as a
+point-in-time answer to exactly one instance of it.
+
+**SHIPPED.** `lib/acca/error-events.ts` (PURE — closed vocabulary, detail bound, auth-outage rule) +
+`lib/acca/error-recorder.ts` (the one write path). Two new `event_type` strings in the EXISTING
+`acca_funnel_events` — no new table: it is already indexed on `event_type`/`created_at`, already
+service-role-only, and a separate table would need a manual migration and then a join back to answer
+anything worth asking. Full mechanism in `CLAUDE.md`'s code map.
+
+⚠️ **THE CLAIM CEILING IS VERBATIM IN THE MODULE HEADER AND MUST NOT BE PARAPHRASED UP:** *"a failure
+that reaches one of the instrumented catch blocks, on a request where the DB is reachable, leaves a
+durable row"* — never *"failures are recorded"*. Three gaps named in the file: an uninstrumented site
+records nothing (a timeout, an OOM kill, a throw above the handler); **if the DB is what is down,
+nothing is written** — the recorder writes to the same Postgres the route was failing against, and
+the fallback there is a log line, not a row; and *"catch block"* is read to include the `if (error)`
+branches on a Supabase result.
+
+🔴 **THE FIND, AND IT IS THE BIGGEST THING IN THIS SESSION. A REJECTED SIT ANSWER RETURNED `200
+{"recorded":true}` AND THE ANSWER WAS GONE.** Proven ON PRODUCTION before the fix (synthetic AFM
+student, real attempt, real route): `acca_case_progress` held **zero rows** after a submission the
+student was told had been recorded. **supabase-js does not throw on a database error** — a
+`PostgrestBuilder` resolves with `{ data, error }` — so `await supabase…upsert(…)` inside a
+`try/catch` **reads as covered and catches only a transport-level throw**. Every database-level
+rejection fell through to the success response. On the sit's SINGLE write path, on the one surface
+where the work is not retypeable, with nothing anywhere logging it.
+**It was found by instrumenting that exact catch block and asking what could reach it.** The answer
+was: not this. Fixed by throwing the returned error so the one catch covers both shapes.
+📐 **GENERALISES: `try { await sb.from(x).insert(y) } catch` IS NOT ERROR HANDLING.** A sweep is
+owed and is logged in `AFM_SURFACED.md` — and it must read INTENT, because the practice-path upsert
+directly below this one is deliberately unchecked best-effort persistence.
+
+🔴 **THE AUTH FOLD-IN, AND THE FILTER IS THE LOAD-BEARING PART.** **TWELVE** ACCA routes discarded
+`getUser()`'s error — **not the eight the diagnosis named; measured** — so a GoTrue outage reached
+the student as *"not signed in"*. **`getUser()` does NOT return a null error when logged out**:
+auth-js returns `AuthSessionMissingError`, so the obvious `if (authError) record(...)` would write a
+row on **every anonymous hit to twelve routes** and bury the outage under the one thing that is not
+an error. An expired or tampered cookie is a 401/403 from a service that is UP, where *"not signed
+in"* is the honest answer. `recordAuthFailure` owns the distinction so no call site can forget it;
+what records is an unreachable GoTrue (`AuthRetryableFetchError`, **status 0 — no status-range test
+can catch it**), a 5xx, or anything unrecognised. Classified structurally on `{name,status}` to keep
+the module pure; the fixture builds the REAL auth-js classes so a rename goes red rather than the
+rule going quietly wrong.
+
+💓 **THE HEARTBEAT SHIPPED WITH IT, AS A CONDITION OF SHIPPING.** Without it, *the product ran and
+nothing failed* / *the recorder is broken* / *nobody used the product* are ONE observation. Written
+through the SAME recorder — a heartbeat proving a different code path works proves nothing. ⚠️ It
+runs BEFORE the daily cron's own work: at the end it would sit behind the early `return` on the
+profiles query, so a failure there would leave no heartbeat and read as a dead recorder.
+
+**LIVE PRODUCTION WALK — `docs/rollbacks/error_recorder_walk_20260905.json`.** Lever: a NUL byte in a
+sit answer, which Postgres genuinely refuses in a `text` column (22P05) and which rides along in text
+pasted from some PDFs — real input, real rejection, real route, no test hook. BEFORE: `200
+{"recorded":true}`, 0 progress rows, 0 funnel rows. AFTER: **500**, and **one row** —
+`server_error {surface: case_answer_write, route: api/acca/case/turn, detail: "22P05: unsupported
+Unicode escape sequence"}`, attributed, `anon_id`/`drill_lo` null, detail 42 chars, **and explicitly
+checked to contain no fragment of the student's answer**. The detail also confirms in production that
+`boundedDetail`'s plain-object branch is load-bearing: a naive `String(err)` would have stored
+`[object Object]`, which is pinned MUST-FAIL in the fixture. Heartbeat proven separately against the
+live table and removed. **Scoped-deleted, funnel rows FIRST** (`user_id` is `ON DELETE SET NULL`, so
+deleting the user orphans rather than removes); a table-wide sweep shows no recorder rows left and the
+87 historical unattributed rows unchanged, which is the proof nothing was orphaned.
+⚠️ **The walk confirms ONE surface end to end.** The other ten rest on the fixture's structural
+checks and on reading the call sites.
+
+Fixtures `npm run test:error-events` (70, contract gate 80 → **81**). Deploy confirmed from the build
+log: contract gate 81/81, `Build Completed`.
