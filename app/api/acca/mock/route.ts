@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createServerClient, createServiceClient } from '@/lib/supabase/server';
+import { recordAuthFailure, recordServerError } from '@/lib/acca/error-recorder';
 import { hasPaperAccess } from '@/lib/acca/access';
 import { getMockPaper, getMockPapers } from '@/lib/acca/mocks';
 import { resolvePaper } from '@/lib/acca/paper';
@@ -42,7 +43,11 @@ async function gate(): Promise<
     return { error: NextResponse.json({ error: 'Not found' }, { status: 404 }) };
   }
   const authClient = await createServerClient();
-  const { data: { user } } = await authClient.auth.getUser();
+  const { data: { user }, error: authError } = await authClient.auth.getUser();
+  // An OUTAGE records; a logged-out request does not. `recordAuthFailure` owns that
+  // distinction (`isAuthOutage`) — an unfiltered version would write a row on every
+  // anonymous hit, because no session is itself an AuthSessionMissingError.
+  if (authError) await recordAuthFailure('api/acca/mock', authError);
   if (!user) {
     return { error: NextResponse.json({ error: 'Unauthorised' }, { status: 401 }) };
   }
@@ -146,6 +151,9 @@ export async function POST(request: Request): Promise<Response> {
     .single();
 
   if (error || !data) {
+    // `!data` with no error is a row that came back empty from a `.single()` insert — no
+    // error object to describe, so the surface and the route are the whole finding.
+    await recordServerError('mock_start', 'api/acca/mock', error ?? new Error('insert returned no row'), g.userId);
     return NextResponse.json({ error: 'Failed to start mock' }, { status: 500 });
   }
   return NextResponse.json({ attempt: data as AttemptRow, resumed: false });

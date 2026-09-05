@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createServerClient, createServiceClient } from '@/lib/supabase/server';
+import { recordAuthFailure, recordServerError } from '@/lib/acca/error-recorder';
 import { hasPaperAccess, type LegacyEntitlementProfile } from '@/lib/acca/access';
 import { sitCaseGate, attemptIsClosed } from '@/lib/acca/sit-preview';
 import { resolvePaperConfig, hintUrl, type AttemptRow } from '@/lib/acca/sit-attempt';
@@ -89,7 +90,11 @@ async function gateAuth(): Promise<{ error: Response } | GateOk> {
     return { error: NextResponse.json({ error: 'Not found' }, { status: 404 }) };
   }
   const authClient = await createServerClient();
-  const { data: { user } } = await authClient.auth.getUser();
+  const { data: { user }, error: authError } = await authClient.auth.getUser();
+  // An OUTAGE records; a logged-out request does not. `recordAuthFailure` owns that
+  // distinction (`isAuthOutage`) — an unfiltered version would write a row on every
+  // anonymous hit, because no session is itself an AuthSessionMissingError.
+  if (authError) await recordAuthFailure('api/acca/sit/results', authError);
   if (!user) {
     return { error: NextResponse.json({ error: 'Unauthorised' }, { status: 401 }) };
   }
@@ -365,6 +370,20 @@ export async function POST(request: Request): Promise<Response> {
       attemptClosed: closed, attemptId,
     });
     if (!run.ok) {
+      // ── RECORDED, AND THIS IS THE HIGHEST-VALUE SITE IN THE SET ──
+      // Marking has exactly one trigger — the client POSTing from the `done` phase — with no
+      // queue, no server-side sweep and no retry beyond a button the student has to press.
+      // So a failure here is a finished paper that nothing will ever come back for, and
+      // until now it left no trace outside a rolling runtime log. `audit:unmarked-sits`
+      // exists because this was unobservable.
+      //
+      // 5xx ONLY. `runCaseMarking` returns 409 for legitimate refusals (an unfinished paper,
+      // a case examining no skills, a missing attempt_id) and 404 for content that is not
+      // there; recording those would fill the table with correct behaviour and bury the 502s
+      // that are the actual finding.
+      if (run.status >= 500) {
+        await recordServerError('sit_mark', 'api/acca/sit/results', new Error(run.error), userId);
+      }
       // Report the failure with the cases that DID mark, rather than 502-ing the lot: a
       // student whose Q1 and Q2 marked must not lose them because Q3's call timed out. A
       // second POST retries only what is still unmarked.

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createServerClient, createServiceClient } from '@/lib/supabase/server';
+import { recordAuthFailure, recordServerError } from '@/lib/acca/error-recorder';
 import { hasPaperAccess, type LegacyEntitlementProfile } from '@/lib/acca/access';
 import type { AccaPaper } from '@/lib/acca/paper';
 import { sitCaseGate, sitDisplayLabel } from '@/lib/acca/sit-preview';
@@ -122,7 +123,11 @@ async function gateAuth(): Promise<{ error: Response } | GateOk> {
     return { error: NextResponse.json({ error: 'Not found' }, { status: 404 }) };
   }
   const authClient = await createServerClient();
-  const { data: { user } } = await authClient.auth.getUser();
+  const { data: { user }, error: authError } = await authClient.auth.getUser();
+  // An OUTAGE records; a logged-out request does not. `recordAuthFailure` owns that
+  // distinction (`isAuthOutage`) — an unfiltered version would write a row on every
+  // anonymous hit, because no session is itself an AuthSessionMissingError.
+  if (authError) await recordAuthFailure('api/acca/sit', authError);
   if (!user) {
     return { error: NextResponse.json({ error: 'Unauthorised' }, { status: 401 }) };
   }
@@ -320,6 +325,9 @@ export async function POST(request: Request): Promise<Response> {
       .select('mock_id, started_at, ends_at, completed')
       .single();
     if (error || !data) {
+      // `!data` with no error is a `.single()` insert that came back empty — nothing to
+      // describe beyond the surface and the route.
+      await recordServerError('sit_start', 'api/acca/sit', error ?? new Error('insert returned no row'), userId);
       return NextResponse.json({ error: 'Failed to start' }, { status: 500 });
     }
     return NextResponse.json({ attempt: data as AttemptRow, resumed: false });

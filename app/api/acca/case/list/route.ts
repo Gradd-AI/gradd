@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createServerClient, createServiceClient } from '@/lib/supabase/server';
+import { recordAuthFailure, recordServerError } from '@/lib/acca/error-recorder';
 import { hasPaperAccess } from '@/lib/acca/access';
 import { resolvePaper, strictPaper } from '@/lib/acca/paper';
 
@@ -39,7 +40,11 @@ export async function GET(request: Request): Promise<Response> {
   }
 
   const authClient = await createServerClient();
-  const { data: { user } } = await authClient.auth.getUser();
+  const { data: { user }, error: authError } = await authClient.auth.getUser();
+  // An OUTAGE records; a logged-out request does not. `recordAuthFailure` owns that
+  // distinction (`isAuthOutage`) — an unfiltered version would write a row on every
+  // anonymous hit, because no session is itself an AuthSessionMissingError.
+  if (authError) await recordAuthFailure('api/acca/case/list', authError);
   if (!user) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 });
 
   const supabase = createServiceClient();
@@ -70,6 +75,7 @@ export async function GET(request: Request): Promise<Response> {
     .order('title', { ascending: true });
 
   if (error) {
+    await recordServerError('case_list', 'api/acca/case/list', error, user.id);
     return NextResponse.json({ error: 'Failed to load cases' }, { status: 500 });
   }
 
