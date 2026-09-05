@@ -84,6 +84,14 @@ export const ERROR_SURFACES = [
   'sit_mark',
   /** Starting an APM mock attempt failed — app/api/acca/mock/route.ts. */
   'mock_start',
+  /** A Stripe webhook handler's write failed — app/api/webhooks/stripe/route.ts.
+   *  The only surface here that is NOT about a student's work, and the only one whose
+   *  recording is paired with a RE-THROW: every other site records and returns the response
+   *  it was already going to return, because there is nobody to retry. Stripe retries a
+   *  non-2xx on its own backoff, so here the throw is the recovery and this row is only how
+   *  you find out it happened. Twelve writes grant, revoke or sync PAID ACCESS; before this,
+   *  a rejected write reached Stripe as `{received:true}` and was never retried. */
+  'stripe_webhook',
 ] as const;
 export type ErrorSurface = (typeof ERROR_SURFACES)[number];
 
@@ -117,6 +125,7 @@ export const ERROR_ROUTES = [
   'api/acca/surface-event',
   'api/acca/tutor',
   'api/cron/trial-reminders',
+  'api/webhooks/stripe',
 ] as const;
 export type ErrorRoute = (typeof ERROR_ROUTES)[number];
 

@@ -1,5 +1,6 @@
 import { strictPaper } from '@/lib/acca/paper';
 import { createServiceClient } from '@/lib/supabase/server';
+import { recordServerError } from '@/lib/acca/error-recorder';
 import stripe from '@/lib/stripe';
 import { Resend } from 'resend';
 import { buildWelcomeEmail } from '@/lib/email/welcome-template';
@@ -9,33 +10,78 @@ import type { IBSubject, IBLevel } from '@/lib/email/ib-welcome-template';
 import { NextResponse } from 'next/server';
 import type Stripe from 'stripe';
 
-export async function POST(request: Request) {
-  const body = await request.text();
-  const signature = request.headers.get('stripe-signature');
+// ═════════════════════════════════════════════════════════════════════════════
+// ── A FAILED WRITE MUST REACH STRIPE AS A NON-2xx (2026-09-05) ───────────────
+//
+// Twelve writes in this file grant, revoke or sync PAID ACCESS. Until now every one of them
+// was `await supabase.from(...).update(...)` with the result discarded — and supabase-js
+// RESOLVES with `{ data, error }` rather than throwing, so a database-level rejection was
+// not an exception, was not caught by anything, and fell straight through to the
+// unconditional `{ received: true }` below.
+//
+// The consequence is the worst available on this surface: STRIPE TREATS 200 AS DELIVERED AND
+// NEVER RETRIES. A customer pays, the grant is rejected by the database, Stripe is told the
+// event was handled, and the customer has no entitlement — with no row, no log, and no
+// second chance. (A THROWN error already produced a 500 and a retry; the one failure mode
+// that actually happens was the one not covered.)
+//
+// Now: every one of the twelve reads its error and throws `StripeWriteError`; this dispatcher
+// RECORDS the failure and RE-THROWS. The throw is the recovery — Stripe's own backoff is a
+// far better retry than anything built here — and the recorded row is how anyone finds out it
+// happened at all. Both, not either.
+//
+// ── WHY RE-RUNNING A HANDLER IS SAFE ────────────────────────────────────────
+// Audited 2026-09-05, all eight handlers. Every one of the twelve is an UPDATE with literal
+// or Stripe-derived values: no insert without a conflict target, no counter, no append. The
+// only INSERT in the file (`acca_entitlements`) already checks its error and is idempotent
+// through `uq_acca_entitlements_stripe_event`.
+//
+// The replay risk here is NOT in the database — it is the welcome email and the operator
+// alert, and both are safe ONLY because of where they sit. See the ⚠️ ORDERING notes at
+// those two call sites before moving anything in those handlers.
+//
+// ⚠️ NO HANDLER CAN DETECT ITS OWN REPLAY. Stripe supplies `event.id`, stable across retries;
+// nothing here reads it and no table stores it. The handlers are replay-safe because they are
+// idempotent, not because anything checks — so this change makes retries MORE likely against
+// a mechanism that was never verified. See docs/AFM_SURFACED.md.
+// ═════════════════════════════════════════════════════════════════════════════
 
-  if (!signature) {
-    return NextResponse.json({ error: 'No signature' }, { status: 400 });
+/** A write that must reach Stripe as a failure. Carries WHICH write, and the driver's own
+ *  code, into `metadata.detail` — a PostgREST error is a plain object, so without this the
+ *  recorded row would read `ObjectError: duplicate key…` with no idea where it came from. */
+export class StripeWriteError extends Error {
+  constructor(write: string, cause: unknown) {
+    const c = (cause ?? {}) as { code?: string; message?: string };
+    super(`${write}${c.code ? ` [${c.code}]` : ''}: ${c.message ?? 'write failed'}`);
+    this.name = 'StripeWriteError';
   }
+}
 
-  let event: Stripe.Event;
+/** Read a write's result and stop the handler if it failed. `write` is the W-number from the
+ *  2026-09-05 audit plus what it writes, so a recorded row names the exact line. */
+function orThrow(error: unknown, write: string): void {
+  if (error) throw new StripeWriteError(write, error);
+}
 
-  const webhookSecret = request.headers.get('host')?.includes('gradd.ai')
-    ? process.env.STRIPE_WEBHOOK_SECRET_AI!
-    : process.env.STRIPE_WEBHOOK_SECRET!;
+/** Best guess at whose event this is, for the error row's `user_id`. Every handler reads the
+ *  same metadata key. Null is fine and expected — an invoice event carries no user id, and
+ *  `metadata.route` still says where the failure was. */
+function userIdFromEvent(event: Stripe.Event): string | null {
+  const obj = event.data.object as { metadata?: Record<string, string> | null };
+  return obj?.metadata?.supabase_user_id ?? null;
+}
 
-  try {
-    event = stripe.webhooks.constructEvent(
-      body,
-      signature,
-      webhookSecret
-    );
-  } catch (err) {
-    console.error('Webhook signature verification failed:', err);
-    return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
-  }
-
-  const supabase = createServiceClient();
-
+/**
+ * The event switch. EXPORTED so the positive control can drive it with a stub client — the
+ * route below is signature verification plus this call, and a fixture cannot forge a Stripe
+ * signature.
+ *
+ * Throws on any write failure. Callers must not swallow it.
+ */
+export async function dispatchStripeEvent(
+  supabase: ReturnType<typeof createServiceClient>,
+  event: Stripe.Event,
+): Promise<void> {
   switch (event.type) {
     case 'checkout.session.completed': {
       const checkoutSession = event.data.object as Stripe.Checkout.Session;
@@ -91,6 +137,63 @@ export async function POST(request: Request) {
     default:
       break;
   }
+}
+
+/**
+ * Record the failure, then let it propagate. EXPORTED for the positive control: its two arms
+ * are exactly this function resolving (and writing nothing) versus rejecting (and writing one
+ * row).
+ *
+ * ⚠️ THE RECORDER WRITES TO THE SAME DATABASE THAT JUST REJECTED THE WRITE, so in the
+ * correlated case — Postgres unreachable — it will fail too. It cannot throw (see
+ * error-recorder.ts), it logs, and the re-throw below still happens. Losing the row in that
+ * case is acceptable precisely because the throw, not the row, is what recovers the payment.
+ */
+export async function dispatchOrRecord(
+  supabase: ReturnType<typeof createServiceClient>,
+  event: Stripe.Event,
+): Promise<void> {
+  try {
+    await dispatchStripeEvent(supabase, event);
+  } catch (err) {
+    await recordServerError('stripe_webhook', 'api/webhooks/stripe', err, userIdFromEvent(event));
+    throw err;
+  }
+}
+
+export async function POST(request: Request) {
+  const body = await request.text();
+  const signature = request.headers.get('stripe-signature');
+
+  if (!signature) {
+    return NextResponse.json({ error: 'No signature' }, { status: 400 });
+  }
+
+  let event: Stripe.Event;
+
+  const webhookSecret = request.headers.get('host')?.includes('gradd.ai')
+    ? process.env.STRIPE_WEBHOOK_SECRET_AI!
+    : process.env.STRIPE_WEBHOOK_SECRET!;
+
+  try {
+    event = stripe.webhooks.constructEvent(
+      body,
+      signature,
+      webhookSecret
+    );
+  } catch (err) {
+    console.error('Webhook signature verification failed:', err);
+    return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
+  }
+
+  const supabase = createServiceClient();
+
+  // NOT wrapped in a try/catch here, deliberately. `dispatchOrRecord` has already recorded
+  // the failure; an uncaught throw is what makes Next answer non-2xx, and a non-2xx is the
+  // entire point — it is the signal that puts the event back into Stripe's retry schedule.
+  // Catching it to return a tidy 500 would work identically today and would be one edit away
+  // from someone returning 200 again.
+  await dispatchOrRecord(supabase, event);
 
   return NextResponse.json({ received: true });
 }
@@ -109,7 +212,7 @@ async function handleCheckoutComplete(
   // One IB product now — every IB purchase is the full Economics + BM bundle.
   const subscriptionTier = metaSubject.startsWith('IB_') ? 'ib_bundle_monthly' : 'business_monthly';
 
-  await supabase
+  const { error: w1 } = await supabase
     .from('profiles')
     .update({
       stripe_customer_id: customerId,
@@ -119,8 +222,24 @@ async function handleCheckoutComplete(
       updated_at: new Date().toISOString(),
     })
     .eq('id', userId);
+  orThrow(w1, 'W1 profiles(IB/LC checkout grant)');
 
   // ── Send welcome email via Resend ─────────────────────────────
+  // ⚠️ ORDERING IS LOAD-BEARING — DO NOT MOVE THIS ABOVE W1.
+  // The email is the one effect in this handler that CANNOT be undone or repeated safely: a
+  // second welcome email is visible to the customer, and Stripe may deliver the same event
+  // more than once. Every database write here is an idempotent UPDATE and survives a replay;
+  // this does not.
+  //
+  // It is safe today for exactly one reason: it runs AFTER the only write, so when W1 throws
+  // the handler stops here and the email has NOT been sent. Stripe retries, the write
+  // succeeds, and the customer gets one email. Hoisting the send above W1 — or reordering
+  // this handler "for readability" — silently converts every retried grant into a duplicate
+  // welcome email, and nothing would fail to tell you.
+  //
+  // Fixture: scripts/test-stripe-webhook-errors.ts asserts the send does not happen when W1
+  // fails. That test is the guard on this comment.
+  //
   // Fetch profile only for names and email
   const { data: profile } = await supabase
     .from('profiles')
@@ -210,18 +329,30 @@ async function handleAPMCheckoutComplete(
     // forever and the pass would never end (the date branch becomes moot). A pass
     // is date-driven only. Leaving status untouched also avoids clobbering a real
     // active monthly subscription if the same user ever held both.
+    //
+    // ⚠️ THIS VALUE DRIFTS ON A REPLAY, KNOWN AND ACCEPTED. It is `now + 90 days`, computed
+    // when the handler RUNS rather than derived from the payment, so if Stripe redelivers
+    // this event — a retry after a failed write, or its ordinary at-least-once delivery — the
+    // expiry is recomputed and moves forward by however long the gap was. Seconds to hours,
+    // always in the customer's favour, and it cannot compound beyond the retry window.
+    // Deriving it from `session.created` would pin it, and is not worth doing while the drift
+    // is bounded and generous; it is written down here so the next reader finds a known
+    // property rather than a surprise. The entitlement row's own `expires_at` below shares
+    // the shape but not the exposure — its insert is idempotent on `stripe_event_id`, so a
+    // replay never rewrites it.
     const expiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString();
-    await supabase
+    const { error: w2 } = await supabase
       .from('profiles')
       .update({
         apm_pass_expires_at: expiresAt,
         updated_at: new Date().toISOString(),
       })
       .eq('id', userId);
+    orThrow(w2, 'W2 profiles(ACCA 90-day pass)');
   } else if (product === 'monthly') {
     // Recurring €49/mo: mark active and store the subscription id for later
     // cancellation reconciliation (customer.subscription.deleted).
-    await supabase
+    const { error: w3 } = await supabase
       .from('profiles')
       .update({
         apm_subscription_status: 'active',
@@ -229,6 +360,7 @@ async function handleAPMCheckoutComplete(
         updated_at: new Date().toISOString(),
       })
       .eq('id', userId);
+    orThrow(w3, 'W3 profiles(ACCA monthly grant)');
   }
 
   // ── THE PER-PAPER ENTITLEMENT ROW ───────────────────────────────────────────
@@ -280,6 +412,19 @@ async function handleAPMCheckoutComplete(
   // flow through checkout.session.completed — renewals hit invoice.* and are not
   // reported here, which is exactly what we want. notifyGrant swallows all
   // errors, so this can never affect the webhook 200.
+  //
+  // ⚠️ ORDERING IS LOAD-BEARING — DO NOT MOVE THIS ABOVE W2/W3.
+  // Same rule as the welcome email in handleCheckoutComplete, for the same reason: an email
+  // is the one effect here that cannot be un-sent, and it is safe under replay ONLY because
+  // it runs after every write in this handler. When W2 or W3 throws, the handler stops before
+  // this line and no alert goes out; Stripe retries, the write lands, and one alert is sent.
+  // Hoisting it — or moving either write below it — turns every retried payment into a
+  // duplicate "payment received" alert, which is exactly the kind of noise that gets an alert
+  // channel muted and then ignored when it matters. The entitlements insert between here and
+  // the writes above does NOT throw (it is deliberately swallowed, see its comment), so it
+  // cannot skip this line either.
+  //
+  // Fixture: scripts/test-stripe-webhook-errors.ts asserts no alert when W2 fails.
   const email = session.customer_details?.email ?? session.customer_email ?? 'unknown email';
   const label = product === 'pass' ? 'pass €99' : 'subscription €49/mo';
   const paperLabel = paper ?? 'ACCA (pre-split, no paper in metadata)';
@@ -299,7 +444,7 @@ async function handleAPMSubscriptionChange(
   // Keep apm_subscription_status in sync with Stripe (e.g. past_due → not active).
   // Access is granted only on 'active', so any non-active status closes the gate.
   const status = mapStripeStatus(subscription.status);
-  await supabase
+  const { error: w4 } = await supabase
     .from('profiles')
     .update({
       apm_subscription_status: status,
@@ -307,16 +452,18 @@ async function handleAPMSubscriptionChange(
       updated_at: new Date().toISOString(),
     })
     .eq('id', userId);
+  orThrow(w4, 'W4 profiles(ACCA subscription status sync)');
 
   // Mirror onto the per-paper row. Keyed by the SUBSCRIPTION ID rather than by paper:
   // the id is what Stripe gives us on this event, and it already identifies exactly one
   // row. Reading the paper from metadata and matching on that would break for a
   // subscription created before the split, which carries no paper.
-  await supabase
+  const { error: w5 } = await supabase
     .from('acca_entitlements')
     .update({ subscription_status: status, updated_at: new Date().toISOString() })
     .eq('user_id', userId)
     .eq('stripe_subscription_id', subscription.id);
+  orThrow(w5, 'W5 acca_entitlements(status mirror)');
 }
 
 async function handleAPMSubscriptionCancelled(
@@ -326,19 +473,20 @@ async function handleAPMSubscriptionCancelled(
   const userId = subscription.metadata?.supabase_user_id;
   if (!userId) return;
 
-  await supabase
+  const { error: w6 } = await supabase
     .from('profiles')
     .update({
       apm_subscription_status: 'inactive',
       updated_at: new Date().toISOString(),
     })
     .eq('id', userId);
+  orThrow(w6, 'W6 profiles(ACCA cancel)');
 
   // Close the per-paper row too. `revoked_at` is set as well as the status: the status
   // is what the predicate reads, and revoked_at is what frees the partial unique index so
   // the same student can subscribe to that paper again later. Without it the second
   // subscription would collide with the corpse of the first.
-  await supabase
+  const { error: w7 } = await supabase
     .from('acca_entitlements')
     .update({
       subscription_status: 'inactive',
@@ -348,6 +496,7 @@ async function handleAPMSubscriptionCancelled(
     .eq('user_id', userId)
     .eq('stripe_subscription_id', subscription.id)
     .is('revoked_at', null);
+  orThrow(w7, 'W7 acca_entitlements(revoke)');
 }
 
 async function handleSubscriptionChange(
@@ -377,11 +526,16 @@ async function handleSubscriptionChange(
   };
 
   // ── Primary: match by stripe_customer_id ─────────────────────
-  const { data: byCustomer } = await supabase
+  // W8 reads BOTH halves: `error` decides whether to throw, `data` decides whether the
+  // fallback below is needed. Before this it read only `data`, which conflated "the write
+  // failed" with "no profile carries that customer id" — the first must retry, the second
+  // must fall through, and they are not the same event.
+  const { data: byCustomer, error: w8 } = await supabase
     .from('profiles')
     .update(updatePayload)
     .eq('stripe_customer_id', customerId)
     .select('id');
+  orThrow(w8, 'W8 profiles(IB/LC subscription sync by customer)');
 
   if (byCustomer && byCustomer.length > 0) return;
 
@@ -389,10 +543,11 @@ async function handleSubscriptionChange(
   const userId = subscription.metadata?.supabase_user_id;
   if (!userId) return;
 
-  await supabase
+  const { error: w9 } = await supabase
     .from('profiles')
     .update(updatePayload)
     .eq('id', userId);
+  orThrow(w9, 'W9 profiles(IB/LC subscription sync by metadata user)');
 }
 
 async function handleSubscriptionCancelled(
@@ -400,13 +555,14 @@ async function handleSubscriptionCancelled(
   subscription: Stripe.Subscription
 ) {
   const customerId = subscription.customer as string;
-  await supabase
+  const { error: w10 } = await supabase
     .from('profiles')
     .update({
       subscription_status: 'cancelled',
       updated_at: new Date().toISOString(),
     })
     .eq('stripe_customer_id', customerId);
+  orThrow(w10, 'W10 profiles(IB/LC cancel)');
 }
 
 async function handlePaymentFailed(
@@ -414,13 +570,14 @@ async function handlePaymentFailed(
   invoice: Stripe.Invoice
 ) {
   const customerId = invoice.customer as string;
-  await supabase
+  const { error: w11 } = await supabase
     .from('profiles')
     .update({
       subscription_status: 'past_due',
       updated_at: new Date().toISOString(),
     })
     .eq('stripe_customer_id', customerId);
+  orThrow(w11, 'W11 profiles(payment failed → past_due)');
 }
 
 async function handlePaymentSucceeded(
@@ -428,13 +585,14 @@ async function handlePaymentSucceeded(
   invoice: Stripe.Invoice
 ) {
   const customerId = invoice.customer as string;
-  await supabase
+  const { error: w12 } = await supabase
     .from('profiles')
     .update({
       subscription_status: 'active',
       updated_at: new Date().toISOString(),
     })
     .eq('stripe_customer_id', customerId);
+  orThrow(w12, 'W12 profiles(payment succeeded → active)');
 }
 
 function mapStripeStatus(stripeStatus: string): string {

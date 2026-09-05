@@ -97,6 +97,7 @@
     "test:paper-link-sweep": "tsx scripts/test-paper-link-sweep.ts",
     "test:surface-events": "tsx scripts/test-surface-events.ts",
     "test:error-events": "tsx scripts/test-error-events.ts",
+    "test:stripe-webhook-errors": "tsx scripts/test-stripe-webhook-errors.ts",
     "test:signout-destination": "tsx scripts/test-signout-destination.ts",
     "test:acca-landing-config": "tsx scripts/test-acca-landing-config.ts",
     "test:entitlement-cta": "tsx scripts/test-entitlement-cta.ts",
