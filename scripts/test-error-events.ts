@@ -213,6 +213,9 @@ const SITES: Record<ErrorSurface, ErrorRoute> = {
   sit_start: 'api/acca/sit',
   sit_mark: 'api/acca/sit/results',
   mock_start: 'api/acca/mock',
+  // The only surface whose recording is paired with a re-throw — see its note in
+  // ERROR_SURFACES. Its own both-arms control is scripts/test-stripe-webhook-errors.ts.
+  stripe_webhook: 'api/webhooks/stripe',
 };
 ok('every declared surface names a call site',
   ERROR_SURFACES.every((s) => !!SITES[s]));

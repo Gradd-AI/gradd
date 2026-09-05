@@ -1090,6 +1090,38 @@ when the session ends on a branch.
   refuses the recorder's two types explicitly; `/api/acca/surface-event` refuses them by
   construction. Neither event type has an HTTP door at all — a client-posted error row is a
   report from the one process that cannot say why it failed, and forgeable.
+  🔴 **THE STRIPE WEBHOOK IS THE ONE SITE THAT RECORDS *AND* RE-THROWS (2026-09-05).** Twelve
+  writes in `app/api/webhooks/stripe/route.ts` grant, revoke or sync PAID ACCESS; every one
+  discarded its `error`, so a rejected grant reached Stripe as `{received:true}`, was marked
+  delivered and **never retried** — a customer pays, the grant is refused, nothing knows. Now
+  each reads its error and throws `StripeWriteError` (carrying **W1..W12** + the driver's code
+  into `metadata.detail`, so a row names the exact line); `dispatchOrRecord` records and
+  **re-throws**, and `POST` deliberately does NOT catch — the uncaught throw is what makes Next
+  answer non-2xx, which is what puts the event back in Stripe's retry schedule. **The throw is
+  the recovery; the row is only how you find out.** Every other surface records and returns the
+  response it was already returning, because there is nobody to retry.
+  ⚠️ **SAFE TO RE-RUN, AUDITED:** all twelve are idempotent UPDATEs — **no insert without a
+  conflict target, no counter, no append**. The one INSERT (`acca_entitlements`) already checks
+  its error and is idempotent on `uq_acca_entitlements_stripe_event`; it is deliberately left
+  swallowing non-23505 errors, because by the time it runs the legacy column write has already
+  granted access — the opposite case to the twelve, where the failing write IS the grant.
+  ⚠️ **THE ORDERING IS LOAD-BEARING AND NOW COMMENTED AT BOTH SITES.** The welcome email
+  (`handleCheckoutComplete`) and `notifyGrant` (`handleAPMCheckoutComplete`) are the only
+  effects here that cannot be un-sent, and Stripe delivers at least once. They are replay-safe
+  **only** because they run AFTER every DB write in their handler — a throw means they have not
+  fired. Reordering either handler "for readability" turns every retried grant into a duplicate
+  email, silently. Fixture asserts it **both ways** (fails → no send; succeeds → send), because
+  deleting the send would satisfy the negative alone.
+  ⚠️ **`apm_pass_expires_at` DRIFTS ON REPLAY, KNOWN AND ACCEPTED** — it is `now + 90 days`
+  computed at execution, so a redelivery moves it forward by the retry gap (seconds to hours,
+  in the customer's favour, bounded by the retry window). Commented where it is computed.
+  ⚠️ **NO HANDLER CAN DETECT ITS OWN REPLAY.** Stripe supplies `event.id`; nothing reads it and
+  no table stores it. They are replay-safe because they are idempotent, not because anything
+  checks — and the one guard that does check **has never fired in production** (all 7
+  entitlement rows are comped, 0 carry a `stripe_event_id`). See `docs/AFM_SURFACED.md`.
+  Fixture `npm run test:stripe-webhook-errors` (86, gate 81 → **82**): both arms on all twelve
+  (fails → rejects + exactly one row; succeeds → resolves + zero rows), driven through the REAL
+  recorder via a `fetch` stub rather than a production test seam.
   Fixtures `npm run test:error-events` (70, gate 80 → **81**) — the naive auth filter and naive
   stringification pinned MUST-FAIL; the fail-path section **states before its checks that it
   proves the SHAPE and not production behaviour**.

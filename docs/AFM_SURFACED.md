@@ -2,6 +2,42 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
+## 🟢 NEW 2026-09-05 (b) — THE STRIPE WEBHOOK NOW FAILS LOUDLY (`fix/stripe-webhook-write-errors`)
+
+Twelve writes grant, revoke or sync PAID ACCESS; none read its `error`, and the dispatcher
+returned `{received:true}` unconditionally — so a rejected grant reached Stripe as a 200, was
+marked delivered, and was **never retried**. Now every one reads its error and throws
+`StripeWriteError`; `dispatchOrRecord` records a `stripe_webhook` row and **re-throws**, so
+Stripe retries on its own backoff. The throw is the recovery, the row is how you find out.
+Audited safe to re-run: all twelve are idempotent UPDATEs — no insert without a conflict
+target, no counter, no append. Fixture `npm run test:stripe-webhook-errors` (86, gate 81 →
+**82**), both arms. Full record in `CLAUDE.md`'s code map.
+
+**Open, and each is its own piece of work:**
+
+1. 🔴 **`uq_acca_entitlements_stripe_event` HAS NEVER FIRED IN PRODUCTION.** It is the ONLY
+   idempotency mechanism in the billing path — a partial unique index on the checkout session
+   id, which is what makes a redelivered `checkout.session.completed` a no-op instead of a
+   second entitlement. Measured 2026-09-05: **all 7 `acca_entitlements` rows are
+   `source <> 'stripe'` and 0 carry a `stripe_event_id`.** Every row was comped or inserted by
+   hand, so the guard has never seen real traffic. **This change makes retries MORE likely**,
+   which is exactly when it would first matter. A Stripe **test-mode** checkout would exercise
+   it end to end (and would also be the first real exercise of the whole webhook path); that is
+   its own piece of work, not a side effect of this one.
+2. 🟡 **`P-V4`, NINTH INSTANCE — the error handler that cannot run.** Seven `session_events`
+   inserts in `app/api/session/message/route.ts` (550, 621, 645, 712, 732, 762, 876) end
+   `.then(undefined, (e) => console.error('… (non-fatal):', e))`. **A DB error RESOLVES**, so
+   that rejection handler can never fire; only a transport failure reaches it. A grep for
+   *"does this handle errors"* scores all seven as handled. Same illusion as the `try/catch`
+   that hid the sit answer-loss bug, in a second costume. They are telemetry, so the cost is a
+   miscount rather than a defect — but it is the wrong template to copy, and it is why the
+   sweep classified by reading rather than by pattern.
+3. 🟡 **The 13 post-response MUST-CHECK sites are a DIFFERENT problem and are not this
+   change.** Everything in `session/message` runs after the reply has already streamed, so
+   nothing can change what the caller saw: **the fix there is recording, not throwing.** A
+   blanket wrap would be worse than the bug — it would turn documented best-effort logging into
+   500s on turns that were only logging. Needs its own decision per site.
+
 ## 🟢 NEW 2026-09-05 — THE ERROR RECORDER SHIPPED, AND IT FOUND A LIVE ANSWER-LOSS BUG ON THE WAY IN
 
 `lib/acca/error-events.ts` (pure) + `lib/acca/error-recorder.ts` + a daily heartbeat. Eleven
