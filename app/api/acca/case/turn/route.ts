@@ -267,7 +267,20 @@ export async function POST(request: Request): Promise<Response> {
       // Nothing else writes submitted_at, and submissions are immutable (a recorded
       // final_answer 409s above), so this value is written once and never moves.
       const submittedAt = new Date().toISOString();
-      await supabase.from('acca_case_progress').upsert(
+      // ── THE RESULT IS INSPECTED, AND IT USED NOT TO BE (fixed 2026-09-05) ──
+      // supabase-js DOES NOT THROW on a database error — a PostgrestBuilder resolves with
+      // `{ data, error }`. So this `await` inside a try/catch caught only a transport-level
+      // throw, and every database-level rejection — a constraint violation, an RLS refusal, a
+      // value Postgres will not store — fell straight through to the 200 below. The student
+      // was told their answer was recorded, the row was not written, and nothing anywhere
+      // logged it. On the sit's SINGLE write path, on the one surface where the student loses
+      // written work they will not retype.
+      //
+      // Found while instrumenting this exact catch block: the failure it exists to record
+      // could not reach it. `error` is now treated identically to a throw — same recorded
+      // surface, same 500, and the runner's `sitWriteOutcomeFor` already maps a 500 to
+      // `failed`, which tells the student to press submit again rather than claiming a save.
+      const { error: writeError } = await supabase.from('acca_case_progress').upsert(
         {
           user_id: user.id,
           case_id: caseId,
@@ -284,6 +297,9 @@ export async function POST(request: Request): Promise<Response> {
         // it here and the upsert keeps working.
         { onConflict: 'user_id,case_id,requirement_id,attempt_id' },
       );
+      // Thrown, not returned, so the one catch below covers both shapes and there is no
+      // second recording site to keep in step with the first.
+      if (writeError) throw writeError;
     } catch (err) {
       // The one instrumented surface where the student LOSES WRITTEN WORK — this is the sit's
       // single write path, and what failed to land is an answer they will not retype from
