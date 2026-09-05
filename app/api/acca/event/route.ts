@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { isSurfaceEventType, SURFACE_EVENTS } from '@/lib/acca/surface-events';
+import { isRecorderEventType } from '@/lib/acca/error-events';
 
 // ── The ACCA funnel event sink ────────────────────────────────────────────────
 // `event_type` is a free string by design — this route validates shape, not vocabulary.
@@ -59,6 +60,27 @@ export async function POST(request: Request): Promise<Response> {
   // downstream could tell those rows from the attributable ones. The two sinks refuse each
   // other's vocabulary; the closed list in surface-events.ts is the single definition of which
   // is which.
+  //
+  // ── AND NEITHER DO THE RECORDER'S TWO EVENT TYPES (added 2026-09-05) ────────
+  // `server_error` and `recorder_heartbeat` have NO HTTP DOOR AT ALL, here or anywhere. They
+  // are written server-side by lib/acca/error-recorder.ts, from inside the failing request,
+  // because the server is the only party that knows what actually broke. A client-posted
+  // error row would be a report that something failed, from the one process that cannot say
+  // why, and forgeable by anyone — which is affordable for a view count and is not
+  // affordable for an error rate, an error rate being the thing you would act on.
+  //
+  // A caller reaching this door is either a mis-wired emitter or someone manufacturing
+  // failures, and both are refused for the same reason.
+  if (isRecorderEventType(event_type)) {
+    return NextResponse.json(
+      {
+        error: `${event_type} is written server-side by the error recorder and has no HTTP `
+          + `sink. Nothing may post it. See lib/acca/error-recorder.ts`,
+      },
+      { status: 400 },
+    );
+  }
+
   if (isSurfaceEventType(event_type)) {
     return NextResponse.json(
       {
