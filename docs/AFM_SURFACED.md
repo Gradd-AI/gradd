@@ -2,6 +2,88 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
+## 🔴 OPEN 2026-09-05 (c) — LEG 1: THE TENTH P-V4 INSTANCE IS **UNSUPPORTED**, NOT ESTABLISHED
+
+> 📐 **THIS BLOCK WAS ITSELF WRITTEN UNDER A RUBRIC THAT LATER MOVED — the exact failure
+> `docs/ATTRIBUTION_RUBRIC.md` was frozen to prevent, caught in our own notes.** Every figure below
+> in its first form (`6/10` before and after, `2/10` quotation on runs 1 and 7) came from a hand
+> pass whose scoring rule was never written down, and a second hand pass over the SAME unchanged
+> replies returned `3/10` and `1/10`. The block is REWRITTEN here against the frozen rubric and the
+> blind rescore of all forty (`docs/rollbacks/attribution_rescore_40_20260905.txt`), not deleted:
+> the correction is the finding.
+
+Read-only measurement block. Four arms × n=10, one drill (`09064738`, APM A1g), one leg
+(`message_kind=hint`, first miss), scored blind against the frozen rubric with the arm mapping
+withheld until after scoring.
+
+| arm | attribution | fabricated quotation | raw errors |
+|---|---|---|---|
+| PROD BASELINE (production deploy, pre-fix, ANSWER-1) | 5/10 | 4/10 | 10 (4 severe, 6 minor) |
+| LOCAL PRE-FIX CONTROL (`main` :3112, ANSWER-1) | 6/10 | 2/10 | 7 (4 severe, 3 minor) |
+| ARM A (branch :3111, post-fix, ANSWER-1) | **7/10** | 1/10 | 12 (11 severe, 1 minor) |
+| ARM B (branch :3111, post-fix, **ANSWER-2**) | **2/10** | 1/10 | 3 (3 severe, 0 minor) |
+
+### 📐 P-V4 — THE TENTH INSTANCE NO LONGER HAS AN ARM UNDER IT
+
+The ruling as it was recorded, kept verbatim so the correction has something to point at:
+
+> **Leg 1 seed answer, 05/09/26.** The dominant false-attribution MODE changed exactly as
+> predicted when the answer changed — the old claim (*"you dismissed functional benchmarking"*)
+> became true and disappeared. **The RATE did not move: 6/10 before, 6/10 after, and the
+> surviving form was worse.** The specific false claim was a proxy for the fabrication
+> behaviour; fixing the claim did not touch the behaviour. **P-V4, instance ~10.**
+
+🔴 **UNDER THE FROZEN RUBRIC THERE IS NO ARM PAIR THAT SAYS `6/10 before, 6/10 after`.** The
+nearest pair the rescore supports is the LOCAL PRE-FIX CONTROL (ANSWER-1, 6/10) against ARM B
+(ANSWER-2, **2/10**) — a large fall, in the direction the rewrite intended, and the opposite of
+what the ruling recorded.
+
+⚠️ **AND THAT PAIR IS CONFOUNDED, SO IT DOES NOT REFUTE P-V4 EITHER.** Arm B carries the seed
+answer rewrite **AND** all three prompt fixes on `fix/hint-attribution-fabrication`. The
+answer-only comparison it needs — `main`, unchanged code, a rewritten answer — WAS captured
+(`docs/rollbacks/attribution_answer3_arm_20260905.json`, :3112 `main`, ANSWER-3, 10 runs) but was
+taken AFTER the rescore closed and **is still unscored**. Until it is scored against the frozen
+rubric, the tenth P-V4 instance is **unsupported — not refuted, unsupported**, and it must not be
+cited as a tenth instance anywhere.
+
+⚠️ **A MODE THAT DISAPPEARS IS NOT A RATE THAT FELL, AND THAT WARNING STILL STANDS** — it is what
+the ANSWER-3 arm exists to test. What has changed is the direction of the risk: the first pass
+over-read a rate that had not moved; the frozen pass shows a rate that moved a long way in an arm
+that cannot say why.
+
+📐 **THE PROMPT HALF OF THE ORIGINAL READING SURVIVES INDEPENDENTLY, AND IT IS THE HARDER HALF.**
+Holding ANSWER-1 fixed, the three prompt fixes moved attribution **6/10 → 7/10** — the wrong way,
+with severity rising 4 severe → 11. That is banked as `P-M4(a)` in `GENERATOR_DOCTRINE.md`.
+
+### 🔴 FABRICATED **CREDIT** IS A DISTINCT SUBCATEGORY FROM FABRICATED **BLAME**
+
+Filed against the standing **FALSE-POSITIVE DIAGNOSIS** category (persona-hardening slot,
+sighting #1) — see that item for the original 2026-07-21 sighting, which was blame-shaped.
+
+- **Fabricated credit and fabricated blame are two subcategories, not one behaviour.** They have
+  different prompt causes and must be counted separately. The split stands, and the rescore
+  sharpens it.
+- **ON ANSWER-1, EVERY SEVERE ERROR IN ALL THREE ARMS IS CREDIT-SHAPED** — 4/4 on the prod
+  baseline, 4/4 on the local control, 11/11 on Arm A. The leg invented what the student got right;
+  it did not invent what they got wrong.
+- 📐 **ON ANSWER-2 THE MODE INVERTS: BOTH of Arm B's attribution errors are BLAME** (R40 —
+  *"Right now your logic is 'they don't publish data, so don't use them'"*, against a student who
+  wrote the opposite; R29 — *"You have not yet weighed whether those methods will actually work"*,
+  which the student did). **The credit form is what a WEAK answer draws; the blame form is what a
+  STRONG one draws.** A hardening change measured on one seed answer sees one of the two.
+- **The quotation figures were BOTH wrong in the first pass.** Under the frozen rubric the prod
+  baseline carries **4/10**, not 2/10 (runs 1, 7, 8 and 10 — the extra two are a deleted word and a
+  substituted phrase inside quotation marks, which the earlier pass let through as paraphrase).
+  ⚠️ Whether either earlier pass counted a quotation error inside the attribution total is **NOT
+  RECOVERABLE**; under the frozen rubric it always is, by construction (`ATTRIBUTION_RUBRIC.md` §4).
+
+⚠️ Every prior sighting under FALSE-POSITIVE DIAGNOSIS was the leg **contradicting a correct
+answer**. This is the mirror: the leg **affirming an answer that was not there**. A hardening
+change measured only against the blame form will report green on a corpus full of the credit form.
+
+**OPEN, one item:** score the ANSWER-3 arm against the frozen rubric. It is the only arm that can
+settle whether the seed answer or the prompt owns the rate.
+
 ## 🟢 NEW 2026-09-05 (b) — THE STRIPE WEBHOOK NOW FAILS LOUDLY (`fix/stripe-webhook-write-errors`)
 
 Twelve writes grant, revoke or sync PAID ACCESS; none read its `error`, and the dispatcher
@@ -6707,6 +6789,7 @@ feature above (both touch the same read/attempt surfaces).
 Every conversational-leg quality issue found across walks lands here, not scattered per-batch. **Fix mechanism (ONE fix, not per-category patches):** inject a rubric/key-facts-in-context payload into ALL conversational legs (diagnose/confirm/hint/close), so the persona is grounded against the drill's OWN criteria, scenario facts, and failure-mode list rather than reasoning about the student's answer from scratch each turn. **Lands narrative-first** — narrative rubrics already carry the exact shape needed (`criteria[]`, `scenario_facts[]`, `disqualifiers[]`) with zero extraction work; **numeric families are a follow-on retrofit phase** (they have no equivalent rubric object yet — would need a key-facts extraction step per calculator family before the same mechanism applies). **Scope as ONE focused session** — do not attempt to patch categories piecemeal across future batches; the next persona-hardening session builds the mechanism once and it should collapse all 7 categories below, not just the newest ones.
 
 1. **⬆⬆ TOP SEVERITY — FALSE-POSITIVE DIAGNOSIS (persona-hardening, sighting #1 — narrative D1 walk 2026-07-21).** The conversational leg flagged a CORRECT student statement as wrong during the walk — the worst class of persona failure seen to date (every prior sighting was a leg being too LENIENT — missing a real error, softening a convention, inventing a follow-up; this is the first sighting of the leg actively CONTRADICTING a correct answer). Directly motivates the rubric/key-facts-in-context fix: a leg reasoning from the actual criteria + scenario facts, not from an ungrounded read of the student's prose, cannot mistake a correct VaR-threshold statement for an error.
+   **📐 SPLIT INTO TWO SUBCATEGORIES 2026-09-05 (Leg 1 measurement, 4 arms × n=10 — see the top block).** Fabricated **CREDIT** is a distinct subcategory from fabricated **BLAME**, with a different prompt cause; they must be counted separately. Scored blind against the frozen `docs/ATTRIBUTION_RUBRIC.md`: **on ANSWER-1 every severe error in all three arms is CREDIT-shaped (4/4, 4/4, 11/11)** — the leg inventing what the student got right — while **on ANSWER-2 both errors are BLAME**, so the credit form is what a weak answer draws and the blame form what a strong one draws. **Fabricated DIRECT QUOTATIONS: 4/10 on the production baseline** (runs 1, 7, 8, 10) — the first hand pass said 2/10 and let a deleted word and a substituted phrase through as paraphrase. The sighting recorded here is the blame form; a hardening change measured only against it will report green on a corpus full of the credit form.
 2. **⬆ HIGH — FOG-RETRACTION WITHOUT OWNERSHIP (persona-hardening, sighting #2 — narrative D1 walk 2026-07-21).** When corrected (following finding 1's false-positive), the leg retracted but without clearly OWNING the error — the retraction reads as vague ("let me reconsider") rather than an explicit "I was wrong, your statement was correct because X." A student who didn't push back would be left with the false diagnosis unresolved. Same root cause as finding 1 — grounding in the rubric would prevent the error in the first place, but the retraction protocol itself also needs hardening for when a leg IS wrong.
 3. **FALSE-COMPLETE (pattern, moderate — batch #9 walk 2026-07-17).** The leg certified a correct-arithmetic-but-missing-signature-insight attempt as complete. Fix direction: per-drill key-insight list → completeness check before resolution → one teaching beat if the signature insight is missing.
 4. **HINT-BASE-WOBBLE (batch unspecified in original sighting).** The hint/close layer wobbles on which base a convention should be checked against, letting an error pass uncorrected.

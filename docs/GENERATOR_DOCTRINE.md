@@ -605,6 +605,69 @@ technical pass, run it as its own arm with a **paraphrase-tolerant detector** an
 **pre-registered direction**, not as a guard metric on an arm about something else. The dose
 (one mention, replacing vs appending) is the variable to hold or vary deliberately.
 
+### P-M4(a) — THREE FIXES, ONE ARM, AND EVERY PRIMARY METRIC MOVED THE WRONG WAY (measured 2026-09-05)
+
+**The instance.** `fix/hint-attribution-fabrication` carried three prompt edits to the DRILL hint
+leg. Each was written against a defect measured n=10 on APM A1g (Viña del Sol benchmarking, drill
+`09064738`), and each is P-T2-compliant in SHAPE — a demand replaced at its source, not a
+prohibition appended beside it:
+
+- **`e31d683` — the credit opening's exit.** `SHIPPED` demanded a SPECIFIC credit unconditionally,
+  the persona banned the vague escape, and both floor branches were armed by an upstream judgement
+  that does not fire on a discursive drill. Handed a weak answer the model had an unsatisfiable
+  demand, a banned hedge and no third option. Primary metric: **attribution**, credit-shaped.
+- **`887b971` — no fabricated attribution.** Three clauses: traceability, quotation,
+  self-contradiction. Metrics: **attribution** (primary) and **fabricated quotation** (secondary).
+  ⚠️ **The P-M4 risk was DECLARED IN THE COMMIT BEFORE THE RUN** — *"naming quotation may raise
+  quoting. That is why the fabricated-quotation count is measured, not assumed."*
+- **`74f2ca5` — the hint leg's shape is a constraint.** *"like a tutor in their corner, not a
+  structured breakdown"* is a COMPARISON, and a comparison can be satisfied while the thing itself
+  is emitted in a lighter form. Primary metric: **shape**.
+
+**MEASURED — one server build per arm, the SAME fixed 200-word answer, the same drill, first-miss
+hint leg, ten replies each, scored blind against the frozen `docs/ATTRIBUTION_RUBRIC.md`:**
+
+| metric | control (`main`, :3112) | Arm A (all three fixes, :3111) |
+|---|---|---|
+| **attribution** — replies carrying ≥1 error | 6/10 | **7/10** |
+| fabricated quotation | 2/10 | **1/10** |
+| replies carrying an UNQUOTED fabrication | 5/10 | **7/10** |
+| raw errors | 7 (4 severe, 3 minor) | **12 (11 severe, 1 minor)** |
+| **shape** | 0/20 checks | **2/20 checks** |
+
+**THE RULE. Each of the three fixes moved its PRIMARY metric the wrong way — and fix two's
+SECONDARY metric, fabricated quotation, moved the RIGHT way, 2/10 → 1/10, while over the SAME ten
+replies unquoted fabrication rose 5/10 → 7/10 and severity rose from 4 severe to 11. That is a
+MODE SHIFT, not a benefit: the fix removed the quotation marks and left the fabrication.** A
+subset metric that falls while the behaviour it is a subset of rises has not measured an
+improvement. Under the frozen rubric the quotation count is a **strict subset** of the attribution
+count by construction (`ATTRIBUTION_RUBRIC.md` §4), so the two can only be read together — and
+read together they say the model stopped citing and kept inventing.
+
+**⚠️ SAY WHAT THE DENOMINATOR COUNTS.** `2/20` is **2 of 20 CHECKS** — ten replies × two checks
+(a bold section label standing as a line; a `---` horizontal rule) — **NOT 2 of 20 replies**. It is
+**ONE reply**, Arm A run 2, carrying four bold section labels and one rule; the control carries
+neither on any reply. Derived, not recalled: `scripts/_shape_count.ts` over the retained captures.
+
+**⚠️ WHAT THIS ARM CANNOT ATTRIBUTE, STATED RATHER THAN GLOSSED.** All three fixes shipped in ONE
+arm, so what was measured is the BUNDLE.
+- **Shape** is named by exactly one fix (`74f2ca5`) and **quotation** by exactly one (`887b971`),
+  so those two movements are attributable to their own fix.
+- **Attribution is the primary metric of BOTH `e31d683` and `887b971`**, so the 6/10 → 7/10 cannot
+  be split between them, and neither can be exonerated on this evidence. A per-fix arm is the only
+  thing that would.
+
+**Relation to P-M4, which this is an instance of and not a second law.** P-M4 was measured on the
+PS marking pass, where the demand for the leaked referent sat in the BAND DEFINITIONS above the
+rules. Here the demand sat in the OPENING INSTRUCTION, and all three edits removed or replaced it
+rather than appending a ban — the P-T2-compliant shape, the one P-M4's failing arms did not have.
+**A P-T2-compliant edit is therefore not sufficient to move the rate**: getting the shape of the
+edit right says nothing about whether the thing being demanded was the thing causing the defect.
+
+**What the next arm should do.** One fix per arm, against the SAME control, on the SAME frozen
+rubric — the bundle bought speed and cost the attribution. And measure the metric the behaviour
+actually lives in: a quotation count alone would have reported this bundle a success.
+
 ## P-M5 — BEFORE THREADING A FACT AT A DEFECT, CHECK THE FACT CONTAINS THE THING (ruled 2026-08-29)
 
 **The question.** Does passing `answer_schema` to `judgeTechnicalMarking` reduce the rate at which

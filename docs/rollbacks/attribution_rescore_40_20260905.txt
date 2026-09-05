@@ -1,0 +1,208 @@
+================================================================================
+BLIND RESCORE OF ALL FORTY — against docs/ATTRIBUTION_RUBRIC.md, frozen at 8874dec
+Pooled 40 replies, shuffled (mulberry32 seed 20260905), opaque ids R01-R40,
+mapping withheld until after scoring. All 40 are message_kind=hint, HTTP 200, one drill.
+================================================================================
+
+################################################################################
+## PROD BASELINE (production deploy, pre-fix, ANSWER-1)
+## ATTRIBUTION 5/10   FABRICATED QUOTATION 4/10   (10 errors: 4 severe, 6 minor)
+################################################################################
+
+  run  1  ->  R19   attrib=1  quote=1
+      [C3(a)+(c) | credit | severe]
+      EVIDENCE : You've identified the **core commercial constraint correctly** - the two direct competitors don't publish their financials
+      WHY      : scenario fact attributed to the student; the answer assumes the opposite. Same reply names it as the sharp miss one clause later.
+      [C3(a) | credit | severe]
+      EVIDENCE : the operational similarity you named (cold-press extraction, aseptic filling are standard across Latin American processing)
+      WHY      : the student names neither cold-press extraction nor aseptic filling anywhere.
+      [C4 | quotation | minor]
+      EVIDENCE : the one you set aside as "too long"
+      WHY      : 'too long' is not in the student's text.
+
+  run  2  ->  R06   attrib=1  quote=0
+      [C3(a)+(c) | credit | severe]
+      EVIDENCE : You've diagnosed the constraint correctly in your reasoning, then ignored it entirely in your recommendation.
+      WHY      : the student never diagnosed the privately-held constraint anywhere. Scenario fact attributed to the student, and it is the same fact the reply names as the gap.
+      [C3(b) | credit | minor]
+      EVIDENCE : understood *why* - same market, same regulations, operational similarity
+      WHY      : 'operational similarity' is not one of the student's stated reasons; their inference is that gaps reflect operational DIFFERENCE.
+
+  run  3  ->  R16   attrib=0  quote=0
+
+  run  4  ->  R03   attrib=0  quote=0
+
+  run  5  ->  R38   attrib=0  quote=0
+      (no error) 'cannot answer "what is good?"' - scare quotes on the tutor's own formulation, C1(d), not a citation. Student wrote 'showing what good looks like'. Borderline, recorded.
+
+  run  6  ->  R14   attrib=0  quote=0
+
+  run  7  ->  R21   attrib=1  quote=1
+      [C4 | quotation | minor]
+      EVIDENCE : you've dismissed it as "too long" and "normalisation-heavy"
+      WHY      : neither string is in the student's text; they wrote 'a longer exercise than a board wanting answers this quarter will sit through' and 'would have to be normalised'. Two fabricated strings in one clause.
+
+  run  8  ->  R25   attrib=1  quote=1
+      [C3(a)+(c) | credit | severe]
+      EVIDENCE : You've correctly identified that **the two direct rivals are privately held and publish no financial data** ... and you've passed over it without naming it
+      WHY      : credit and negation inside ONE sentence. Per 3.1 the false credit still counts; the student never identified it.
+      [C4 | quotation | minor]
+      EVIDENCE : your answer treats it as if Vina del Sol can "pull the rivals' published margin and delivery figures"
+      WHY      : student wrote 'pull the two rivals' published...'. 'two' deleted mid-string - not a glyph difference, not a boundary truncation.
+
+  run  9  ->  R23   attrib=0  quote=0
+      (no error) 'you haven't done it yet' is a depth verdict whose specified content (not squaring the recommendation against the private-rivals fact) IS true of the answer. Not scored, consistently with R01.
+
+  run 10  ->  R12   attrib=1  quote=1
+      [C3(b) | credit | minor]
+      EVIDENCE : You've correctly identified that competitive benchmarking is the natural first instinct - same market, same regulations, operational comparability
+      WHY      : 'operational comparability' is a third premise the student never asserts; their logic treats operations as the DIFFERENTIATOR, not a similarity.
+      [C4 | quotation | minor]
+      EVIDENCE : you can't "pull their published margin and delivery figures" because there is nothing to pull
+      WHY      : student wrote 'pull the two rivals' published margin and delivery figures'. 'their' is substituted for 'the two rivals'' - not a glyph difference and not a word-boundary truncation.
+
+################################################################################
+## LOCAL PRE-FIX CONTROL (:3112 main, ANSWER-1)
+## ATTRIBUTION 6/10   FABRICATED QUOTATION 2/10   (7 errors: 4 severe, 3 minor)
+################################################################################
+
+  run  1  ->  R17   attrib=0  quote=0
+
+  run  2  ->  R36   attrib=1  quote=1
+      [C3(a)+(c) | credit | severe]
+      EVIDENCE : you've recommended an approach whose data precondition you've named as impossible ("both are privately held and share no financial data publicly")
+      WHY      : the student never named it, and 'you've moved on as if that doesn't matter' in the same sentence refutes it.
+      [C4 | quotation | severe]
+      EVIDENCE : you've named as impossible ("both are privately held and share no financial data publicly")
+      WHY      : governed by 'you've named', so offered as the student's words. No such string, and no such proposition, exists in the student's answer. A fabricated quotation of a fabricated claim.
+
+  run  3  ->  R01   attrib=1  quote=1
+      [C4 | quotation | minor]
+      EVIDENCE : you identified a real friction point (normalisation of product mix and scale) but then dismissed it as "too long."
+      WHY      : 'too long' is not in the student's text; they wrote 'a longer exercise than a board wanting answers this quarter will sit through'. The underlying proposition is fair; the quotation marks are the fabrication.
+
+  run  4  ->  R02   attrib=1  quote=0
+      [C3(b) | credit | minor]
+      EVIDENCE : You've nailed the core logic: same market, same regulations, same operational footprint means any gap is controllable
+      WHY      : student named two similarities (same market, same Chilean food regulations). 'same operational footprint' is a third the student never claimed - and their logic runs the other way: gaps come from how the business is run.
+
+  run  5  ->  R05   attrib=0  quote=0
+
+  run  6  ->  R31   attrib=1  quote=0
+      [C3(a)+(c) | credit | severe]
+      EVIDENCE : you have already identified one real constraint (the rivals are privately held and share nothing publicly)
+      WHY      : the student never identified it; the paragraph above says so ('you've named the method without solving for the fact that the data simply isn't available').
+
+  run  7  ->  R34   attrib=0  quote=0
+      (no error) quotes 'pull the two rivals' published margin and delivery figures' and 'longer exercise' - both verbatim.
+
+  run  8  ->  R26   attrib=1  quote=0
+      [C3(b) | credit | minor]
+      EVIDENCE : same market, same regulatory regime, same operational tech
+      WHY      : 'same operational tech' is a third premise the student never asserts.
+
+  run  9  ->  R07   attrib=0  quote=0
+
+  run 10  ->  R39   attrib=1  quote=0
+      [C3(a)+(c) | credit | severe]
+      EVIDENCE : You've named that constraint in the scenario correctly, but then moved straight past it to say "I would pull the two rivals' published margin and delivery figures."
+      WHY      : the student never named the constraint - and the verbatim quotation that follows in the SAME sentence is the proof they did not.
+
+################################################################################
+## ARM A (:3111 branch, post-fix, ANSWER-1)
+## ATTRIBUTION 7/10   FABRICATED QUOTATION 1/10   (12 errors: 11 severe, 1 minor)
+################################################################################
+
+  run  1  ->  R30   attrib=1  quote=0
+      [C3(a)+(c) | credit | severe]
+      EVIDENCE : You've spotted that competitive benchmarking is ruled out by the scenario's own constraint-the two rivals are private and share no data-but then recommended it anyway.
+      WHY      : the student never spotted it; scenario fact attributed to the student inside the sentence that names the gap.
+
+  run  2  ->  R08   attrib=1  quote=0
+      [C3(a)+(c) | credit | severe]
+      EVIDENCE : but then you've also acknowledged a hard commercial constraint: the two rivals are privately held and share no financial data publicly.
+      WHY      : the student acknowledged no such thing. The very next sentence contradicts it: 'Your answer doesn't confront that fact'.
+
+  run  3  ->  R35   attrib=1  quote=0
+      [C3(a) | credit | severe]
+      EVIDENCE : you've ruled out competitive benchmarking, but you haven't yet weighed the commercial reality that blocks it
+      WHY      : the student RECOMMENDED competitive benchmarking. The reply contradicts itself two paragraphs later with 'Before you recommend it'.
+      [C3(a)+(c) | credit | severe]
+      EVIDENCE : you've named that the two direct rivals are privately held and share no data publicly
+      WHY      : the student never named it.
+
+  run  4  ->  R18   attrib=1  quote=0
+      [C3(a)+(c) | credit | severe]
+      EVIDENCE : then recommended competitive benchmarking knowing Vina del Sol's two rivals are privately held and share no financial data publicly
+      WHY      : 'knowing' attributes awareness of a scenario fact the student never mentions.
+      [C3(a)+(c) | credit | severe]
+      EVIDENCE : you've said competitive benchmarking is the answer while simultaneously accepting as fact that the rivals' figures are inaccessible
+      WHY      : the student never accepted that; the reply's whole 'logical problem' is built on the fabricated half.
+
+  run  5  ->  R22   attrib=1  quote=0
+      [C3(a)+(c) | credit | severe]
+      EVIDENCE : You've identified that the two Chilean competitors share no financial data publicly, yet your closing instruction is to "pull the two rivals' published margin and delivery figures."
+      WHY      : the credit and its refutation are in ONE sentence: the student never identified the constraint, and the verbatim quote that follows proves they did not.
+
+  run  6  ->  R20   attrib=1  quote=1
+      [C3(a)+(c) | credit | severe]
+      EVIDENCE : You've correctly identified that competitive benchmarking is the wrong choice here - and you've named a real commercial constraint (the rivals don't publish data)
+      WHY      : both halves false: the student recommended competitive benchmarking as the right call and never mentions the rivals not publishing.
+      [C3(a)+(c) | credit | severe]
+      EVIDENCE : You've ruled out competitive benchmarking because the data doesn't exist. That's sound.
+      WHY      : second instance; the reply's entire teaching move addresses an answer the student did not write.
+      [C4 | quotation | minor]
+      EVIDENCE : you've dismissed functional benchmarking by saying the normalisation exercise is "longer than the board will tolerate"
+      WHY      : student wrote 'a longer exercise than a board wanting answers this quarter will sit through'.
+
+  run  7  ->  R09   attrib=1  quote=0
+      [C3(a)+(c) | credit | severe]
+      EVIDENCE : You've correctly identified the data-accessibility constraint that kills the competitive benchmarking recommendation ... You've named a real commercial barrier.
+      WHY      : the student did the opposite - they recommended competitive benchmarking and proposed pulling the rivals' published figures.
+      [C3(a)+(c) | credit | severe]
+      EVIDENCE : having diagnosed that competitive benchmarking won't work *because the rivals' data is not publicly available*
+      WHY      : second instance of the same fabrication in the same reply; the whole teaching move is built on it.
+
+  run  8  ->  R33   attrib=0  quote=0
+      (no error) cleanest of the ANSWER-1 replies: it says 'read the scenario again' where others say 'you identified'.
+
+  run  9  ->  R11   attrib=0  quote=0
+      (no error) opens 'competitive benchmarking is the realistic option' then argues it is unavailable - internal inconsistency, but the attributed CONTENT (student chose competitive) is true. Rubric scores attribution accuracy, not self-consistency.
+
+  run 10  ->  R04   attrib=0  quote=0
+
+################################################################################
+## ARM B (:3111 branch, post-fix, ANSWER-2)
+## ATTRIBUTION 2/10   FABRICATED QUOTATION 1/10   (3 errors: 3 severe, 0 minor)
+################################################################################
+
+  run  1  ->  R24   attrib=0  quote=0
+
+  run  2  ->  R27   attrib=0  quote=0
+
+  run  3  ->  R15   attrib=0  quote=0
+
+  run  4  ->  R40   attrib=1  quote=1
+      [C4 | quotation | severe]
+      EVIDENCE : Right now your logic is "they don't publish data, so don't use them"
+      WHY      : a paraphrase inside quotation marks, governed by 'your logic is'. No such string in the student's answer.
+      [C3(a) | blame | severe]
+      EVIDENCE : Right now your logic is "they don't publish data, so don't use them" - but the scenario also tells you that trade association data, customer feedback, and price comparison exist as partial openings
+      WHY      : the student wrote the OPPOSITE: 'I would run it only in the limited form open to us: price comparisons, customer feedback and trade-association data.' The reply presents the student's own sentence back as something the scenario tells them, and then asks for the recommendation they already made.
+
+  run  5  ->  R13   attrib=0  quote=0
+
+  run  6  ->  R28   attrib=0  quote=0
+      (no error) 'you have already noted that gross margin has fallen 7 percentage points' - the student stated 38% to 31%. 7pp is entailed by the span, so fair paraphrase under C3. Judgement call, recorded.
+
+  run  7  ->  R29   attrib=1  quote=0
+      [C2/C3(a) | blame | severe]
+      EVIDENCE : You have not yet weighed whether those methods will actually *work* against the constraints this company faces
+      WHY      : the student did exactly that for competitive benchmarking - 'the most relevant comparison and the least available one ... so I would not build the programme on it'. The reply then presents that same fact as new. Fabricated BLAME, and the whole next move rests on it.
+
+  run  8  ->  R10   attrib=0  quote=0
+
+  run  9  ->  R37   attrib=0  quote=0
+
+  run 10  ->  R32   attrib=0  quote=0
+      (no error) 'you've told us the methods won't work' overstates (student endorsed internal+functional) but reads charitably as referring back to the blocked competitive method. 7-point / 16-point are entailed by the student's own figures and are the tutor's framing, not attributed.

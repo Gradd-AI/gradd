@@ -1,0 +1,424 @@
+{
+  "account": {
+    "uid": "9314594f-0f7b-4b3e-a283-8a57ce13dc15",
+    "email": "answer3-rehearsal-1788617370000@gradd.ai"
+  },
+  "base": "http://localhost:3112",
+  "drill": "09064738-e8dc-4d6b-a53d-63926ff003c5",
+  "answer_1": "For Viña del Sol I would recommend competitive benchmarking against its two direct Chilean rivals.\n\nInternal benchmarking is cheapest and the data is already in-house, but the margin has been sliding for two years, so measuring the company against its own history only confirms the trend rather than showing what good looks like. The board asked for root causes; that won't give them any.\n\nFunctional benchmarking against the wider Latin American processing industry is a fairer comparison, but the product mix and scale differences would have to be normalised before any of the numbers meant anything, and that is a longer exercise than a board wanting answers this quarter will sit through.\n\nCompetitive benchmarking is the right call because the two rivals sell into the same market and work under the same Chilean food regulations, so any gap between them and Viña del Sol has to come from how the business is run rather than from circumstances management cannot control.\n\nViña del Sol's own gross margin has fallen from 38% to 31%, and on-time delivery is down to 74% against its 90% internal target. I would pull the two rivals' published margin and delivery figures and set them against those.",
+  "answer_3": "For Viña del Sol I would recommend competitive benchmarking against its two direct Chilean rivals.\n\nOne thing I would settle first, though. Gross margin has fallen from 38% to 31% over two years, but if input costs across Chilean fruit and wine processing have risen over the same period then the whole sector's margins have moved, and we would be treating a market-wide squeeze as an internal efficiency failure. Whether the decline is ours or the sector's changes what the programme is for, so I would establish that before designing it.\n\nInternal benchmarking is cheapest and the data is already in-house, but the margin has been sliding for two years, so measuring the company against its own history only confirms the trend rather than showing what good looks like. The board asked for root causes; that won't give them any.\n\nFunctional benchmarking against the wider Latin American processing industry is a fairer comparison, but the product mix and scale differences would have to be normalised before any of the numbers meant anything, and that is a longer exercise than a board wanting answers this quarter will sit through.\n\nCompetitive benchmarking is the right call because the two rivals sell into the same market and work under the same Chilean food regulations, so any gap between them and Viña del Sol has to come from how the business is run rather than from circumstances management cannot control.\n\nViña del Sol's own gross margin has fallen from 38% to 31%, and on-time delivery is down to 74% against its 90% internal target. I would pull the two rivals' published margin and delivery figures and set them against those.",
+  "strength_para": "One thing I would settle first, though. Gross margin has fallen from 38% to 31% over two years, but if input costs across Chilean fruit and wine processing have risen over the same period then the whole sector's margins have moved, and we would be treating a market-wide squeeze as an internal efficiency failure. Whether the decline is ours or the sector's changes what the programme is for, so I would establish that before designing it.",
+  "runs": [
+    {
+      "arm": "ANSWER-3",
+      "run": 1,
+      "status": 200,
+      "progress_rows_before_post": 0,
+      "intent": "attempt",
+      "message_kind": "hint",
+      "outcome": "miss",
+      "call_type": "hint",
+      "gaplabel": [
+        {
+          "vetoed": false,
+          "scope": "unsubstantiated",
+          "structured": true,
+          "parsed": true,
+          "derived": 1,
+          "creditable": 1,
+          "hintOnRow": true,
+          "hintArm": false,
+          "calcRequired": false,
+          "codeOwnsUnderived": false,
+          "resolved": {
+            "nothingEstablished": false,
+            "source": "field"
+          },
+          "echoed": false,
+          "label": "evaluates methods but omits actionable combined-approach recommendation after weighing them"
+        }
+      ],
+      "creditable": 1,
+      "derived": 1,
+      "resolved": {
+        "nothingEstablished": false,
+        "source": "field"
+      },
+      "gap_label": "evaluates methods but omits actionable combined-approach recommendation after weighing them",
+      "strength_screen": [],
+      "latency_ms": 6897,
+      "reply": "You've done the hard analytical work — you've correctly identified that competitive benchmarking is the right primary choice *because* same market + same regulations = gaps are operational, not circumstantial — and you've used that reasoning to reject internal (confirms the slide, doesn't diagnose it) and functional (normalisation overhead defeats the timeline). That's the floor, and you nailed it. \n\nBut the requirement asks you to evaluate and **advise on which approach or combination** — and you've stopped at \"competitive is right\", which leaves the board without the full picture: you haven't yet answered what competitive benchmarking alone *cannot* see, and whether functional or internal methods, deployed in a narrow, targeted way alongside it, would close that gap enough to matter.\n\nHere's your next move: you've already noted that the two Chilean rivals are private and share no financial data publicly — use that constraint to say what you'd actually *do* instead, and whether that changes what you recommend."
+    },
+    {
+      "arm": "ANSWER-3",
+      "run": 2,
+      "status": 200,
+      "progress_rows_before_post": 0,
+      "intent": "attempt",
+      "message_kind": "hint",
+      "outcome": "miss",
+      "call_type": "hint",
+      "gaplabel": [
+        {
+          "vetoed": false,
+          "scope": "unsubstantiated",
+          "structured": true,
+          "parsed": true,
+          "derived": 1,
+          "creditable": 0,
+          "hintOnRow": true,
+          "hintArm": false,
+          "calcRequired": false,
+          "codeOwnsUnderived": false,
+          "resolved": {
+            "nothingEstablished": false,
+            "source": "field"
+          },
+          "echoed": false,
+          "label": "Evaluates methods in isolation without integrating findings into a combined recommendation"
+        }
+      ],
+      "creditable": 0,
+      "derived": 1,
+      "resolved": {
+        "nothingEstablished": false,
+        "source": "field"
+      },
+      "gap_label": "Evaluates methods in isolation without integrating findings into a combined recommendation",
+      "strength_screen": [
+        "sector",
+        "sector-wide"
+      ],
+      "latency_ms": 8411,
+      "reply": "You've done the floor — you've correctly sifted the three methods, named real constraints (data access, product-mix normalisation, timing pressure), and landed on a defensible choice. The issue is that you've stopped at which method to use, not what it actually tells you when you use it.\n\nThe requirement's real bite is this: **once you've chosen competitive benchmarking, you have to show what happens to your recommendation if the rivals' figures turn out to be better than, worse than, or similar to Viña del Sol's own**. That's where judgment lives. You've said \"I would pull the two rivals' published margin and delivery figures\" — but you haven't done the next move, which is to evaluate what you'd actually do with that gap once you've found it. If both rivals have 35% gross margin while Viña del Sol sits at 31%, that's a different diagnosis and a different programme design than if both rivals are at 28%. The choice of method only matters if you then ask: what does this data tell me about whether the problem is fixable, and which part of the operation to attack first?\n\nHere's the sharpest miss: you've flagged that the margin decline *could* be sector-wide, but then you've moved past it without circling back to say whether competitive benchmarking actually answers that question or leaves it still open — and if it leaves it open, how you'd resolve it as part of the same programme. **What would the rivals' margin figures tell you about whether this is a Viña del Sol problem or a Chilean market problem, and what would you do differently in each case?** Put that in one sentence and show how it shapes which piece of analysis you'd run first."
+    },
+    {
+      "arm": "ANSWER-3",
+      "run": 3,
+      "status": 200,
+      "progress_rows_before_post": 0,
+      "intent": "attempt",
+      "message_kind": "hint",
+      "outcome": "miss",
+      "call_type": "hint",
+      "gaplabel": [
+        {
+          "vetoed": false,
+          "scope": "unsubstantiated",
+          "structured": true,
+          "parsed": true,
+          "derived": 1,
+          "creditable": 1,
+          "hintOnRow": true,
+          "hintArm": false,
+          "calcRequired": false,
+          "codeOwnsUnderived": false,
+          "resolved": {
+            "nothingEstablished": false,
+            "source": "field"
+          },
+          "echoed": false,
+          "label": "evaluates each method but stops short of a supported combined recommendation"
+        }
+      ],
+      "creditable": 1,
+      "derived": 1,
+      "resolved": {
+        "nothingEstablished": false,
+        "source": "field"
+      },
+      "gap_label": "evaluates each method but stops short of a supported combined recommendation",
+      "strength_screen": [
+        "sector",
+        "sector-wide",
+        "squeeze"
+      ],
+      "latency_ms": 6281,
+      "reply": "You've done the hard part: you've correctly identified that **competitive benchmarking is the fit for this scenario** — you named the real reason why (same market, same regulations, gap = execution, not circumstance) — and you've shown professional scepticism about the sector-wide margin squeeze, which is exactly the kind of boundary-setting that separates diagnosis from noise. But you've stopped at choosing the method; the requirement also asks you to evaluate the **suitability** of the approach *for Viña del Sol's stated objectives*, which means testing whether competitive benchmarking alone will actually deliver the root cause analysis the board asked for.\n\nHere's the next move: you know Viña del Sol's margins are down and delivery is at 74%. You've named that the two direct rivals operate under the same constraints. Now spell out in one sentence what you would *actually be able to see* if you pulled their published figures — what gaps you could measure — and whether that gap alone tells the board *why* Viña del Sol's margin fell or its delivery slipped."
+    },
+    {
+      "arm": "ANSWER-3",
+      "run": 4,
+      "status": 200,
+      "progress_rows_before_post": 0,
+      "intent": "attempt",
+      "message_kind": "hint",
+      "outcome": "miss",
+      "call_type": "hint",
+      "gaplabel": [
+        {
+          "vetoed": false,
+          "scope": "unsubstantiated",
+          "structured": true,
+          "parsed": true,
+          "derived": 1,
+          "creditable": 1,
+          "hintOnRow": true,
+          "hintArm": false,
+          "calcRequired": false,
+          "codeOwnsUnderived": false,
+          "resolved": {
+            "nothingEstablished": false,
+            "source": "field"
+          },
+          "echoed": false,
+          "label": "recommends competitive benchmarking while ignoring rivals publish no data"
+        }
+      ],
+      "creditable": 1,
+      "derived": 1,
+      "resolved": {
+        "nothingEstablished": false,
+        "source": "field"
+      },
+      "gap_label": "recommends competitive benchmarking while ignoring rivals publish no data",
+      "strength_screen": [],
+      "latency_ms": 6865,
+      "reply": "You've done the hardest move: you've named that the two Chilean rivals publish no data, which kills competitive benchmarking as the student wrote it. That's the professional scepticism the board needs. But now you have to sit with that discovery and ask what it means for your recommendation — because right now you're recommending an approach you've just shown won't work, and you haven't resolved that tension.\n\nHere's the real gap: you've weighed the three methods against the scenario constraints, but you stopped the analysis the moment you hit the floor (correctly identifying why each method does or doesn't fit). The marks are in what comes *after* — judging which of the three actually gives Viña del Sol actionable insight *given* what the scenario has handed you, and whether that means pivoting away from your first choice or combining methods in a way that works around the data gap you've spotted. You have all the information in front of you now; the next step is to read your own diagnosis of the competitive benchmarking problem and decide whether it changes the relative weight of the other two approaches."
+    },
+    {
+      "arm": "ANSWER-3",
+      "run": 5,
+      "status": 200,
+      "progress_rows_before_post": 0,
+      "intent": "attempt",
+      "message_kind": "hint",
+      "outcome": "miss",
+      "call_type": "hint",
+      "gaplabel": [
+        {
+          "vetoed": false,
+          "scope": "unsubstantiated",
+          "structured": true,
+          "parsed": true,
+          "derived": 1,
+          "creditable": 1,
+          "hintOnRow": true,
+          "hintArm": false,
+          "calcRequired": false,
+          "codeOwnsUnderived": false,
+          "resolved": {
+            "nothingEstablished": false,
+            "source": "field"
+          },
+          "echoed": false,
+          "label": "evaluates methods but stops at selection without combining and prioritising them"
+        }
+      ],
+      "creditable": 1,
+      "derived": 1,
+      "resolved": {
+        "nothingEstablished": false,
+        "source": "field"
+      },
+      "gap_label": "evaluates methods but stops at selection without combining and prioritising them",
+      "strength_screen": [],
+      "latency_ms": 6658,
+      "reply": "You've done the hard part — you've applied the three methods *to this scenario's constraints* rather than just listing textbook definitions, and that's where most candidates stop dead. You correctly identified that competitive benchmarking is the right lead because the rivals face identical market and regulatory conditions, so any gap is actionable rather than structural. That's sound reasoning.\n\nBut you've stopped at *selecting* the method rather than *judging what the selection actually tells you*. The requirement wants you to weigh not just which method fits best, but what each one would *actually cost to run and what insight it would buy* for a company trying to move fast on margin and delivery. You have a strong case for competitive benchmarking as the primary lever — now take that one step further and say explicitly: given that your two rivals are privately held and share no public data, how does that change what you can actually *do* with competitive benchmarking as your main tool, and does that open a door back to one of the other methods as essential backup?"
+    },
+    {
+      "arm": "ANSWER-3",
+      "run": 6,
+      "status": 200,
+      "progress_rows_before_post": 0,
+      "intent": "attempt",
+      "message_kind": "hint",
+      "outcome": "miss",
+      "call_type": "hint",
+      "gaplabel": [
+        {
+          "vetoed": false,
+          "scope": "unsubstantiated",
+          "structured": true,
+          "parsed": true,
+          "derived": 1,
+          "creditable": 1,
+          "hintOnRow": true,
+          "hintArm": false,
+          "calcRequired": false,
+          "codeOwnsUnderived": false,
+          "resolved": {
+            "nothingEstablished": false,
+            "source": "field"
+          },
+          "echoed": false,
+          "label": "evaluates methods adequately but stops before joining evaluation to a supported combined recommendation"
+        }
+      ],
+      "creditable": 1,
+      "derived": 1,
+      "resolved": {
+        "nothingEstablished": false,
+        "source": "field"
+      },
+      "gap_label": "evaluates methods adequately but stops before joining evaluation to a supported combined recommendation",
+      "strength_screen": [],
+      "latency_ms": 7213,
+      "reply": "You've done the hard part — you spotted that competitive benchmarking alone won't work because two privately held rivals don't publish their figures, and that internal benchmarking only confirms decline rather than diagnosing it. That's the real insight. Where the recommendation stalls is that you've evaluated each method *separately* rather than *combined*: you've ruled out competitive benchmarking on a data obstacle but then still concluded it's \"the right call\" without explaining how you'd actually *use* it, or whether you'd layer a second method to fill the gap it leaves. The floor says weigh the three against each other; the marks are in what you then *prescribe* — a sequenced, hybrid approach that names what each method contributes to the root-cause diagnosis and what constraints it faces *in this scenario*. Take your evaluation of why internal benchmarking fails on its own (two-year slide shows decline, not causation) and your point about functional benchmarking needing normalisation — now write one sentence that says: given that Viña del Sol cannot access competitor data, which of the three methods would actually *surface the root causes* the board asked for, and in what order would you run them to make the time and effort pay off?"
+    },
+    {
+      "arm": "ANSWER-3",
+      "run": 7,
+      "status": 200,
+      "progress_rows_before_post": 0,
+      "intent": "attempt",
+      "message_kind": "hint",
+      "outcome": "miss",
+      "call_type": "hint",
+      "gaplabel": [
+        {
+          "vetoed": false,
+          "scope": "unsubstantiated",
+          "structured": true,
+          "parsed": true,
+          "derived": 1,
+          "creditable": 1,
+          "hintOnRow": true,
+          "hintArm": false,
+          "calcRequired": false,
+          "codeOwnsUnderived": false,
+          "resolved": {
+            "nothingEstablished": false,
+            "source": "field"
+          },
+          "echoed": false,
+          "label": "evaluates each method but omits actionable combined-programme recommendation entirely"
+        }
+      ],
+      "creditable": 1,
+      "derived": 1,
+      "resolved": {
+        "nothingEstablished": false,
+        "source": "field"
+      },
+      "gap_label": "evaluates each method but omits actionable combined-programme recommendation entirely",
+      "strength_screen": [
+        "sector",
+        "sector-wide",
+        "squeeze"
+      ],
+      "latency_ms": 5413,
+      "reply": "You've nailed the commercial insight — you spotted that a sector-wide margin squeeze changes the entire frame of what the programme is meant to fix, and you stopped yourself there. That's the professional scepticism the board needs.\n\nBut here's where the work stops short of the actual judgement the requirement is asking for: you've evaluated each method and ruled out two, but you've given your recommendation as a standalone call without connecting it back to what you've already established — specifically, the data **availability problem** you named for competitive benchmarking. You said the two rivals are privately held and share no financial data publicly. Now take that fact you already have in front of you and state in one sentence whether it changes whether competitive benchmarking is actually the feasible choice here."
+    },
+    {
+      "arm": "ANSWER-3",
+      "run": 8,
+      "status": 200,
+      "progress_rows_before_post": 0,
+      "intent": "attempt",
+      "message_kind": "hint",
+      "outcome": "miss",
+      "call_type": "hint",
+      "gaplabel": [
+        {
+          "vetoed": false,
+          "scope": "unsubstantiated",
+          "structured": true,
+          "parsed": true,
+          "derived": 1,
+          "creditable": 0,
+          "hintOnRow": true,
+          "hintArm": false,
+          "calcRequired": false,
+          "codeOwnsUnderived": false,
+          "resolved": {
+            "nothingEstablished": false,
+            "source": "field"
+          },
+          "echoed": false,
+          "label": "discards viable methods without weighing their partial value against scenario constraints"
+        }
+      ],
+      "creditable": 0,
+      "derived": 1,
+      "resolved": {
+        "nothingEstablished": false,
+        "source": "field"
+      },
+      "gap_label": "discards viable methods without weighing their partial value against scenario constraints",
+      "strength_screen": [],
+      "latency_ms": 6368,
+      "reply": "You've done the structural work — you've applied the three methods correctly and rejected two of them with sound reasoning. But you've stopped at *whether* competitive benchmarking works; the requirement asks you to *evaluate* whether it will actually deliver what the board wants given the constraints they face. That's where the marks live.\n\nHere's the specific gap: you say \"I would pull the two rivals' published margin and delivery figures\" — but the scenario tells you they are *privately held and share no financial data publicly*. You cannot pull what does not exist. That single fact demolishes your recommendation as stated. So your first move is to reread what the scenario actually allows you to know about those competitors, then restate your recommendation in light of that constraint — not to abandon competitive benchmarking, but to name what form it could realistically take for Viña del Sol given what data *is* actually available to them."
+    },
+    {
+      "arm": "ANSWER-3",
+      "run": 9,
+      "status": 200,
+      "progress_rows_before_post": 0,
+      "intent": "attempt",
+      "message_kind": "hint",
+      "outcome": "miss",
+      "call_type": "hint",
+      "gaplabel": [
+        {
+          "vetoed": false,
+          "scope": "unsubstantiated",
+          "structured": true,
+          "parsed": true,
+          "derived": 1,
+          "creditable": 1,
+          "hintOnRow": true,
+          "hintArm": false,
+          "calcRequired": false,
+          "codeOwnsUnderived": false,
+          "resolved": {
+            "nothingEstablished": false,
+            "source": "field"
+          },
+          "echoed": false,
+          "label": "Evaluates each method but stops before joining them into a supported recommendation"
+        }
+      ],
+      "creditable": 1,
+      "derived": 1,
+      "resolved": {
+        "nothingEstablished": false,
+        "source": "field"
+      },
+      "gap_label": "Evaluates each method but stops before joining them into a supported recommendation",
+      "strength_screen": [],
+      "latency_ms": 6264,
+      "reply": "You've done the analytical floor — you've correctly rejected internal benchmarking (it tracks the symptom, not the cause) and you've named the real commercial reason competitive benchmarking fits: same market, same regulatory regime, so any gap is operational, not circumstantial. That's the thinking that marks require.\n\nBut you've stopped at the method choice and haven't yet done the part that carries the marks: **you need to surface what your recommendation actually *assumes* about those two rivals' data, and then judge whether those assumptions hold in this scenario.**\n\nYou wrote \"pull the two rivals' published margin and delivery figures\" — but re-read the scenario: those two competitors are privately held and share no financial data publicly. That assumption does not survive contact with the facts. So the next move is to name, in one sentence, what that constraint actually means for whether competitive benchmarking alone can deliver what the board is asking for — and then decide whether the recommendation needs to change in light of it."
+    },
+    {
+      "arm": "ANSWER-3",
+      "run": 10,
+      "status": 200,
+      "progress_rows_before_post": 0,
+      "intent": "attempt",
+      "message_kind": "hint",
+      "outcome": "miss",
+      "call_type": "hint",
+      "gaplabel": [
+        {
+          "vetoed": false,
+          "scope": "unsubstantiated",
+          "structured": true,
+          "parsed": true,
+          "derived": 1,
+          "creditable": 1,
+          "hintOnRow": true,
+          "hintArm": false,
+          "calcRequired": false,
+          "codeOwnsUnderived": false,
+          "resolved": {
+            "nothingEstablished": false,
+            "source": "field"
+          },
+          "echoed": false,
+          "label": "evaluates all three methods but stops before reaching a supported combined recommendation"
+        }
+      ],
+      "creditable": 1,
+      "derived": 1,
+      "resolved": {
+        "nothingEstablished": false,
+        "source": "field"
+      },
+      "gap_label": "evaluates all three methods but stops before reaching a supported combined recommendation",
+      "strength_screen": [],
+      "latency_ms": 6341,
+      "reply": "You've done the harder part — you've actually *evaluated* whether each method fits, rather than just describing them. The commercial scepticism is sharp: you've named that internal benchmarking is confirmatory, not diagnostic; that functional benchmarking carries normalisation friction the board won't tolerate; and that competitive benchmarking removes confounding variables because both rivals face the same regulatory and market environment. That's the floor. \n\nBut here's where you've stopped short of the judgment the board needs: you've identified competitive benchmarking as \"the right call\" and then immediately hedged it by reaching for the rivals' *published* figures — and the scenario tells you both competitors are privately held and share no financial data publicly. So the method you've chosen as most suitable is the one that's actually unavailable to you.\n\nWhat you now need to do is take that constraint you've just named and fold it back into your recommendation — does it change which approach, or which *combination* of approaches, actually works here?"
+    }
+  ]
+}
