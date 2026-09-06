@@ -46,17 +46,42 @@ artefact is appended verbatim) is untouched. But the instruction is plainly viol
 6/10 vs 23/30 is exactly the kind of movement this sample cannot resolve. The finding is that the
 behaviour is there on both sides, not that it grew.
 
-📐 **THE CAUSE IS NAMED AND IT IS A MISSING WIRE.** The DRILL route's `call4_reveal` takes a
-`GroundingPack` and appends `renderResolvableTopics(grounding)` — built in the 2026-07-21
-persona-hardening pass as finding 5, **INVENTED-INVENTORY**, for this exact failure. **The CASE
-engine's `call4_reveal` takes no grounding at all**, so the one leg with a fix has it and the one
-without invents. Wiring it is the obvious next move and is a measurable change, not a free one.
+📐 **RE-MEASURED ON THE CREDITABLE SEED, n = 30: 12/30** (`result_20260906_creditable_n30.md`) —
+`2025`, `2008–2009` ×3, `£20`, `six months` ×4, `three years`, `40%`, `18 months`, `under 25`. Per
+**P-M6** 12/30 and 23/30 are NOT claimed to differ, but the mechanism is visible: that seed already
+contains the correct base-rate reasoning, so the closing beat has less headroom to invent a fresh
+imbalanced-data hypothetical and reaches for a plausible DATE RANGE instead.
+
+🔴 **THE CAUSE WAS NAMED WRONG, AND THE CORRECTION IS THE FINDING (2026-09-06).** The entry below
+said the fix was a missing wire — the DRILL route's `call4_reveal` appends
+`renderResolvableTopics(grounding)`, built in 2026-07-21 as finding 5 **INVENTED-INVENTORY**, and
+the CASE engine's takes no grounding at all. Both halves are true and **the wire cannot fix this
+case, because it does not fire on APM.** `resolvableAreas` is
+`paper === 'AFM' ? ['B1'..'B5'] : []` (`app/api/acca/tutor/route.ts:1293`, its own comment saying
+so) → `resolvableTopics` is `[]` → `renderResolvableTopics` returns `''`. **Measured with the real
+builders: the reveal user prompt for Vesla (i) is 2819 bytes with the wire and 2819 without,
+byte-identical.** The July fix has never applied to APM on the drill route either.
+
+⚠️ **AND ON AFM, WHERE IT WOULD FIRE, IT IS AIMED AT THE WRONG INVENTORY.** The topics are DRILL
+phrases (*"another investment appraisal and risk drill"*) on a CASE surface, and the list is a
+fixed B1–B5 regardless of requirement while **9 of the 20 published AFM case requirements sit in
+E1/E2/E3/A1**. **The two fixes are also disjoint across the corpus:** APM 18/18 requirements carry
+`## ` headings (pointer beat fires) with topics empty; AFM 0/20 carry headings (pointer omitted)
+with topics non-empty. **No published requirement gets both.** Making it fire on APM needs an area
+→ label inventory that exists nowhere (`AFM_AREA_LABELS` is the only such map in the repo) — a
+substitute, so it was not built. **This item is OPEN with no known fix, not OPEN pending a wire.**
 
 ⚠️ **`[reveal:unsourced-figures]` FLAGGED ONLY 8 OF THE 23, AND THAT IS ITS DOCUMENTED CEILING**
 (`reveal-figure-audit.ts`, ceiling 2b: *"a coincidence passes"*). Fifteen invented figures collided
 with a number already present somewhere in context ∪ model_answer ∪ attempt. **Never quote the
 audit's count as a census of invented figures** — it is a lower bound, and this run measures the
 gap at 8/23.
+
+⚠️ **A SECOND CEILING, AND THE SEED-A PASS FOLDED IT INTO THE FIRST. THE AUDIT READS DIGITS; A
+NUMBER WRITTEN AS A WORD IS INVISIBLE TO IT.** On the creditable seed it flagged 6 of 12, and the
+six misses split two ways, not one: **3 by collision** (`£20`, `40%`, `18` — ceiling 2b) and **3 by
+construction** (`six months`, which carries no digit at all). *"Fifteen invented figures collided"*
+was therefore an over-attribution to collision; some share of them were never candidates.
 
 ## 🔴 OPEN 2026-09-06 (i) — A CREDITABLE ANSWER DRAWS FABRICATED QUOTATION, WHERE A WRONG ONE DRAWS NONE
 
@@ -80,8 +105,47 @@ arm, it is 2/10** — and both are quotation errors under C4, so attribution is 
 the correlation/causation point. The defect is the quotation marks, and it appears only where there
 is real content to quote. That is the **P-M4(a) mode shift running the other way**: that arm removed
 the marks and left the fabrication; this shows the marks return the moment the answer earns credit.
-⚠️ **n = 10 and it is not the gated arm** — under **P-M6** this is a SIGHTING that says where to
-look, never a rate. The arm that would settle it is a creditable-seed run at n = 30.
+
+📐 **SETTLED AT n = 30, AND IT IS A RATE: 4/30 fabricated quotation, 6/30 attribution**
+(`result_20260906_creditable_n30.md`; gates were ≤2 and ≤3, both FAIL). **All four quote the SAME
+clause** — the student's *"it keeps the training set clean of incomplete histories"* — re-inflected
+to fit the tutor's grammar: `"keep the model clean"` (run 4), `"keep the set clean"` (6), `"keep the
+training set clean"` (7), and run 24's pair under an explicit *"**you wrote that**"*:
+`"expose the model to a wider range"` + `"keep the training set clean"`. **That is a GRAMMATICAL
+PRESSURE, not a memory failure** — `as strengths that "keep …"` requires the bare infinitive where
+the student wrote the third person — which is why it survives at n=30 and why an instruction not to
+misquote will not touch it. The span mechanism the drill hint leg needs is the same target here.
+
+🔴 **AND ONE CREDIT IN THIRTY IS NOT MERELY UNQUOTABLE, IT IS THE OPPOSITE OF WHAT THE STUDENT
+WROTE.** Run 12: *"you correctly pushed back on the "model is complete" claim — that's solid
+critical thinking"*, against the student's *"On the analyst's final point **I agree the model can be
+treated as complete**"*. C3(a), credit-shaped, SEVERE. The other 29 credits are accurate and
+locatable. **So "the credits themselves are all accurate" held at n=10 and does NOT hold at n=30**
+— report credit accuracy as 29/30, never as clean.
+
+## 🔴 OPEN 2026-09-06 (j) — `sanitizeAfmWrapper` DELETES THE POINTER BEAT, AND THE POINTER AUDIT CANNOT SEE IT
+
+Found by a 1/30 disagreement, not by looking: the harness scored one reveal **off-list** while the
+server logged **`[reveal:pointer-off-list]` zero times**. Those two read DIFFERENT STRINGS. The
+audit runs on `wrapper` — the raw model output (`teach-engine.ts:1111`); the student reads `served`
+= `sanitizeAfmWrapper(wrapper)`. **So the audit passed on a pointer the student never received.**
+
+📐 **REPRODUCED DIRECTLY, not inferred.** `sanitizeAfmWrapper` cuts at `\n[^\n]*worked answer`. A
+two-paragraph wrapper whose second paragraph is *"Start by reading **Training-data limitations** in
+the worked answer below…"* is cut 397 → 279 bytes and `wrapperNamesAListedSection` goes **true →
+false**; the single-paragraph control is untouched (396 → 396, still true).
+
+🔴 **THE SYSTEM PROMPT INSTRUCTS THE MODEL TO NAME THE THING THE SANITIZER CUTS ON.**
+`REVEAL_AFM_WRAPPER_SYSTEM` says *"say WHICH PART of **the worked answer** below to read first"*.
+The guard exists to stop a model STARTING to restate the build; it cannot tell that from a sentence
+that merely refers to it. The other 29 runs escaped only because they were ONE paragraph. Run 13
+lost its pointer AND its closing beat — two of four — and served a reveal stopping on the
+diagnosis.
+
+⚠️ **`assembleAfmReveal` IS SHARED WITH THE DRILL ROUTE**, whose prompt uses the same phrase and
+which has **no pointer audit at all**, so the same cut there is silent by construction. Not
+measured. ⚠️ Fixing the audit (check the SERVED string) and fixing the cut are two different
+changes; the audit change alone would only make the deletion visible.
 
 ## 🟠 LOGGED 2026-09-06 (b) — THE 43/91 DRILL RENDERING DEFECT, LIVE FROM 2026-09-04, FIXED
 
