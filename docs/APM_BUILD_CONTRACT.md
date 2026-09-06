@@ -5351,3 +5351,84 @@ checks and on reading the call sites.
 
 Fixtures `npm run test:error-events` (70, contract gate 80 → **81**). Deploy confirmed from the build
 log: contract gate 81/81, `Build Completed`.
+
+
+---
+
+## 2026-09-06 — THE CASE REVEAL'S POINTER BEAT AND ITS CREDIT DEMAND (`feat/case-reveal-design-b`)
+
+Design "B" on the case reveal shipped at `8eb92db` with two things it could not do, and this session
+closed both. Branch commits: `1f32d8b` (the paragraph normaliser), `ec806f8` (the `## ` migration),
+`6c83e24` (the two wiring fixes), `91de1a1` (the predictions, banked before the run).
+
+**THE POINTER BEAT WAS STRUCTURALLY UNSATISFIABLE.** `REVEAL_AFM_WRAPPER_SYSTEM` tells the wrapper to
+*"say WHICH PART of the worked answer below to read first"*. Design B hands the artefact to
+`assembleAfmReveal`, not to the model, so the wrapper was pointing into a document it had never seen:
+0/10 usable, 9/10 naming the opening section of six — what a model with no information does.
+**Migration `20260906120000` could not have moved that**, and the diagnosis that expected it to was
+wrong. `revealArtefactSections` now extracts the `## ` heading NAMES and the user prompt lists them
+with a copy-verbatim instruction. **A heading is not a figure** — `## The accuracy claim` computes
+nothing — so names cross into the prompt with the figure-free guarantee intact.
+
+The anti-default is a SELECTION CRITERION (*"the one where that misconception is resolved"*), not a
+warning about position: per **P-M4(a)** an instruction that names the wrong output primes it, so
+*"do not always pick the first"* is the shape not to write. The list is bulleted, not numbered, so no
+second ordinal handle is supplied. `wrapperNamesAListedSection` logs `[reveal:pointer-off-list]`; it
+warns, never blocks.
+
+**THE EMPTY BRANCH IS LIVE, NOT DEFENSIVE.** All 18 published APM case `model_answer`s carry `## `
+headings; **none of the 20 AFM ones do** — they are flowing prose. On an empty list the pointer beat
+is OMITTED from BOTH prompts rather than left standing with nothing to satisfy it. `undefined` is a
+THIRD state, not `[]`: the drill route supplies no sections and keeps its shipped generic beat
+byte-for-byte, so this arm stays one surface wide.
+
+**THE CREDIT SUPPRESSION IS RESTORED.** `routed_2p_conditioned` suppressed the praise-first clause
+when nothing earned credit (7/60 → 36/60, Fisher p = 4.0e-8); design B dropped it and `8eb92db`
+shipped that trade explicitly asking for it to be measured. It was: 10/10 opened on credit, 6/10
+fabricated it. Now a call-time recast inside `REVEAL_AFM_WRAPPER_SYSTEM` under a parameter defaulting
+false. **Removal and conditioning only (P-M4(a))** — nothing added anywhere. The stored constant's
+bytes are UNTOUCHED and the drill route passes no options object, which is the isolation, and it is
+fixture-checked rather than asserted. The phrase is defined ONCE (`CONDITIONED_OPEN`) and shared with
+the case cores so two live reveal surfaces cannot drift into two conditioned openings.
+
+**`full_reveal` IS WIRED.** The wrapper system said *"use the authored reframe you are given"* and
+`app/api/acca/case/turn/route.ts` never selected the column, so that instruction ran against nothing.
+The comment that left it unwired cited *"absent on some requirements"*; measured this session, **all
+38 published case requirements (18 APM, 20 AFM) carry a non-empty one**.
+
+📐 **MEASURED n = 30, NOT n = 10, AND THE SAMPLE SIZE IS ITSELF A FINDING (doctrine `P-M6`).** The
+same code, prompt and seed answer scored 2/10 on Tuesday and 6/10 on Friday; Fisher puts that pair at
+p ≈ 0.17 (21,390 / 125,970, computed). n = 10 cannot tell them apart, so every `≤ 2/10` gate set in
+this workstream has been finer than the instrument reading it.
+
+**All four gates passed:** pointer names a listed heading **30/30** (gate ≥27) · attribution **0/30**
+(≤2) · truncation **0/30** (0) · opens-on-credit at `creditable = 0` **0/30** (≤3), suppression armed
+30/30. Wrapper headings/rules 0/30, mid-sentence 0/30, reveal latency p50 7.6s. Grant's banked
+predictions (≥28/30, ≤4/30, ≤2/30) all held.
+
+⚠️ **30/30 ON SECTION #1 IS NOT A DEFAULT, AND ONE SEED CANNOT SHOW THAT.** That seed's dominant error
+IS the base-rate misconception and the diagnose leg names it, so #1 is where the criterion correctly
+points; a working criterion SHOULD concentrate when the diagnosis is single-valued. No sample size
+separates the two readings — it is a fixed-input problem. **A second seed settled it:** correct on §1
+and §2, confidently wrong on the training data, the pointer moved to **#3 *Training-data limitations*
+10/10**, with `creditable = 1` so the suppression correctly did NOT arm. Both arms demonstrated, not
+only the gated one.
+
+🔴 **TWO FINDINGS OUTSIDE THE GATE, BOTH LOGGED IN `AFM_SURFACED.md` (items (h) and (i)).** The
+closing "fresh question" beat invents a numeric scenario — **23 of 30 wrappers carry a figure that is
+not the case's own** — under a prompt that says *include NO figures*; all sit in the hypothetical and
+none is a claim about Vesla, so figure integrity is untouched. **Pre-existing, not introduced** (6/10
+on the retained pre-change capture; per P-M6 the two rates are NOT claimed to differ). The cause is a
+missing wire: the DRILL route's `call4_reveal` appends `renderResolvableTopics(grounding)`, built in
+2026-07-21's persona hardening as finding 5 INVENTED-INVENTORY, and the CASE engine's takes no
+grounding at all. `[reveal:unsourced-figures]` caught 8 of the 23 — its documented ceiling 2b, *"a
+coincidence passes"*, measured. And on the creditable seed the credit was accurate 10/10 while
+fabricated QUOTATION appeared 2/10 — the P-M4(a) mode shift running the other way, a sighting at
+n = 10 and not a rate.
+
+Fixtures `npm run test:case-reveal-routing` (159 checks, including the three states of `sections`,
+both directions of the off-list flag, and the drill route's bytes pinned equal to the stored
+constant). Contract gate 82/82. Captures retained:
+`docs/rollbacks/case_reveal_n30_seedA_20260906.json`,
+`docs/rollbacks/case_reveal_n10_seedB_spread_20260906.json`,
+predictions `docs/rollbacks/predictions_20260906_n30.md`.

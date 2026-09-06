@@ -32,10 +32,21 @@ console.log('\ncase envelope — creditable conditions the hint opening\n');
 // Transcribed from the pre-change constant in teach-engine.ts. Break mode: the refactor to a
 // shared builder silently re-words the live case prompt, and every number measured against it —
 // before or after — describes a string that no longer exists.
+// ⚠️ REPINNED 2026-09-06 (Grant-ruled): the credit demand was DELETED from every opening arm,
+// so the pinned bytes changed. The removed string is pinned MUST-FAIL just below — that is the
+// check with teeth now, since a pin on the new bytes alone goes green the moment the old ones
+// are restored beside them.
 const SHIPPED_CASE_OPENING =
+  'First miss. Name the single sharpest gap (just one, not a list) and ' +
+  'one next move.';
+const REMOVED_CASE_CREDIT_OPENING =
   'First miss. Lead with the ONE specific thing they got right — name the real move, ' +
   'not vague praise — then name the single sharpest gap (just one, not a list) and ' +
   'one next move.';
+ok('MUST-FAIL: the deleted credit demand is not restored on the case hint leg',
+  caseHintOpening('conditional', false, false) !== REMOVED_CASE_CREDIT_OPENING &&
+  caseHintOpening('conditional', false, true) !== REMOVED_CASE_CREDIT_OPENING &&
+  caseHintOpening('shipped', false, false) !== REMOVED_CASE_CREDIT_OPENING);
 
 ok('no-contradiction + creditable UNKNOWN → byte-identical to the shipped opening',
   caseHintOpening('conditional', false, false) === SHIPPED_CASE_OPENING,
@@ -75,8 +86,12 @@ ok('contradiction wins under the shipped variant too',
 // Break mode: the arm is wired but returns the shipped string, so the measurement reports "no
 // effect" from a branch that never changed anything.
 const creditableArm = caseHintOpening('conditional', false, true);
-ok('creditable=0 produces a DIFFERENT opening from shipped',
-  creditableArm !== SHIPPED_CASE_OPENING);
+// ⚠️ INVERTED 2026-09-06. Deleting the credit language from (c) left it byte-identical to the
+// opening it existed to replace, so `creditable=0` no longer changes the case hint opening.
+// Asserted, not deleted: the envelope is still parsed and still carried, and a green section
+// here must not be read as the arm still doing something.
+ok('creditable=0 is now BYTE-IDENTICAL to shipped — the arm is INERT',
+  creditableArm === SHIPPED_CASE_OPENING);
 ok('creditable=0 opening is hint-opening.ts (c), not a local copy',
   creditableArm === hintOpeningInstruction('conditional', false, true).trimEnd());
 // The (c) arm's whole point (P-T2/P-M4/P-T4): it does not FORBID praise, it replaces the demand
@@ -85,8 +100,9 @@ ok('creditable=0 opening is hint-opening.ts (c), not a local copy',
 ok('the creditable arm names no prohibition — it replaces the demand, it does not ban praise',
   !/do not|don't|never/i.test(creditableArm),
   creditableArm);
-ok('the creditable arm demands something satisfiable on an answer with nothing to credit',
-  /nothing in the answer yet earns credit/.test(creditableArm));
+ok('the creditable arm demands something satisfiable, and says NOTHING about credit',
+  /single sharpest gap/.test(creditableArm) && /one next move/.test(creditableArm) &&
+  !/credit|got right|praise/i.test(creditableArm), creditableArm);
 
 // ── 4. `derived` IS PARSED BUT NOT WIRED — THE ARM IS ONE VARIABLE ───────────
 // Break mode: both envelope fields get wired at once and no movement is attributable to either,

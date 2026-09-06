@@ -595,8 +595,12 @@ export const CASE_REVEAL_CORE_APM =
 // the conditioning under-delivers.
 const CREDIT_CLAUSE =
   'first credit, specifically, what they already had right, then walk the moves they were missing, ';
+// ⚠️ THE PHRASE IS DEFINED ONCE AND SHARED WITH THE DESIGN-B WRAPPER (2026-09-06). The wrapper's
+// conditioned opening is the same job in a shorter sentence, and two independently-written
+// "conditioned" openings on two live reveal surfaces is a drift the fixture cannot see.
+const CONDITIONED_OPEN = 'open on the first move the answer turns on';
 const CONDITIONED_CLAUSE =
-  'open on the first move the answer turns on and build from there, walking every move it takes, ';
+  `${CONDITIONED_OPEN} and build from there, walking every move it takes, `;
 
 // `mustRecast` reused for the same reason it exists: a silent no-op would ship a "conditioned"
 // variant byte-identical to the control, and the arm would report a null meaning "the edit never
@@ -701,8 +705,106 @@ export type RevealReachedFrom = 'solved' | 'struggle';
 const AFM_WRAPPER_OPENING = "You are Ezra, an ACCA AFM tutor and the board's senior financial adviser.";
 const APM_WRAPPER_OPENING = 'You are Ezra, an APM tutor.';
 
-export function revealWrapperSystemFor(paper: string, reachedFrom: RevealReachedFrom): string {
-  const afm = reachedFrom === 'solved' ? REVEAL_AFM_WRAPPER_SYSTEM_SOLVED : REVEAL_AFM_WRAPPER_SYSTEM;
+// ── THE SECTION LIST THE POINTER BEAT POINTS AT (2026-09-06) ─────────────────
+// The wrapper is told to "say WHICH PART of the worked answer below to read first". It was never
+// shown the worked answer — design B hands the artefact to `assembleAfmReveal`, not to the model —
+// so every pointer it wrote was a GUESS at the shape of a document it had not seen. Measured
+// 10/10 unusable, and 9 of 10 aimed at the opening section, which is what a model with no
+// information does. The fix is to hand it the heading NAMES and ask it to choose one.
+//
+// ⚠️ A HEADING IS NOT A FIGURE. This is the one piece of the artefact that can cross into the
+// prompt without touching the figure-free guarantee: `## The accuracy claim` computes nothing and
+// states nothing. Names only — never a body line, never a table row.
+//
+// ⚠️ EMPTY IS A LIVE BRANCH, NOT A DEFENSIVE ONE. All 18 published APM case `model_answer`s carry
+// `## ` headings (migration `20260906120000`); NONE of the 20 AFM ones do — they are flowing prose
+// with no headings at all. On an empty list the pointer beat is OMITTED from both the system and
+// the user prompt rather than left standing with nothing to satisfy it, because a beat the model
+// cannot satisfy from the prompt is exactly the condition that produced the invented pointers.
+/**
+ * The `## ` heading names of an appended reveal artefact, in document order, de-duplicated.
+ * `### ` and deeper are NOT headings here — a sub-heading is a part of a section, and pointing a
+ * student at one names something smaller than the thing they need to read.
+ */
+export function revealArtefactSections(artefact: string): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const line of artefact.split(/\r\n|\n/)) {
+    const t = line.trim();
+    if (!t.startsWith('## ')) continue;
+    const name = t.slice(3).trim();
+    if (name === '' || seen.has(name)) continue;
+    seen.add(name);
+    out.push(name);
+  }
+  return out;
+}
+
+/**
+ * Does the wrapper name one of the sections it was given, VERBATIM? The flag behind the
+ * `[reveal:pointer-off-list]` log line — a diagnostic, never a blocker.
+ *
+ * ⚠️ CLAIM CEILING. `false` means "no listed heading appears in this wrapper", NEVER "the wrapper
+ * pointed somewhere that does not exist": a wrapper that names no part at all is equally false
+ * here, and one that quotes a heading while ALSO inventing a second pointer is true. It measures
+ * whether a listed name was copied, which is the property the list exists to produce.
+ */
+export function wrapperNamesAListedSection(wrapper: string, sections: string[]): boolean {
+  return sections.some(s => s !== '' && wrapper.includes(s));
+}
+
+// ── THE POINTER BEAT'S TWO OTHER FORMS ───────────────────────────────────────
+// Both are REMOVALS from the shipped clause, produced through `mustRecast` so a wording drift in
+// the source throws instead of silently shipping the shipped form under a conditioned name.
+const WRAPPER_POINTER_CLAUSE =
+  ', and say WHICH PART of the worked answer below to read first — name the step, section or ' +
+  'heading it sits under, never a figure from it;';
+// No headings to choose from → the beat is deleted, and the sentence closes on the correction.
+const WRAPPER_POINTER_DELETED = ';';
+
+// ── THE CREDIT DEMAND, CONDITIONED (2026-09-06) ──────────────────────────────
+// `routed_2p_conditioned`'s suppression, ported to the design-B wrapper. Commit `8eb92db` shipped
+// design B knowing it traded a CONDITIONED praise demand over a model-authored walkthrough for an
+// UNCONDITIONED one over an anchored artefact, and asked for that trade to be measured. It has
+// been: on a confidently-wrong answer the wrapper opened on credit 10/10 and FABRICATED the credit
+// 6/10. This restores the suppression.
+//
+// REMOVAL AND CONDITIONING ONLY — P-M4(a). Nothing is added: the demand is replaced at its source
+// by the same satisfiable job the case core uses ("open on the first move the answer turns on"),
+// and no instruction is added anywhere saying what not to do. The phrase is defined ONCE
+// (`CONDITIONED_OPEN`, above) and shared with the case cores, so the two surfaces cannot drift
+// into two different conditioned openings.
+const WRAPPER_CREDIT_CLAUSE = 'first credit, specifically, what they already had right;';
+const WRAPPER_CONDITIONED_CLAUSE = `${CONDITIONED_OPEN};`;
+
+/**
+ * The reveal wrapper's system prompt.
+ *
+ * `nothingCreditable` — nothing in the attempt this reveal is looking at earns credit. Defaulted
+ * FALSE so every caller that does not pass it (the whole drill route) gets the byte-identical
+ * shipped string. Absent must mean "no claim", never "nothing creditable".
+ *
+ * `hasSections` — the appended artefact has named sections for the pointer beat to choose from.
+ * Defaulted TRUE for the same reason inverted: absent must leave the shipped prompt untouched.
+ *
+ * Both are ignored on the SOLVED path, which has no misconception to diagnose and no pointer beat
+ * — its join is "compare your sequencing against it", and a student who solved the requirement is
+ * not a student whose work earned no credit.
+ */
+export function revealWrapperSystemFor(
+  paper: string,
+  reachedFrom: RevealReachedFrom,
+  opts: { nothingCreditable?: boolean; hasSections?: boolean } = {},
+): string {
+  let afm: string;
+  if (reachedFrom === 'solved') {
+    afm = REVEAL_AFM_WRAPPER_SYSTEM_SOLVED;
+  } else {
+    const recasts: Array<[string, string]> = [];
+    if (opts.nothingCreditable) recasts.push([WRAPPER_CREDIT_CLAUSE, WRAPPER_CONDITIONED_CLAUSE]);
+    if (opts.hasSections === false) recasts.push([WRAPPER_POINTER_CLAUSE, WRAPPER_POINTER_DELETED]);
+    afm = recasts.length ? mustRecast(REVEAL_AFM_WRAPPER_SYSTEM, recasts) : REVEAL_AFM_WRAPPER_SYSTEM;
+  }
   if (paper === 'AFM') return afm;
   return mustRecast(afm, [[AFM_WRAPPER_OPENING, APM_WRAPPER_OPENING]]);
 }
@@ -714,6 +816,15 @@ export function revealWrapperSystemFor(paper: string, reachedFrom: RevealReached
 export function buildRevealWrapperUserPrompt(opts: {
   contextLine: string; question: string; attempt: string; diagnosis: string;
   reframeLine: string; reachedFrom: RevealReachedFrom;
+  /**
+   * The appended artefact's `## ` heading names, in document order (`revealArtefactSections`).
+   * Names ONLY — no bodies, no figures. Empty (the default) omits the pointer beat entirely, and
+   * the system prompt must be built with `hasSections: false` to match; the two prompts disagreeing
+   * about how many beats the wrapper has is the condition this parameter exists to end.
+   */
+  sections?: string[];
+  /** See `revealWrapperSystemFor`. Defaulted false — absent means "no claim". */
+  nothingCreditable?: boolean;
 }): string {
   const head = `${opts.contextLine}Question: ${opts.question}\n\nTheir last attempt: ${opts.attempt}\n\n`;
   if (opts.reachedFrom === 'solved') {
@@ -725,16 +836,44 @@ export function buildRevealWrapperUserPrompt(opts: {
       'as sound; keep it a comparison, not a critique. Do NOT include any figures or the worked ' +
       'answer; the verified worked answer is appended verbatim below your message.';
   }
+  // ── THREE STATES, NOT TWO ─────────────────────────────────────────────────
+  // `undefined` = this caller does not supply the artefact's shape (the whole drill route) → the
+  // shipped generic pointer beat, byte-identical to what it has always sent. `[]` = supplied, and
+  // the artefact has no named sections → the beat is OMITTED. Non-empty → the list, and a copy
+  // instruction. Collapsing undefined into `[]` would silently delete the drill route's pointer
+  // beat, which is a second surface changing inside a one-surface arm.
+  const sections = opts.sections;
+  // ── THE LIST, AND WHY IT IS NOT NUMBERED ──────────────────────────────────
+  // 9 of 10 measured pointers named the opening section of six. The correction is a SELECTION
+  // CRITERION ("the one where that misconception is resolved"), not a warning about position:
+  // per P-M4(a) an instruction that names the wrong output primes it, and "do not always pick the
+  // first" names the failure it is trying to prevent. Numbering would supply a second ordinal
+  // handle for the same bias, so the list is bulleted and the criterion does the work.
+  const sectionBlock = sections && sections.length
+    ? 'The worked answer below is divided into these sections, in the order they appear:\n' +
+      sections.map(s => `- ${s}`).join('\n') + '\n\n'
+    : '';
+  // The pointer beat is echoed here so the system prompt and the user prompt do not disagree
+  // about how many beats the wrapper has. Solved path deliberately untouched — it has no
+  // misconception to name, and its "compare your sequencing against it" IS its join.
+  const pointerBeat =
+    sections === undefined
+      ? 'say which part of the answer below to read first (name it; never quote a figure from it), '
+      : sections.length
+        ? 'say which part of the answer below to read first by copying ONE heading from the list ' +
+          'above, word for word — the one where that misconception is resolved, '
+        : '';
+  const openBeat = opts.nothingCreditable
+    ? `${CONDITIONED_OPEN}, `
+    : 'credit what they had, ';
   return head +
     `The gap they kept missing: ${opts.diagnosis}\n\n` +
     opts.reframeLine +
-    // The pointer beat is echoed here so the system prompt and the user prompt do not disagree
-    // about how many beats the wrapper has. Solved path deliberately untouched — it has no
-    // misconception to name, and its "compare your sequencing against it" IS its join.
-    'Write ONLY the short framing wrapper now — credit what they had, name and correct the ' +
-    'misconception, say which part of the answer below to read first (name it; never quote a ' +
-    'figure from it), and point them to a fresh application. Do NOT include any figures or the ' +
-    'worked answer; the verified worked answer is appended verbatim below your message.';
+    sectionBlock +
+    `Write ONLY the short framing wrapper now — ${openBeat}name and correct the ` +
+    `misconception, ${pointerBeat}and point them to a fresh application. Do NOT include any ` +
+    'figures or the worked answer; the verified worked answer is appended verbatim below your ' +
+    'message.';
 }
 
 // Pure builder for the APM reveal USER prompt (system selected in parallel: REVEAL_SYSTEM_SOLVED
@@ -777,15 +916,62 @@ export function sanitizeAfmWrapper(raw: string): string {
   return w.trimEnd();
 }
 
+// ── THE APPENDED ARTEFACT'S PARAGRAPH NORMALISER ─────────────────────────────
+// `MessageRenderer` follows GFM: consecutive non-blank lines are JOINED with a space into one
+// paragraph. A stored answer that separates its sections with a SINGLE newline therefore renders
+// as a run-on paragraph — the section label swallowed into the sentence that follows it. That is
+// live on 43 of 91 published APM drills (no markdown at all) and on all 18 APM case
+// `model_answer`s (CRLF, section labels on bare lines), and design B serves those bytes VERBATIM,
+// so the defect is now visible wherever the reveal is.
+//
+// The fix is the FLOOR, deliberately: every content line becomes its own paragraph. No heuristics,
+// no heading detection, no content edits — a line's characters are never touched, never reordered,
+// never dropped. Blank lines (which carry no content) are collapsed into the separator.
+//
+// ⚠️ THE ONE EXCEPTION IS STRUCTURAL, NOT A HEURISTIC. A markdown table's rows are separated by
+// SINGLE newlines by grammar; `MessageRenderer` ends a table on the first blank line and drops a
+// one-row table entirely (`renderTable` returns null below two rows). Blank-separating a table's
+// rows would therefore DELETE the table. 35 AFM and 5 APM published drills carry pipe tables, so
+// this is not hypothetical. Two source-ADJACENT pipe rows keep their single newline; everything
+// else is blank-separated. A blank line already present between two pipe rows is preserved as a
+// break, so this can never MERGE two tables the author separated.
+//
+// 🔗 COUPLED TO `components/chat/MessageRenderer.tsx`'s `isTableRow` — same test, deliberately
+// (a leading `|` after trimming). If that renderer's table detection changes, this must follow.
+function isArtefactTableRow(line: string): boolean {
+  return line.trim().startsWith('|');
+}
+
+export function normaliseRevealArtefact(artefact: string): string {
+  const src = artefact.split(/\r\n|\n/);
+  const out: string[] = [];
+  for (let i = 0; i < src.length; i++) {
+    const line = src[i];
+    if (line.trim() === '') continue;             // blank lines carry no content
+    if (out.length > 0) {
+      // Contiguous in the SOURCE (no blank line between them) and both pipe rows → one table.
+      const contiguousTableRows =
+        i > 0 && src[i - 1].trim() !== '' &&
+        isArtefactTableRow(src[i - 1]) && isArtefactTableRow(line);
+      out.push(contiguousTableRows ? '\n' : '\n\n');
+    }
+    out.push(line);
+  }
+  return out.join('');
+}
+
 // Pure assembly (no model call): the served AFM reveal body is the (sanitized) wrapper followed
-// by the authored model_answer VERBATIM. Invariant (fixture-enforced): the returned body ENDS
-// WITH modelAnswer byte-for-byte, so a refactor cannot quietly reintroduce model-emitted
-// (drift-prone, truncation-prone) tables. The wrapper is sanitized here, so callers just pass
-// the raw model output.
+// by the authored model_answer, normalised for paragraph rendering and otherwise VERBATIM.
+//
+// ⚠️ THE ANTI-TRUNCATION INVARIANT CHANGED SHAPE HERE, AND IT IS NOT WEAKER. It was
+// `served.endsWith(modelAnswer)` byte-for-byte; a normaliser that inserts blank lines cannot
+// satisfy that. What is fixture-enforced now: the served body's CONTENT LINES end with the
+// model_answer's content lines, byte-for-byte, in order, none altered and none dropped. That is
+// the property the byte check existed to defend — the figures reach the student whole and
+// untruncated, and a refactor still cannot quietly reintroduce model-emitted tables.
 export function assembleAfmReveal(wrapper: string, modelAnswer: string): string {
-  // Footer sits in the wrapper (above the separator), so the model_answer stays the exact
-  // verbatim tail — the byte-equality anti-truncation invariant is unaffected.
-  return `${sanitizeAfmWrapper(wrapper)}${REVEAL_FOOTER}${AFM_REVEAL_SEPARATOR}${modelAnswer}`;
+  // Footer sits in the wrapper (above the separator), so the artefact stays the exact tail.
+  return `${sanitizeAfmWrapper(wrapper)}${REVEAL_FOOTER}${AFM_REVEAL_SEPARATOR}${normaliseRevealArtefact(modelAnswer)}`;
 }
 
 // ── Earned-reveal GATE (pure) ─────────────────────────────────────────────────

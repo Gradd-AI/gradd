@@ -447,6 +447,30 @@ when the session ends on a branch.
   `scripts/test-narrative-marker.ts` (unchanged) + `scripts/test-area-entry.ts` (new E2/E1/mixed-E2 cases).
   Pack: `docs/reviews/AFM_BATCH_E_NARRATIVE_REVIEW_PACK.md`. **LIVE (GATE-P flip, 2026-07-24):** all 3
   drills approved+published — AFM narrative cluster now 8/8 (5 B + 3 E).
+- **THE EARNED REVEAL IS DESIGN "B" ON BOTH SURFACES, AND THE WRAPPER NOW SEES THE ARTEFACT'S SHAPE
+  (2026-09-06).** The model writes a FIGURE-FREE wrapper; `assembleAfmReveal` appends the stored
+  `model_answer` VERBATIM beneath it (`normaliseRevealArtefact` makes each content line its own
+  paragraph — two source-adjacent pipe rows keep their single newline, or a table would be DELETED).
+  **`revealArtefactSections(modelAnswer)`** hands the wrapper the `## ` heading NAMES and the user
+  prompt asks it to copy ONE — the pointer beat was previously pointing into a document the model had
+  never seen (0/10 usable, 9/10 naming the opening section of six). **A heading is not a figure**, so
+  names cross with the guarantee intact. **`undefined` / `[]` / non-empty are THREE states**: the
+  drill route supplies nothing and keeps its shipped generic beat byte-for-byte; `[]` (every AFM case
+  requirement — 0 of 20 carry headings, against 18 of 18 APM) OMITS the beat from both prompts;
+  non-empty lists them. Anti-default is a SELECTION CRITERION, never a warning about position
+  (P-M4(a)). `wrapperNamesAListedSection` → `[reveal:pointer-off-list]`, a warn that never blocks.
+  **The credit demand is CONDITIONED again** — a call-time recast inside `REVEAL_AFM_WRAPPER_SYSTEM`
+  under a parameter defaulting FALSE, so the shared constant's bytes are untouched and the drill route
+  (which passes no options) is byte-identical; `CONDITIONED_OPEN` is defined ONCE and shared with the
+  case cores. Fires on `lastRealAttempt != null && lastEverCreditable === false` — **`=== false`,
+  never falsy**, and the `lastRealAttempt` half is load-bearing, not a null guard (the flag must
+  describe the text the model is shown). 📐 **n = 30: pointer in-list 30/30, attribution 0/30,
+  truncation 0/30, opens-on-credit 0/30.** ⚠️ **30/30 on section #1 is NOT a default** — that seed's
+  diagnosis is single-valued, and a second seed moved the pointer to #3, 10/10, with the suppression
+  correctly not arming. 🔴 **OPEN: the closing "fresh question" beat invents a numeric scenario 23/30**
+  (pre-existing, 6/10 pre-change) — the CASE `call4_reveal` takes NO `GroundingPack`, so
+  `renderResolvableTopics` (the drill route's INVENTED-INVENTORY fix) never reaches it. Fixtures
+  `npm run test:case-reveal-routing` (159).
 - **THE TEACHING-REVEAL CATALOGUE — three sites, all unpinned but one (2026-08-20).** The
   `full_reveal` misconception list is stated in `EZRA_TEACHING_PERSONA_<PAPER>` (system block),
   `buildRevealPrompt<Paper>` (user prompt) and **`SUBMIT_REVEAL_TOOL`, which is SHARED BY BOTH

@@ -18,6 +18,8 @@ import {
   NO_COMPUTED_OUTPUTS, DIGNITY_ON_DISTRESS, GROUNDING_DISCIPLINE,
   CASE_REVEAL_GUARDRAILS_2P_FOR_TEST,
   CASE_REVEAL_CREDIT_CLAUSE_FOR_TEST, CASE_REVEAL_CONDITIONED_CLAUSE_FOR_TEST,
+  assembleAfmReveal,
+  revealArtefactSections, wrapperNamesAListedSection, buildRevealWrapperUserPrompt,
 } from '../lib/acca/tutor-personas';
 import { caseRevealSystem } from '../lib/acca/teach-engine';
 // Imported, never transcribed: divergence #5's whole design argument is that the hint leg's (c)
@@ -277,8 +279,12 @@ ok('AFM does NOT adopt the drill route design "B" (no verbatim-append instructio
     const trt = caseRevealSystem('routed_2p_conditioned', paper, true);
     ok(`#5 ${paper}: MUST-FAIL — (c) says "First miss"; the reveal fires at missCount >= 2`,
       /First miss/.test(HINT_C) && !/First miss/.test(trt));
-    ok(`#5 ${paper}: MUST-FAIL — (c) hands the job to the STUDENT ("put on the page")`,
-      /put on the page/.test(HINT_C) && !/put on the page/.test(trt));
+    // ⚠️ RE-ANCHORED 2026-09-06. This clause used to be `"put on the page"`, which the credit
+    // deletion removed from (c) along with the credit language around it. The claim is
+    // unchanged — (c) is a first-miss HINT and the reveal core is not — so it is re-anchored on
+    // a clause that still separates them rather than dropped.
+    ok(`#5 ${paper}: MUST-FAIL — the reveal core authorises the answer; (c) never does`,
+      /EARNED/.test(trt) && !/EARNED|worked answer|full model/i.test(HINT_C));
     ok(`#5 ${paper}: MUST-FAIL — (c) demands ONE gap; the reveal walks every move`,
       /just one, not a list/.test(HINT_C) && !/just one, not a list/.test(trt));
   }
@@ -313,14 +319,133 @@ ok('AFM does NOT adopt the drill route design "B" (no verbatim-append instructio
   ok('#5 the verdict is carried in the SEALED payload, not the plaintext session state',
     /everCreditable\?: boolean/.test(engine) &&
     /JSON\.stringify\(\{ answer, counted, everCreditable \}/.test(engine));
-  ok('#5 call4_reveal receives the carried verdict',
-    /caseRevealSystem\(CASE_REVEAL, paper, nothingCreditableNow\)/.test(engine));
-  ok('#5 the reveal does NOT fire when the attempt is the fallback message',
+  // 🔴 SUPERSEDED, THEN RESTORED IN A NEW SHAPE (2026-09-06). Design "B" briefly dropped the
+  // carrier: `call4_reveal` moved to the shared figure-free wrapper system, and for one commit
+  // that system had no conditioned form to select. It has one again — the suppression is now a
+  // recast INSIDE `REVEAL_AFM_WRAPPER_SYSTEM` rather than a choice between two whole cores — so
+  // the variant-selector check stays inverted while the carrier check goes back to positive.
+  ok('#5 SUPERSEDED — the carried verdict no longer selects a reveal SYSTEM VARIANT',
+    !/caseRevealSystem\(CASE_REVEAL/.test(engine));
+  ok('#5 the reveal call passes the creditable carrier again',
     /lastRealAttempt != null && lastEverCreditable === false/.test(engine));
+  ok('#5 the carrier itself SURVIVES (re-wiring it must not need the session state rebuilt)',
+    /everCreditable\?: boolean/.test(engine) && /let newEverCreditable = lastEverCreditable;/.test(engine));
   ok('#5 the credit flag is STICKY, not last-write',
     /newEverCreditable = lastEverCreditable === true \? true : thisTurnCreditable/.test(engine));
   ok('#5 a correct answer and a completeness demotion both COUNT AS CREDIT',
     /const thisTurnCreditable = treatCorrect \|\| !!completenessGap \|\| !gapNothingCreditable/.test(engine));
+
+  // ── DESIGN "B" ON THE CASE REVEAL (2026-09-06) ──────────────────────────────
+  // The claim is STRUCTURAL, so the checks are structural: the model's output is a wrapper, the
+  // figures come from the row, and code does the joining. A prompt-only check would pass on a
+  // build that asked for a wrapper and still served whatever the model wrote.
+  // The wrapper is bound to a name (2026-09-06) so the pointer audit can read it; the assembly is
+  // otherwise unchanged — still code-side, still the stored answer, still exactly once.
+  ok('B: the case reveal assembles code-side, verbatim, exactly once',
+    (engine.match(/assembleAfmReveal\(/g) || []).length === 1 &&
+    /const wrapper = finishClean\(res\);\s*\n\s*const served = assembleAfmReveal\(wrapper, modelAnswer\);/
+      .test(engine));
+  ok('B: the wrapper runs under the SHARED wrapper system, paper- and path-routed',
+    /system: revealWrapperSystemFor\(paper, reachedFrom, \{/.test(engine));
+  ok('B: the wrapper user prompt is the SHARED builder, not a local literal',
+    /buildRevealWrapperUserPrompt\(\{/.test(engine));
+  ok('B: MUST-FAIL — the model is no longer handed the answer to re-author',
+    !/Build the worked walkthrough now/.test(engine) &&
+    !/Verified model answer \(you MAY reveal this/.test(engine));
+  ok('B: the cap is the wrapper cap, not the walkthrough cap (700 was for authored prose)',
+    /max_tokens: 500, \/\/ wrapper only/.test(engine));
+  ok('B: a truncated wrapper is trimmed to a whole sentence before assembly',
+    /function finishClean\(res: unknown\)/.test(engine) && /trimToLastSentence\(text\)/.test(engine));
+  ok('B: the figure audit is wired, and it can never block an EARNED reveal',
+    /auditRevealFigures\(served, \{ context, modelAnswer, attempt \}\)/.test(engine) &&
+    /catch \{ \/\* an audit must never break a reveal \*\/ \}/.test(engine));
+  // ⚠️ The pre-normaliser form of this check compared a literal `\\n` (a backslash and an `n`, not
+  // a newline), so it never exercised a real multi-line answer and would have passed on ANY
+  // line handling. Rebuilt on real newlines, against the invariant the normaliser leaves standing:
+  // the served body's CONTENT LINES end with the stored answer's, byte-for-byte, in order.
+  {
+    const STORED = '**1. Tax**\n| a | b |\n| 1 | 2 |\nThe rate is 26.5%.';
+    const body = assembleAfmReveal('A framing wrapper.', STORED);
+    const lines = (s: string) => s.split(/\r\n|\n/).filter(l => l.trim() !== '');
+    const stored = lines(STORED), got = lines(body);
+    ok('B: FUNCTIONAL — the served body ends with the stored answer\'s lines, byte-for-byte',
+      got.slice(got.length - stored.length).every((l, i) => l === stored[i]));
+    ok('B: FUNCTIONAL — the table survives (contiguous pipe rows keep their single newline)',
+      body.includes('| a | b |\n| 1 | 2 |'));
+    ok('B: FUNCTIONAL — a bare line after the table is its OWN paragraph, not a run-on',
+      body.includes('| 1 | 2 |\n\nThe rate is 26.5%.'));
+  }
+
+  // ── THE POINTER BEAT GETS THE ARTEFACT'S SHAPE (2026-09-06) ────────────────
+  // The diagnosis this fixes is not "the pointer was bad", it is "the wrapper was never shown the
+  // document it was told to point into". So the checks are about WIRING and about the three
+  // states of `sections`, not about the wording of any one pointer.
+  {
+    const ART = [
+      'Intro line.', '', '## The accuracy claim', 'Body.', '',
+      '### A sub-heading', 'More body.', '', '## Conclusion', 'End.', '',
+      '## The accuracy claim', 'A repeat.',
+    ].join('\n');
+    const secs = revealArtefactSections(ART);
+    ok('pointer: heading NAMES are extracted, in document order, de-duplicated',
+      JSON.stringify(secs) === JSON.stringify(['The accuracy claim', 'Conclusion']));
+    ok('pointer: `### ` is NOT a section (a sub-heading names something smaller than a read target)',
+      !secs.includes('A sub-heading'));
+    ok('pointer: an artefact with no `## ` lines yields [] (every AFM case requirement today)',
+      revealArtefactSections('Flowing prose.\n\nA second paragraph.').length === 0);
+    ok('pointer: CRLF artefacts parse (the 18 APM case answers are CRLF)',
+      JSON.stringify(revealArtefactSections('a\r\n\r\n## Tax\r\nbody')) === JSON.stringify(['Tax']));
+
+    // The engine passes the SAME value to both prompts, so they cannot disagree about the beat.
+    ok('pointer: the engine derives sections from the artefact and feeds BOTH prompts',
+      /const sections = revealArtefactSections\(modelAnswer\);/.test(engine) &&
+      /hasSections: sections\.length > 0,/.test(engine) &&
+      /reachedFrom, sections, nothingCreditable,/.test(engine));
+    ok('pointer: the off-list flag is wired, and it can never block an EARNED reveal',
+      /wrapperNamesAListedSection\(wrapper, sections\)/.test(engine) &&
+      /\[reveal:pointer-off-list\]/.test(engine) &&
+      // a warn, not a throw and not a return: the served body is built before the check and
+      // returned after it, unchanged.
+      /console\.warn\('\[reveal:pointer-off-list\]'/.test(engine));
+
+    const base = {
+      contextLine: '', question: 'Q', attempt: 'A', diagnosis: 'D',
+      reframeLine: '', reachedFrom: 'struggle' as const,
+    };
+    const withList = buildRevealWrapperUserPrompt({ ...base, sections: secs });
+    ok('pointer: the list is rendered as NAMES only — no bodies, so no figures cross over',
+      withList.includes('- The accuracy claim') && withList.includes('- Conclusion') &&
+      !withList.includes('Body.') && !withList.includes('End.'));
+    ok('pointer: with a list, the beat demands a COPY from it',
+      /copying ONE heading from the list above, word for word/.test(withList));
+    ok('pointer: the selection criterion is positive — it names the target, not the wrong answer',
+      /the one where that misconception is resolved/.test(withList) &&
+      // P-M4(a): no instruction anywhere that names the failure it is preventing.
+      !/\bfirst section\b|\bnot the first\b|do not always/i.test(withList));
+    const noList = buildRevealWrapperUserPrompt({ ...base, sections: [] });
+    ok('pointer: [] OMITS the beat rather than leaving it standing with nothing to satisfy it',
+      !/read first/.test(noList) && !/The worked answer below is divided/.test(noList) &&
+      /name and correct the misconception, and point them to a fresh application/.test(noList));
+    const unwired = buildRevealWrapperUserPrompt(base);
+    ok('pointer: MUST-FAIL — `undefined` is NOT `[]`; an unwired caller keeps the shipped beat',
+      unwired !== noList &&
+      /say which part of the answer below to read first \(name it; never quote a figure from it\)/
+        .test(unwired));
+    ok('pointer: the flag is a VERBATIM containment test, both directions',
+      wrapperNamesAListedSection('Start with The accuracy claim.', secs) &&
+      !wrapperNamesAListedSection('Start with the accuracy section.', secs) &&
+      !wrapperNamesAListedSection('No pointer at all.', secs) &&
+      !wrapperNamesAListedSection('anything', []));
+
+    // The two prompts' credit beats move TOGETHER — a conditioned system under an unconditioned
+    // user prompt would restore the demand the system just removed.
+    const credOn = buildRevealWrapperUserPrompt({ ...base, sections: secs, nothingCreditable: true });
+    ok('#5 the user prompt\'s credit beat is conditioned in step with the system\'s',
+      !/credit what they had/.test(credOn) &&
+      credOn.includes(CASE_REVEAL_CONDITIONED_CLAUSE_FOR_TEST.split(' and build from there')[0]));
+    ok('#5 MUST-FAIL — the default user prompt still opens on credit',
+      /credit what they had/.test(withList));
+  }
 
   // ── THE POSITIVE CONTROL'S FINDING, PINNED (2026-08-28) ─────────────────────
   // The first build was LAST-WRITE and the 120-turn arm could not see the defect: every one of
@@ -338,13 +463,16 @@ ok('AFM does NOT adopt the drill route design "B" (no verbatim-append instructio
   ok('#5 the reveal tests `=== false`, never a bare falsy check',
     !/lastRealAttempt != null && !lastEverCreditable\b/.test(engine));
 
-  // (i) CASE SURFACE ONLY. The identical praise clause sits in THREE drill-route strings, and
-  //     `REVEAL_AFM_WRAPPER_SYSTEM` is a live teaching surface with its own measurement owed.
-  //     A future edit that "helpfully" conditioned them too would silently widen this arm from one
-  //     surface to two and make the case measurement uninterpretable. Pinned present, unchanged.
+  // (i) CASE SURFACE ONLY — AND THE BOUNDARY MOVED WITHOUT WIDENING (2026-09-06).
+  //     `REVEAL_AFM_WRAPPER_SYSTEM` is SHARED by the drill and case reveals, so conditioning it
+  //     could have widened this arm from one surface to two. It does not, and the reason is
+  //     structural rather than editorial: the conditioning is a RECAST APPLIED AT CALL TIME under
+  //     a parameter that DEFAULTS FALSE, and the drill route passes no options object at all. The
+  //     stored constant is therefore still the shipped praise-first string, byte for byte — which
+  //     is what the first check below asserts, unchanged from before this arm.
   {
     const {
-      REVEAL_SYSTEM, REVEAL_SYSTEM_SOLVED, REVEAL_AFM_WRAPPER_SYSTEM,
+      REVEAL_SYSTEM, REVEAL_SYSTEM_SOLVED, REVEAL_AFM_WRAPPER_SYSTEM, revealWrapperSystemFor,
     } = require('../lib/acca/tutor-personas');
     ok('#5 drill route: REVEAL_SYSTEM still carries the praise clause (NOT conditioned)',
       REVEAL_SYSTEM.includes(CLAUSE) && !REVEAL_SYSTEM.includes(COND));
@@ -354,15 +482,49 @@ ok('AFM does NOT adopt the drill route design "B" (no verbatim-append instructio
     ok('#5 drill route: the SOLVED reveal is untouched',
       /first credit, specifically, what they did well/.test(REVEAL_SYSTEM_SOLVED) &&
       !REVEAL_SYSTEM_SOLVED.includes(COND));
-    // The conditioned clause must exist in EXACTLY the two case cores and nowhere else.
+    // THE ISOLATION CHECK ITSELF: the drill route's own call form is byte-identical to the shipped
+    // constant, and the conditioned form is reachable only by asking for it.
+    const drill = require('fs').readFileSync(
+      require('path').join(__dirname, '..', 'app', 'api', 'acca', 'tutor', 'route.ts'), 'utf8');
+    ok('#5 drill route: the call site passes NO options, so it gets the shipped bytes',
+      /revealWrapperSystemFor\(paper, reachedFrom\)/.test(drill) &&
+      revealWrapperSystemFor('AFM', 'struggle') === REVEAL_AFM_WRAPPER_SYSTEM);
+    // The wrapper's conditioned opening is the SHARED phrase in a shorter sentence — the same job,
+    // one clause instead of two, which is why it is the head of the case cores' clause and not a
+    // second string. Derived here rather than transcribed, so a drift throws rather than passing.
+    const OPEN = CASE_REVEAL_CONDITIONED_CLAUSE_FOR_TEST.split(' and build from there')[0];
+    ok('#5 the conditioned wrapper fires ONLY on the explicit flag, and only on struggle',
+      revealWrapperSystemFor('AFM', 'struggle', {}) === REVEAL_AFM_WRAPPER_SYSTEM &&
+      revealWrapperSystemFor('AFM', 'struggle', { nothingCreditable: false }) === REVEAL_AFM_WRAPPER_SYSTEM &&
+      revealWrapperSystemFor('AFM', 'struggle', { nothingCreditable: true }) !== REVEAL_AFM_WRAPPER_SYSTEM &&
+      revealWrapperSystemFor('AFM', 'struggle', { nothingCreditable: true }).includes(`${OPEN};`) &&
+      !revealWrapperSystemFor('AFM', 'struggle', { nothingCreditable: true })
+        .includes('first credit, specifically, what they already had right;') &&
+      // SOLVED ignores both options — a student who reached the answer is not a student whose
+      // work earned no credit, and that path has no pointer beat to remove.
+      revealWrapperSystemFor('AFM', 'solved', { nothingCreditable: true, hasSections: false }) ===
+        revealWrapperSystemFor('AFM', 'solved'));
+    ok('#5 an empty section list removes the pointer beat from the SYSTEM prompt too',
+      revealWrapperSystemFor('AFM', 'struggle', { hasSections: true }) === REVEAL_AFM_WRAPPER_SYSTEM &&
+      !revealWrapperSystemFor('AFM', 'struggle', { hasSections: false })
+        .includes('say WHICH PART of the worked answer below to read first') &&
+      // ...and nothing else moves with it: the removal is the pointer clause and only that.
+      revealWrapperSystemFor('AFM', 'struggle', { hasSections: false })
+        .includes('first credit, specifically, what they already had right;') &&
+      revealWrapperSystemFor('AFM', 'struggle', { hasSections: false })
+        .includes('then point them to apply the key move on a FRESH question.'));
+    // The conditioned clause must exist in EXACTLY the two case cores and the wrapper recast, and
+    // the PHRASE must be defined once so the two surfaces cannot drift into two conditioned forms.
     const personas = require('fs').readFileSync(
       require('path').join(__dirname, '..', 'lib', 'acca', 'tutor-personas.ts'), 'utf8');
     const code = personas
       .replace(/\/\*[\s\S]*?\*\//g, (m: string) => m.replace(/[^\n]/g, ' '))
       .replace(/^([^\n]*?)\/\/[^\n]*$/gm, (_m: string, keep: string) => keep);
-    ok('#5 the conditioned clause is defined ONCE and applied to the two case cores only',
+    ok('#5 the conditioned phrase is a literal ONCE, shared by the cores and the wrapper',
+      (code.match(/'open on the first move the answer turns on'/g) || []).length === 1 &&
       (code.match(/open on the first move the answer turns on/g) || []).length === 1 &&
-      (code.match(/CASE_REVEAL_CORE_(AFM|APM)_NC = mustRecast/g) || []).length === 2);
+      (code.match(/CASE_REVEAL_CORE_(AFM|APM)_NC = mustRecast/g) || []).length === 2 &&
+      /WRAPPER_CONDITIONED_CLAUSE = `\$\{CONDITIONED_OPEN\};`/.test(code));
     // POSITIVE CONTROL (P-G3): prove the comment-blanking did not simply erase the file.
     //
     // ⚠️ NOT A LENGTH RATIO ANY MORE (corrected 2026-09-01). It was

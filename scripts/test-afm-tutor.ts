@@ -18,6 +18,7 @@ import {
   systemFor,
   AFM_REVEAL_SEPARATOR,
   assembleAfmReveal,
+  normaliseRevealArtefact,
   sanitizeAfmWrapper,
   revealDecision,
   trimToLastSentence,
@@ -301,19 +302,84 @@ const MODEL_ANSWER = [
 ].join('\n');
 const WRAPPER = 'Good call spotting MIRR is the sounder measure. The trap was inventing the hurdle rate — the worked answer below shows the real build. Try the next one.';
 
+// ⚠️ THE INVARIANT'S SHAPE CHANGED WITH THE PARAGRAPH NORMALISER (2026-09-06) AND THESE CHECKS
+// ARE THE STATEMENT OF WHAT REPLACED IT. `served.endsWith(modelAnswer)` byte-for-byte cannot hold
+// once blank lines are inserted between content lines. What is checked instead: the served body's
+// CONTENT LINES end with the model_answer's content lines, byte-for-byte, in order, none altered
+// and none dropped — which is the property the byte check existed to defend (the figures reach the
+// student whole, and no refactor can reintroduce model-emitted tables).
+const contentLines = (s: string): string[] =>
+  s.split(/\r\n|\n/).map(l => l.trimEnd()).filter(l => l.trim() !== '');
+const endsWithLines = (body: string, tail: string): boolean => {
+  const b = contentLines(body), t = contentLines(tail);
+  return t.length > 0 && b.length >= t.length &&
+    b.slice(b.length - t.length).every((l, i) => l === t[i]);
+};
+
 const served = assembleAfmReveal(WRAPPER, MODEL_ANSWER);
-ok('reveal body ENDS WITH model_answer byte-for-byte', served.endsWith(MODEL_ANSWER));
+ok('reveal body ENDS WITH model_answer\'s content lines, byte-for-byte, in order',
+  endsWithLines(served, MODEL_ANSWER));
 ok('reveal body contains model_answer verbatim (tables intact)', served.includes('| 1 | AUD 23.0m |'));
 ok('reveal body contains the separator', served.includes(AFM_REVEAL_SEPARATOR));
-ok('reveal body preserves model_answer length exactly at the tail',
-  served.slice(served.length - MODEL_ANSWER.length) === MODEL_ANSWER);
+ok('reveal body drops NO content line and invents none (tail line count is exact)',
+  contentLines(served).length === contentLines(WRAPPER).length + contentLines(REVEAL_FOOTER).length
+    + 1 /* the --- separator rule */ + contentLines(MODEL_ANSWER).length);
 
 // Wrapper trailing whitespace must not perturb the invariant.
-ok('trailing-whitespace wrapper still ends with model_answer',
-  assembleAfmReveal(WRAPPER + '\n\n  ', MODEL_ANSWER).endsWith(MODEL_ANSWER));
+ok('trailing-whitespace wrapper still ends with the model_answer lines',
+  endsWithLines(assembleAfmReveal(WRAPPER + '\n\n  ', MODEL_ANSWER), MODEL_ANSWER));
 // Empty wrapper degrades safely (still verbatim tail).
-ok('empty wrapper still serves model_answer verbatim',
-  assembleAfmReveal('', MODEL_ANSWER).endsWith(MODEL_ANSWER));
+ok('empty wrapper still serves the model_answer lines verbatim',
+  endsWithLines(assembleAfmReveal('', MODEL_ANSWER), MODEL_ANSWER));
+
+// ── (2a) THE PARAGRAPH NORMALISER — the floor, and its one structural exception ──
+// The defect it closes: `MessageRenderer` joins consecutive non-blank lines with a SPACE, so a
+// bare section label renders swallowed into the sentence below it. Live on 43/91 published APM
+// drills and all 18 APM case model_answers.
+const RUNON = 'The accuracy claim\r\nThe headline 94% accuracy should not be accepted.\r\n\r\nConclusion\r\nNot yet safe.';
+ok('normaliser: a bare label followed by its body becomes its OWN paragraph',
+  normaliseRevealArtefact(RUNON) ===
+  'The accuracy claim\n\nThe headline 94% accuracy should not be accepted.\n\nConclusion\n\nNot yet safe.');
+// P-G3: the SHIPPED behaviour pinned MUST-FAIL. `paras` mirrors `MessageRenderer`'s paragraph
+// rule exactly — consecutive non-blank lines are joined with a SPACE — so this reproduces the
+// defect rather than asserting a string shape.
+const paras = (s: string): string[] =>
+  s.split(/\r\n|\n/).reduce<string[]>((acc, raw) => {
+    const l = raw.trimEnd();
+    if (l.trim() === '') { acc.push(''); return acc; }
+    const last = acc[acc.length - 1];
+    if (last === undefined || last === '') acc.push(l); else acc[acc.length - 1] = `${last} ${l}`;
+    return acc;
+  }, []).filter(Boolean);
+ok('normaliser: MUST-FAIL — the raw artefact renders label + body as ONE run-on paragraph',
+  paras(RUNON)[0] === 'The accuracy claim The headline 94% accuracy should not be accepted.');
+ok('normaliser: the normalised artefact renders the label as its own paragraph',
+  paras(normaliseRevealArtefact(RUNON))[0] === 'The accuracy claim' &&
+  paras(normaliseRevealArtefact(RUNON)).length === 4);
+ok('normaliser: CRLF is handled (all 18 APM case model_answers are CRLF)',
+  !normaliseRevealArtefact(RUNON).includes('\r'));
+ok('normaliser: no content character is altered, reordered or dropped',
+  contentLines(normaliseRevealArtefact(RUNON)).join(' ') === contentLines(RUNON).join(' '));
+ok('normaliser: already-normalised prose is unchanged (idempotent)',
+  normaliseRevealArtefact('A.\n\nB.') === 'A.\n\nB.' &&
+  normaliseRevealArtefact(normaliseRevealArtefact(RUNON)) === normaliseRevealArtefact(RUNON));
+// The structural exception. A blank line between table rows ENDS the table at the renderer and
+// `renderTable` drops a sub-two-row table entirely, so blank-separating rows DELETES the table.
+const TABLE = '**Step 1**\n| Year | WDA |\n|------|-----|\n| 1 | AUD 23.0m |\n| 2 | AUD 18.4m |\n**Total.**';
+ok('normaliser: contiguous pipe rows KEEP their single newline (the table survives)',
+  normaliseRevealArtefact(TABLE).includes('| Year | WDA |\n|------|-----|\n| 1 | AUD 23.0m |\n| 2 | AUD 18.4m |'));
+ok('normaliser: the non-table lines around a table ARE blank-separated',
+  normaliseRevealArtefact(TABLE).startsWith('**Step 1**\n\n| Year | WDA |') &&
+  normaliseRevealArtefact(TABLE).endsWith('| 2 | AUD 18.4m |\n\n**Total.**'));
+ok('normaliser: MUST-FAIL — a naive newline→blank-line replace would break the table',
+  TABLE.replace(/\n/g, '\n\n') !== normaliseRevealArtefact(TABLE));
+ok('normaliser: two tables the author SEPARATED are never merged into one',
+  normaliseRevealArtefact('| a | b |\n| 1 | 2 |\n\n| c | d |\n| 3 | 4 |')
+    === '| a | b |\n| 1 | 2 |\n\n| c | d |\n| 3 | 4 |');
+ok('normaliser: an AFM answer that is already blank-separated round-trips unchanged',
+  normaliseRevealArtefact(MODEL_ANSWER) === MODEL_ANSWER);
+ok('normaliser: empty / whitespace-only input degrades to empty, never throws',
+  normaliseRevealArtefact('') === '' && normaliseRevealArtefact('\r\n  \n\n') === '');
 
 // ── (2b) sanitizeAfmWrapper cuts a stray divider / worked-answer stub ─────────
 // Observed failure mode: the wrapper model starts its OWN "---" + "WORKED ANSWER … 1. Tax-"
@@ -331,7 +397,7 @@ ok('sanitizer leaves clean prose (with an em-dash) untouched',
   sanitizeAfmWrapper('You had MIRR right — the trap was inventing the hurdle rate. Try a fresh one.')
     === 'You had MIRR right — the trap was inventing the hurdle rate. Try a fresh one.');
 ok('assembled body stays verbatim-tailed even when the wrapper had a stray stub',
-  assembleAfmReveal('Prose.\n\n---\n\n**WORKED ANSWER**\n**1. Tax-', MODEL_ANSWER).endsWith(MODEL_ANSWER));
+  endsWithLines(assembleAfmReveal('Prose.\n\n---\n\n**WORKED ANSWER**\n**1. Tax-', MODEL_ANSWER), MODEL_ANSWER));
 ok('assembled body drops the stray stub (no double worked-answer heading)',
   !assembleAfmReveal('Prose.\n\n---\n\n**WORKED ANSWER**\n**1. Tax-', MODEL_ANSWER).includes('**WORKED ANSWER**'));
 
@@ -384,8 +450,8 @@ ok('burn: neutral CTA (no paper) falls back to the bare subscribe link',
   buildBurnCta().includes('](/acca/subscribe)') && BURN_CTA === buildBurnCta());
 ok('reveal footer: copyright line present + personal-prep wording',
   REVEAL_FOOTER.includes('© Gradd') && REVEAL_FOOTER.includes('personal exam preparation'));
-ok('reveal footer: assembled reveal STILL ends with model_answer verbatim (footer in wrapper)',
-  assembleAfmReveal(WRAPPER, MODEL_ANSWER).endsWith(MODEL_ANSWER) &&
+ok('reveal footer: assembled reveal STILL ends with the model_answer lines (footer in wrapper)',
+  endsWithLines(assembleAfmReveal(WRAPPER, MODEL_ANSWER), MODEL_ANSWER) &&
   assembleAfmReveal(WRAPPER, MODEL_ANSWER).includes('© Gradd'));
 
 // ── (4c) reachedFrom — SOLVED reveal credits (no invented error), STRUGGLE diagnoses ──

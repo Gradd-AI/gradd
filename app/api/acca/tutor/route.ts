@@ -712,8 +712,13 @@ async function call3_teach(
           nextMoveLine +
           selfAssessLine +
           distressLine +
-          "Second miss or stop-signal — they haven't cracked it yet. Still don't lecture: lead with " +
-          'the specific thing that IS working, then name the ONE gap that matters most (one, sharply ' +
+          // THE CREDIT DEMAND IS DELETED (2026-09-06, Grant-ruled). Was: "...Still don't lecture:
+          // lead with the specific thing that IS working, then name the ONE gap...". This is the
+          // DRILL route's byte-identical twin of the case engine's teach demand; deleting one and
+          // not the other would leave the two teaching surfaces disagreeing about the one thing
+          // the deletion is for. Removal only.
+          "Second miss or stop-signal — they haven't cracked it yet. Still don't lecture: " +
+          'name the ONE gap that matters most (one, sharply ' +
           '— not a list of four) and the single next move that unblocks it. Conversational prose, 3 ' +
           'sentences, 4 at the most — no numbered points or structured breakdown, a sharp tutor ' +
           // Was: "Use the authored command verb and ACCA intellectual level above (do not infer
