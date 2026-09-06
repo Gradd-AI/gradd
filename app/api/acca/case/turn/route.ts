@@ -378,7 +378,12 @@ export async function POST(request: Request): Promise<Response> {
     // trade from model_answer prose — measured at 4/20 affirming the inverse rule and ~10/20
     // never adjudicating direction at all. Selecting is not serving: it is read here and only a
     // derived statement of fact reaches the prompt.
-    .select('id, requirement_order, question, model_answer, marks_guide, command_verb, intellectual_level, answer_schema')
+    // `full_reveal` added 2026-09-06. The earned reveal's wrapper system says "use the authored
+    // reframe you are given" and this path never selected the column, so that instruction ran
+    // against nothing and the misconception was named from the carried diagnosis alone. Selecting
+    // is not serving on this path either: it reaches ONE prompt, the earned reveal's, on the one
+    // leg where withholding is over. All 38 published case requirements carry one (measured).
+    .select('id, requirement_order, question, model_answer, full_reveal, marks_guide, command_verb, intellectual_level, answer_schema')
     .eq('id', requirementId)
     .eq('case_id', caseId)
     .single();
@@ -523,6 +528,8 @@ export async function POST(request: Request): Promise<Response> {
       lastDiagnosis,
       lastRealAttempt,
       lastEverCreditable: carriedEverCreditable,
+      // Authored misconception reframe — the earned-reveal wrapper's anchor. '' when null.
+      reframe: (req.full_reveal as string | null) ?? '',
       resolved,
       // PERSONA ROUTING (2026-08-23, stage 5). Safe to use the request paper here: every
       // acca_cases fetch above is `.eq('paper_code', paper)`, so a case belonging to another

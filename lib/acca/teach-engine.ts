@@ -24,6 +24,7 @@ import {
   systemFor, caseRevealSystemFor,
   // DESIGN "B" ON THE CASE REVEAL (2026-09-06) — see call4_reveal.
   revealWrapperSystemFor, buildRevealWrapperUserPrompt, assembleAfmReveal, trimToLastSentence,
+  revealArtefactSections, wrapperNamesAListedSection,
   type RevealReachedFrom,
 } from './tutor-personas';
 import { auditRevealFigures } from './reveal-figure-audit';
@@ -1051,36 +1052,67 @@ async function call4_reveal(
    *  carried diagnosis is stale for a student who already reached the answer), 'struggle' the
    *  diagnosing one. Defaulted 'struggle' — the branch every pre-design-B case reveal took. */
   reachedFrom: RevealReachedFrom = 'struggle',
+  /** The requirement's authored misconception reframe (`acca_case_requirements.full_reveal`).
+   *  Defaulted '' — omitted from the prompt when absent, exactly as the drill route does. */
+  fullReveal = '',
+  /** DIVERGENCE #5, RE-WIRED (2026-09-06). Nothing in the attempt earned credit, carried in the
+   *  sealed session blob. Defaulted false — absent means "no claim", never "nothing creditable":
+   *  the failure a wrong `true` causes is opening a student's earned reveal as though their work
+   *  had been worthless. Read on the STRUGGLE path only. */
+  nothingCreditable = false,
 ): Promise<string> {
   const contextLine = context ? `Context: ${context}\n\n` : '';
+  // ── THE ARTEFACT'S SHAPE REACHES THE WRAPPER (2026-09-06) ────────────────────
+  // Names only, never bodies — a heading computes nothing, so the figure-free guarantee is intact.
+  // `[]` (an artefact with no `## ` headings — every AFM case requirement today) is a DIFFERENT
+  // state from "not supplied", and both prompts are built from the same value so they cannot
+  // disagree about whether the pointer beat exists.
+  const sections = revealArtefactSections(modelAnswer);
+  const conditioned = reachedFrom === 'struggle' && nothingCreditable;
   // ⚠️ SERVER LOG ONLY, NEVER A RESPONSE FIELD — the rule `[GAPLABEL]` already sets on the drill
   // route. A conditional response field is a habit, not a value judgement, and the flag would ship
   // the habit.
   if (process.env.TUTOR_DEBUG_GAP === '1') {
-    console.log('[CASEREVEAL]', JSON.stringify({ design: 'B', paper, reached_from: reachedFrom }));
+    console.log('[CASEREVEAL]', JSON.stringify({
+      design: 'B', paper, reached_from: reachedFrom,
+      nothingCreditable, conditioned, sections: sections.length, reframe: fullReveal !== '',
+    }));
   }
+  // Authored misconception reframe — same literal the drill route uses, so the two surfaces frame
+  // the same field the same way. Present on all 38 published case requirements (measured
+  // 2026-09-06); '' when the column is null, and the builder omits the block.
+  const reframeLine = fullReveal
+    ? `Authored misconception reframe (name this and correct the thinking):\n${fullReveal}\n\n`
+    : '';
   const res = await anthropic.messages.create({
     model: 'claude-haiku-4-5-20251001',
     max_tokens: 500, // wrapper only — the worked answer is appended verbatim, not generated
-    system: revealWrapperSystemFor(paper, reachedFrom),
+    system: revealWrapperSystemFor(paper, reachedFrom, {
+      nothingCreditable, hasSections: sections.length > 0,
+    }),
     messages: [
       {
         role: 'user',
         content: buildRevealWrapperUserPrompt({
           contextLine, question, attempt, diagnosis,
-          // ⚠️ NO AUTHORED REFRAME ON THIS LEG. `acca_case_requirements.full_reveal` is not in
-          // `app/api/acca/case/turn/route.ts`'s select list, and is absent on some requirements
-          // anyway (see `case-authoring-gates.ts`'s P7 exemption). The builder omits the block when
-          // it is empty, so the wrapper names the misconception from the carried diagnosis alone —
-          // while the system prompt still says "use the authored reframe you are given". FLAGGED,
-          // not absorbed: wiring it is a separate, measurable change.
-          reframeLine: '',
-          reachedFrom,
+          reframeLine,
+          reachedFrom, sections, nothingCreditable,
         }),
       },
     ],
   });
-  const served = assembleAfmReveal(finishClean(res), modelAnswer);
+  const wrapper = finishClean(res);
+  const served = assembleAfmReveal(wrapper, modelAnswer);
+
+  // ── POINTER AUDIT — FLAG FOR REVIEW, NEVER A BLOCKER ──────────────────────
+  // The list is handed to the model precisely so the pointer can be a SELECTION rather than a
+  // generation; this says whether it was. See `wrapperNamesAListedSection` for what a `false`
+  // does and does not mean. Never blocks: an earned reveal must serve.
+  if (sections.length > 0 && !wrapperNamesAListedSection(wrapper, sections)) {
+    console.warn('[reveal:pointer-off-list]', JSON.stringify({
+      surface: 'case', paper, reached_from: reachedFrom, sections,
+    }));
+  }
 
   // ── POST-HOC FIGURE AUDIT — FLAG FOR REVIEW, NEVER A BLOCKER ───────────────
   // Brought across whole with design B. Every number in the served reveal must appear in
@@ -1162,6 +1194,21 @@ export interface TeachTurnInput {
    * AFM case requirements**.
    */
   paper?: string;
+  /**
+   * The requirement's authored misconception reframe (`acca_case_requirements.full_reveal`) —
+   * pre-baked, 3–5 sentences, the same field the drill route already passes to the same builder.
+   *
+   * WHY IT IS HERE. `REVEAL_AFM_WRAPPER_SYSTEM` says "use the authored reframe you are given" and
+   * the case route did not select the column, so the case reveal ran that instruction against
+   * nothing and named the misconception from the carried diagnosis alone. Measured 2026-09-06: all
+   * 38 published case requirements (18 APM, 20 AFM) carry a non-empty `full_reveal`, so the
+   * "absent on some requirements" reason the earlier comment gave for leaving it unwired does not
+   * hold on any live row.
+   *
+   * Optional, '' by default, so a caller that does not pass it gets the exact prompt it got before
+   * this field existed. Read ONLY on the reveal branch.
+   */
+  reframe?: string;
 }
 
 export interface TeachTurnResult {
@@ -1186,7 +1233,7 @@ export interface TeachTurnResult {
 export async function runTeachTurn(input: TeachTurnInput): Promise<TeachTurnResult> {
   const {
     question, context, modelAnswer, verbLevel, markScheme, groundedFacts = '', nextMove = '',
-    studentMessage, lastEzraMessage, paper = 'APM',
+    studentMessage, lastEzraMessage, paper = 'APM', reframe = '',
     missCount, lastDiagnosis, lastRealAttempt, resolved,
     lastEverCreditable,
   } = input;
@@ -1213,13 +1260,22 @@ export async function runTeachTurn(input: TeachTurnInput): Promise<TeachTurnResu
     messageKind = 'reveal';
     // `attempt` falls back to `studentMessage` when there is no stored attempt.
     //
-    // ⚠️ THE `everCreditable` CARRIER NO LONGER REACHES THIS LEG. Design "B" replaced the whole
-    // reveal opening rather than conditioning its praise clause, so there is nothing here for the
-    // flag to suppress. It is still parsed, still sealed and still carried forward — re-wiring it
-    // needs the session state, and losing the state would make the re-wiring unmeasurable.
+    // ── THE `everCreditable` CARRIER REACHES THIS LEG AGAIN (2026-09-06) ──────
+    // Design "B" replaced the reveal opening with a wrapper that carried an UNCONDITIONED "first
+    // credit, specifically, what they already had right", and commit `8eb92db` shipped that trade
+    // explicitly to be measured. Measured: 10/10 opened on credit and 6/10 fabricated it. The
+    // suppression is restored at its source in `REVEAL_AFM_WRAPPER_SYSTEM` (see
+    // `revealWrapperSystemFor`), so nothing is added — the demand is conditioned, not fenced.
+    //
+    // ⚠️ THE `lastRealAttempt != null` HALF IS LOAD-BEARING, not a null-guard. The flag describes
+    // an ADJUDICATED attempt; `revealAttempt` falls back to the reveal REQUEST ("show me the
+    // answer") when there is no stored attempt, and a flag about text the model is not being shown
+    // is a claim about nothing. `=== false`, never a bare falsy check: `undefined` means no attempt
+    // has been adjudicated and must not fire the suppression.
     const revealAttempt = lastRealAttempt ?? studentMessage;
     ezraResponse = await call4_reveal(question, context, revealAttempt, lastDiagnosis ?? '', modelAnswer, paper,
-      resolved ? 'solved' : 'struggle');
+      resolved ? 'solved' : 'struggle', reframe,
+      lastRealAttempt != null && lastEverCreditable === false);
     newResolved = true;
   } else if (wantsReveal) {
     intent = 'reveal_redirect';
