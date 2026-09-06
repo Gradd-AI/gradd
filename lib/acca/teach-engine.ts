@@ -20,7 +20,13 @@ import Anthropic from '@anthropic-ai/sdk';
 // STAGE 6 (2026-08-24): the case surface uses the SHARED persona selector. `systemFor` is the one
 // definition of each paper's persona — importing it is what makes it structurally impossible for
 // the drill and case surfaces to drift about what they forbid. See `caseSystemFor` below.
-import { systemFor, caseRevealSystemFor } from './tutor-personas';
+import {
+  systemFor, caseRevealSystemFor,
+  // DESIGN "B" ON THE CASE REVEAL (2026-09-06) — see call4_reveal.
+  revealWrapperSystemFor, buildRevealWrapperUserPrompt, assembleAfmReveal, trimToLastSentence,
+  type RevealReachedFrom,
+} from './tutor-personas';
+import { auditRevealFigures } from './reveal-figure-audit';
 // DIVERGENCE #2 (2026-08-24): the ENVELOPE. Imported, never transcribed — `GAP_VERDICT_FORMAT` is
 // the ONLY place the output shape is stated and `hintOpeningInstruction` the only place the
 // opening is, so the drill and case surfaces cannot drift about either. See `CASE_HINT_OPENING`.
@@ -358,13 +364,22 @@ export function caseSystemFor(paper: string): string {
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 
 interface TextBlock { type: 'text'; text: string }
-interface AnthropicMessage { content: Array<{ type: string } | TextBlock> }
+interface AnthropicMessage { content: Array<{ type: string } | TextBlock>; stop_reason?: string }
 
 function extractText(res: unknown): string {
   const msg = res as AnthropicMessage;
   const block = msg.content.find((b): b is TextBlock => b.type === 'text');
   if (!block) throw new Error('No text block in Anthropic response');
   return block.text;
+}
+
+// Truncation guard, brought across from the drill route (route.ts:305) with design "B": a cap
+// hit mid-sentence is trimmed back to the last complete sentence rather than served as a
+// fragment. Used ONLY by call4_reveal — every other leg here keeps the extractText it shipped
+// with, so no unmeasured leg changes shape.
+function finishClean(res: unknown): string {
+  const text = extractText(res);
+  return (res as AnthropicMessage).stop_reason === 'max_tokens' ? trimToLastSentence(text) : text;
 }
 
 // ── CALL 1: Generate model answer (fallback only) ─────────────────────────────
@@ -968,7 +983,14 @@ const SHIPPED_CASE_REVEAL_SYSTEM =
 // absent or true the assembled prompt is BYTE-IDENTICAL to `routed_2p`, fixture-pinned — so on
 // every turn this arm does not fire, nothing about today's behaviour changes.
 export type CaseRevealVariant = 'routed' | 'routed_2p' | 'routed_2p_conditioned' | 'shipped';
-const CASE_REVEAL = (process.env.TUTOR_CASE_REVEAL ?? 'routed_2p_conditioned') as CaseRevealVariant;
+
+// 🔴 INERT SINCE DESIGN "B" (2026-09-06). `call4_reveal` no longer reads this knob — it serves
+// the shared wrapper system unconditionally, the way the drill route does. It is EXPORTED and
+// kept, not deleted, for two reasons: the redteam capture records `TUTOR_CASE_REVEAL` in
+// `ARM_VARS`, and every arm summary in `docs/redteam/` is only readable against the bytes it
+// ran. Setting it now changes NOTHING that reaches a student — do not read a capture that
+// records it as evidence about what was served.
+export const CASE_REVEAL = (process.env.TUTOR_CASE_REVEAL ?? 'routed_2p_conditioned') as CaseRevealVariant;
 
 /**
  * Pure, exported so the assembled bytes are pinnable — the baseline claim is a BYTE claim.
@@ -989,6 +1011,30 @@ export function caseRevealSystem(
   );
 }
 
+// ── DESIGN "B" ON THE CASE REVEAL (2026-09-06, Grant-ruled) ──────────────────
+// Adopted from the drill route (`app/api/acca/tutor/route.ts`'s `call4_reveal`, one design for
+// BOTH papers since 2026-09-04). The model writes a FIGURE-FREE framing wrapper; code appends the
+// stored `model_answer` VERBATIM beneath a separator (`assembleAfmReveal`). Figure integrity is
+// STRUCTURAL, not instructed — the model's output is no longer where the figures live — and the
+// worked answer can no longer be truncated by a token cap.
+//
+// THE REFUSAL THIS OVERRIDES is `tutor-personas.ts:463`: design B "is a different CONTENT design
+// needing its own measurement, and the case engine has no `assembleAfmReveal` call". Both true,
+// neither a break — the first is a scope statement, the second is the absence this fills.
+//
+// ⚠️ THE CASE-REVEAL VARIANT APPARATUS IS OFF THE SERVING PATH. `caseRevealSystem`,
+// `SHIPPED_CASE_REVEAL_SYSTEM`, `CASE_REVEAL_CORE_*` and the `TUTOR_CASE_REVEAL` knob are RETAINED
+// as pure, fixture-pinned baselines — the arm records in `docs/redteam/` are only readable against
+// the bytes they ran — but nothing reads them at serve time any more.
+//
+// 🔴 AND THAT DROPS A MEASURED WIN, DELIBERATELY AND WITH IT STATED: `routed_2p_conditioned`
+// suppressed the praise-first clause when nothing in the attempt earned credit (clean reveal
+// openings 7/60 -> 36/60, Fisher p = 4.0e-8, 2026-08-28). Design B replaces the whole opening
+// rather than conditioning it, and `REVEAL_AFM_WRAPPER_SYSTEM` carries an UNCONDITIONED
+// "first credit, specifically, what they already had right". So this leg is NOT credit-demand-free:
+// it trades a conditioned demand over a model-authored walkthrough for an unconditioned one over an
+// anchored artefact. That trade is what the ship-candidate measurement is for. Grant's ruling was
+// to leave the reveal's credit clause alone and measure before touching it.
 async function call4_reveal(
   question: string,
   context: string,
@@ -998,41 +1044,56 @@ async function call4_reveal(
   /** Defaulted 'APM' so any caller that does not pass it is byte-identical to before the parameter
    *  existed — the same convention `call3_hint` uses. The orchestrator now passes the real paper. */
   paper = 'APM',
-  /** DIVERGENCE #5 — resolved by the caller from the session-sticky `everCreditable`. Defaulted
-   *  FALSE, so a caller that does not pass it assembles the byte-identical praise-first core. */
-  nothingCreditableNow = false,
+  /** Mirrors the drill route: 'solved' selects the wrapper that asserts NO misconception (the
+   *  carried diagnosis is stale for a student who already reached the answer), 'struggle' the
+   *  diagnosing one. Defaulted 'struggle' — the branch every pre-design-B case reveal took. */
+  reachedFrom: RevealReachedFrom = 'struggle',
 ): Promise<string> {
   const contextLine = context ? `Context: ${context}\n\n` : '';
   // ⚠️ SERVER LOG ONLY, NEVER A RESPONSE FIELD — the rule `[GAPLABEL]` already sets on the drill
-  // route. This one carries no content at all (a variant name and a boolean), but a conditional
-  // response field is a habit, not a value judgement, and the flag would ship the habit. It is the
-  // arm's FIRST validity condition: if the conditioned opening never fires, a null result means
-  // "the condition was never met", not "conditioning does not work".
+  // route. A conditional response field is a habit, not a value judgement, and the flag would ship
+  // the habit.
   if (process.env.TUTOR_DEBUG_GAP === '1') {
-    console.log('[CASEREVEAL]', JSON.stringify({
-      variant: CASE_REVEAL,
-      paper,
-      nothingCreditable: nothingCreditableNow,
-      conditioned: CASE_REVEAL === 'routed_2p_conditioned' && nothingCreditableNow,
-    }));
+    console.log('[CASEREVEAL]', JSON.stringify({ design: 'B', paper, reached_from: reachedFrom }));
   }
   const res = await anthropic.messages.create({
     model: 'claude-haiku-4-5-20251001',
-    max_tokens: 700,
-    system: caseRevealSystem(CASE_REVEAL, paper, nothingCreditableNow),
+    max_tokens: 500, // wrapper only — the worked answer is appended verbatim, not generated
+    system: revealWrapperSystemFor(paper, reachedFrom),
     messages: [
       {
         role: 'user',
-        content:
-          `${contextLine}Question: ${question}\n\n` +
-          `Their last attempt: ${attempt}\n\n` +
-          `The gap they kept missing: ${diagnosis}\n\n` +
-          `Verified model answer (you MAY reveal this — it is the earned reveal):\n${modelAnswer}\n\n` +
-          'Build the worked walkthrough now, crediting what they had, then point them to a fresh application.',
+        content: buildRevealWrapperUserPrompt({
+          contextLine, question, attempt, diagnosis,
+          // ⚠️ NO AUTHORED REFRAME ON THIS LEG. `acca_case_requirements.full_reveal` is not in
+          // `app/api/acca/case/turn/route.ts`'s select list, and is absent on some requirements
+          // anyway (see `case-authoring-gates.ts`'s P7 exemption). The builder omits the block when
+          // it is empty, so the wrapper names the misconception from the carried diagnosis alone —
+          // while the system prompt still says "use the authored reframe you are given". FLAGGED,
+          // not absorbed: wiring it is a separate, measurable change.
+          reframeLine: '',
+          reachedFrom,
+        }),
       },
     ],
   });
-  return extractText(res);
+  const served = assembleAfmReveal(finishClean(res), modelAnswer);
+
+  // ── POST-HOC FIGURE AUDIT — FLAG FOR REVIEW, NEVER A BLOCKER ───────────────
+  // Brought across whole with design B. Every number in the served reveal must appear in
+  // context ∪ model_answer ∪ the student's attempt. Best-effort and swallowed: a reveal the
+  // student EARNED must never fail to serve because an audit threw.
+  try {
+    const audit = auditRevealFigures(served, { context, modelAnswer, attempt });
+    if (audit.unsourced.length > 0) {
+      console.warn('[reveal:unsourced-figures]', JSON.stringify({
+        surface: 'case', paper, reached_from: reachedFrom,
+        unsourced: audit.unsourced.slice(0, 12), checked: audit.checked,
+      }));
+    }
+  } catch { /* an audit must never break a reveal */ }
+
+  return served;
 }
 
 // ── Orchestrator: one teach turn ───────────────────────────────────────────────
@@ -1147,13 +1208,15 @@ export async function runTeachTurn(input: TeachTurnInput): Promise<TeachTurnResu
   if (wantsReveal && missCount >= 2) {
     intent = 'reveal';
     messageKind = 'reveal';
-    // ⚠️ TWO CONDITIONS, AND BOTH EXIST TO AVOID SUPPRESSING PRAISE SOMEONE EARNED. `attempt`
-    // falls back to `studentMessage` when there is no stored attempt, and on that fallback nothing
-    // has been adjudicated, so the flag must not be used. `=== false` is deliberate and is NOT
-    // `!lastEverCreditable`: undefined means "no attempt adjudicated" and must not fire.
+    // `attempt` falls back to `studentMessage` when there is no stored attempt.
+    //
+    // ⚠️ THE `everCreditable` CARRIER NO LONGER REACHES THIS LEG. Design "B" replaced the whole
+    // reveal opening rather than conditioning its praise clause, so there is nothing here for the
+    // flag to suppress. It is still parsed, still sealed and still carried forward — re-wiring it
+    // needs the session state, and losing the state would make the re-wiring unmeasurable.
     const revealAttempt = lastRealAttempt ?? studentMessage;
     ezraResponse = await call4_reveal(question, context, revealAttempt, lastDiagnosis ?? '', modelAnswer, paper,
-      lastRealAttempt != null && lastEverCreditable === false);
+      resolved ? 'solved' : 'struggle');
     newResolved = true;
   } else if (wantsReveal) {
     intent = 'reveal_redirect';

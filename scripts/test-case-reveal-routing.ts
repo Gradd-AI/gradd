@@ -18,6 +18,7 @@ import {
   NO_COMPUTED_OUTPUTS, DIGNITY_ON_DISTRESS, GROUNDING_DISCIPLINE,
   CASE_REVEAL_GUARDRAILS_2P_FOR_TEST,
   CASE_REVEAL_CREDIT_CLAUSE_FOR_TEST, CASE_REVEAL_CONDITIONED_CLAUSE_FOR_TEST,
+  assembleAfmReveal,
 } from '../lib/acca/tutor-personas';
 import { caseRevealSystem } from '../lib/acca/teach-engine';
 // Imported, never transcribed: divergence #5's whole design argument is that the hint leg's (c)
@@ -313,14 +314,46 @@ ok('AFM does NOT adopt the drill route design "B" (no verbatim-append instructio
   ok('#5 the verdict is carried in the SEALED payload, not the plaintext session state',
     /everCreditable\?: boolean/.test(engine) &&
     /JSON\.stringify\(\{ answer, counted, everCreditable \}/.test(engine));
-  ok('#5 call4_reveal receives the carried verdict',
-    /caseRevealSystem\(CASE_REVEAL, paper, nothingCreditableNow\)/.test(engine));
-  ok('#5 the reveal does NOT fire when the attempt is the fallback message',
-    /lastRealAttempt != null && lastEverCreditable === false/.test(engine));
+  // 🔴 SUPERSEDED BY DESIGN "B" (2026-09-06). These two pinned the carrier reaching the reveal.
+  // It no longer does: `call4_reveal` serves the shared figure-free wrapper system, which has no
+  // praise clause to condition. Inverted rather than deleted — a silent deletion would leave the
+  // file asserting nothing about a wiring that used to be load-bearing, and the arm summary
+  // (docs/redteam/summaries/2026-08-28-case-reveal-creditable.md) would still read as current.
+  ok('#5 SUPERSEDED — the carried verdict no longer selects a reveal system',
+    !/caseRevealSystem\(CASE_REVEAL/.test(engine));
+  ok('#5 SUPERSEDED — the reveal call no longer passes the creditable carrier',
+    !/lastRealAttempt != null && lastEverCreditable === false/.test(engine));
+  ok('#5 the carrier itself SURVIVES (re-wiring it must not need the session state rebuilt)',
+    /everCreditable\?: boolean/.test(engine) && /let newEverCreditable = lastEverCreditable;/.test(engine));
   ok('#5 the credit flag is STICKY, not last-write',
     /newEverCreditable = lastEverCreditable === true \? true : thisTurnCreditable/.test(engine));
   ok('#5 a correct answer and a completeness demotion both COUNT AS CREDIT',
     /const thisTurnCreditable = treatCorrect \|\| !!completenessGap \|\| !gapNothingCreditable/.test(engine));
+
+  // ── DESIGN "B" ON THE CASE REVEAL (2026-09-06) ──────────────────────────────
+  // The claim is STRUCTURAL, so the checks are structural: the model's output is a wrapper, the
+  // figures come from the row, and code does the joining. A prompt-only check would pass on a
+  // build that asked for a wrapper and still served whatever the model wrote.
+  ok('B: the case reveal assembles code-side, verbatim, exactly once',
+    (engine.match(/assembleAfmReveal\(/g) || []).length === 1 &&
+    /const served = assembleAfmReveal\(finishClean\(res\), modelAnswer\);/.test(engine));
+  ok('B: the wrapper runs under the SHARED wrapper system, paper- and path-routed',
+    /system: revealWrapperSystemFor\(paper, reachedFrom\),/.test(engine));
+  ok('B: the wrapper user prompt is the SHARED builder, not a local literal',
+    /buildRevealWrapperUserPrompt\(\{/.test(engine));
+  ok('B: MUST-FAIL — the model is no longer handed the answer to re-author',
+    !/Build the worked walkthrough now/.test(engine) &&
+    !/Verified model answer \(you MAY reveal this/.test(engine));
+  ok('B: the cap is the wrapper cap, not the walkthrough cap (700 was for authored prose)',
+    /max_tokens: 500, \/\/ wrapper only/.test(engine));
+  ok('B: a truncated wrapper is trimmed to a whole sentence before assembly',
+    /function finishClean\(res: unknown\)/.test(engine) && /trimToLastSentence\(text\)/.test(engine));
+  ok('B: the figure audit is wired, and it can never block an EARNED reveal',
+    /auditRevealFigures\(served, \{ context, modelAnswer, attempt \}\)/.test(engine) &&
+    /catch \{ \/\* an audit must never break a reveal \*\/ \}/.test(engine));
+  ok('B: FUNCTIONAL — the served body ends with the stored answer, byte-for-byte',
+    assembleAfmReveal('A framing wrapper.', '**1. Tax**\\n| a | b |\\n| 1 | 2 |')
+      .endsWith('**1. Tax**\\n| a | b |\\n| 1 | 2 |'));
 
   // ── THE POSITIVE CONTROL'S FINDING, PINNED (2026-08-28) ─────────────────────
   // The first build was LAST-WRITE and the 120-turn arm could not see the defect: every one of
