@@ -2,6 +2,44 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
+## 🔴 OPEN 2026-09-06 (a) — THE TEACH LEG IS A THIRD UNFIXED CREDIT SITE, AND ITS ONE EXIT IS DEAD ON APM
+
+`call3_teach` (`lib/acca/teach-engine.ts:663`) carries the same unconditional-praise shape the hint
+opening and the reveal core were both conditioned for, and it was never given the parameter:
+
+> *"Second miss or stop-signal — they haven't cracked it yet. Still don't lecture: lead with the
+> specific thing that IS working, then name the ONE gap that matters most (one, sharply — not a
+> list of four) and the single next move that unblocks it."*
+
+Its signature has **no `nothingCreditable` parameter** — `(question, context, attempt, diagnosis,
+verbLevel, offerReveal, groundedFacts, nextMove, paper)` — so nothing that reaches this leg can
+tell it the attempt earned nothing. The demand is the `else` of a single ternary, and the only
+other arm is the CONTRADICTION FOUND branch, which is the leg's **one exit** from crediting:
+*"Do NOT credit them with that choice."*
+
+🔴 **THAT EXIT IS UNREACHABLE ON THE ENTIRE APM CASE CORPUS.** The branch is gated on
+`groundedFacts.includes('CONTRADICTION FOUND')`, and `groundedFacts` is the direction fence:
+`renderDiscriminants(extractDiscriminants(req.answer_schema), detectContradictions(...))`
+(`app/api/acca/case/turn/route.ts:433-435`). `extractDiscriminants` reads `answer_schema.params`
+and returns `[]` for a null schema, `renderDiscriminants` returns the EMPTY STRING for no
+discriminants and no contradictions, and the `.includes` is therefore false on every turn.
+
+📐 **MEASURED LIVE, not inferred — `answer_schema` is NULL on 18 of 18 published APM case
+requirements** (11 practice + 7 `mock_only`), against 20 of 20 AFM requirements that carry one. So
+on APM the fence emits `''` unconditionally and the teach leg has exactly one arm.
+
+📐 **AND THE EXIT IS THIN EVEN WHERE A SCHEMA EXISTS.** A schema is necessary but not sufficient:
+the fence fires only on a REGISTERED discriminant key (`side` / `direction` / `quote_direction`).
+Across all 38 published requirements on both papers, **4 carry one** — all AFM, all E2b/E3a
+hedging. That is the same 34-of-38 figure `teach-engine.ts` already states about
+`GROUNDING_DISCIPLINE`, confirmed here from the rows rather than from the comment.
+
+**DISPOSITION: post-demo CONTENT work, not a code fix, and deliberately not fixed now.** Authoring
+`answer_schema` onto APM case requirements is a content batch with its own review; conditioning the
+teach leg is a prompt arm that has not been specified, let alone measured. Recorded so that nobody
+reads the CONTRADICTION FOUND branch as live cover for the APM surface — on APM it has never once
+executed.
+
 ## 🔴 OPEN 2026-09-05 (c) — LEG 1: THE TENTH P-V4 INSTANCE IS **UNSUPPORTED**, NOT ESTABLISHED
 
 > 📐 **THIS BLOCK WAS ITSELF WRITTEN UNDER A RUBRIC THAT LATER MOVED — the exact failure
