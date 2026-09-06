@@ -71,6 +71,53 @@ with topics non-empty. **No published requirement gets both.** Making it fire on
 → label inventory that exists nowhere (`AFM_AREA_LABELS` is the only such map in the repo) — a
 substitute, so it was not built. **This item is OPEN with no known fix, not OPEN pending a wire.**
 
+### 🔵 SCOPED, NOT BUILT (2026-09-06) — WHAT AN APM INVENTORY WOULD HAVE TO CONTAIN
+
+Logged as CONTENT work with the scope named, per Grant's ruling. The wire is not the blocker; the
+DATA is, and the data does not exist:
+
+- **An APM area → human label map**, the analogue of `AFM_AREA_LABELS` (`tutor-grounding.ts:70`,
+  five AFM entries, the only such map in the repo — `grep -rn AREA_LABELS` returns one file).
+  APM's syllabus areas are A–E with sub-areas; the map needs a phrase a tutor can say out loud
+  (*"another divisional performance measurement drill"*), not a code.
+- **A COVERAGE RULE, because the label alone is a promise.** `renderResolvableTopics` renders
+  *"another X drill"* — a claim that such a drill EXISTS and is servable to this student. So the
+  map must be derived from, or checked against, the published corpus, or the fix re-creates
+  INVENTED-INVENTORY in a new place. The AFM list is a hardcoded literal and is not checked
+  against anything.
+- **A PER-REQUIREMENT SELECTION**, not a fixed list — see the sibling item below for why the fixed
+  list is itself a defect.
+
+**Verified 2026-09-06, live corpus, so the scope is sized rather than guessed:** 91 published APM
+drills; the case surface's own inventory is case requirements, not drills, so a faithful version
+of this beat on a case surface may need a SECOND inventory that has never been built at all.
+
+## 🔴 OPEN 2026-09-06 (h2) — THE AFM ONWARD-TOPIC LIST IS A FIXED B1–B5 AND 16 OF 63 PUBLISHED AFM DRILLS SIT OUTSIDE IT
+
+**Split out of (h) as its own item on Grant's ruling: this half is LIVE on the drill route today,
+where (h) is a case-surface item with no fix.**
+
+`app/api/acca/tutor/route.ts:1323` — `const resolvableAreas = paper === 'AFM' ? ['B1','B2','B3',
+'B4','B5'] : []`. A hardcoded literal, identical for every drill, rendered by
+`renderResolvableTopics` into the reveal's closing beat as the onward topics the tutor may name.
+
+📐 **MEASURED 2026-09-06 against the live corpus, not inherited:** 63 published AFM drills, by area
+`A3:1 · A6:1 · B1:14 · B2:4 · B3:17 · B4:7 · B5:5 · E1:2 · E2:7 · E3:5`. **16 of 63 sit outside
+B1–B5.** So a student finishing an **E3a interest-rate-hedging** drill is told the onward areas are
+five B-section investment-appraisal topics, **none of them its own** — and the two AFM Section E
+calculator families (fxhedge E2b/E2c, irhedge E3a) plus the E-narrative cluster are exactly the
+newest content. The list was written when AFM was B-section only and has not moved since.
+
+⚠️ **THIS IS THE OPPOSITE FAILURE TO INVENTED-INVENTORY, AND THE SAME MECHANISM CAUSED BOTH.** The
+July fix replaced *"a topic the model invented"* with *"a topic from a fixed list"*; a fixed list
+is grounded but not RELEVANT, and the beat still ends up pointing somewhere the student was not.
+**Nothing gates it** — no fixture asserts the list covers the served corpus, and a new published
+area silently falls outside it, which is how this arrived.
+
+⚠️ **NOT FIXED HERE.** The obvious repair (derive the list from the drill's own area) is a content
++ label question, not a one-line change: it needs the same label-map discipline item (h) names, and
+`AFM_AREA_LABELS` has five entries against ten live AFM areas. **Sized, not started.**
+
 ⚠️ **`[reveal:unsourced-figures]` FLAGGED ONLY 8 OF THE 23, AND THAT IS ITS DOCUMENTED CEILING**
 (`reveal-figure-audit.ts`, ceiling 2b: *"a coincidence passes"*). Fifteen invented figures collided
 with a number already present somewhere in context ∪ model_answer ∪ attempt. **Never quote the
@@ -123,7 +170,85 @@ treated as complete**"*. C3(a), credit-shaped, SEVERE. The other 29 credits are 
 locatable. **So "the credits themselves are all accurate" held at n=10 and does NOT hold at n=30**
 — report credit accuracy as 29/30, never as clean.
 
-## 🔴 OPEN 2026-09-06 (j) — `sanitizeAfmWrapper` DELETES THE POINTER BEAT, AND THE POINTER AUDIT CANNOT SEE IT
+### ✅ THE CITATION HALF IS FIXED (2026-09-06). THE ATTRIBUTION HALF IS NOT, AND THE MODEL'S RATE HAS NOT MOVED.
+
+`lib/acca/reveal-quotation.ts` — pure, both surfaces, one definition. A quoted span classified as
+STUDENT-ATTRIBUTED that does not appear in the attempt **loses its quotation marks and stays in the
+sentence as prose**. Never deleted, never rewritten, never substituted: the underlying claim was
+TRUE in all five original sightings and only the citation's precision was false. Logged at
+`[reveal:quote-unquoted]` so the rate stays visible. Fixtures `npm run test:reveal-quotation` (95),
+contract gate 82 → **83**. Branch `fix/reveal-quotation-and-sanitizer-cut`, **NOT MERGED**.
+
+📐 **SERVED 0/30 at n=30 on the same frozen seed** (`result_20260906_quotation_and_sanitizer.md`)
+— **and it took three runs and two named holes to get there**, both in the CLASSIFIER, never in the
+byte comparison: (1) punctuation inside an EARLIER citation, and a bracket opening before the mark
+and closing after it, read as clause breaks — served `"better generalisation"` with its marks
+intact; (2) **`endorsed` was not on the attribution-verb list** — served *"you endorsed … as
+"exposing the model to wider behaviour,""*. Both are transcribed as MUST-FAIL fixtures.
+
+🔴 **THE MODEL'S RATE IS UNCHANGED. DO NOT REPORT THIS AS REDUCING FABRICATION.** The gate run
+unquoted **8 citations across 7 of 30 replies** (4/30 pre-change hand read; Fisher p = 0.51), every
+one the SAME grammatical pressure — *"keep the training set clean"* / *"expose the model to a wider
+range"* against a student who wrote the third person. **The check removes the citation claim and
+leaves the sentence; it does not stop the model reaching for a quotation.**
+
+⚠️ **CLAIM CEILING, verbatim:** green means *no span the check classified as student-attributed
+survives in marks without appearing in the attempt* — **NEVER** *"the reply contains no fabricated
+attribution"*. An unquoted false claim is a §2/§3 rubric error and this check cannot see one. **It
+measures citations, not honesty**, and 3 of the 30 gate replies carry a fabricated attribution with
+no quotation marks near it. ⚠️ **The verb list is a phrase table and that is the standing residual**
+— hole (2) above was exactly it. Its three deliberate ABSENCES (`rate`, `confuse`/`conflate`,
+perception/instruction verbs) are stated in-file so an absence can be argued with.
+
+📐 **DISCRIMINATOR, MEASURED over 137 spans:** the historic corpus classification is byte-identical
+before and after both fixes — 8 student-attributed, all 8 fabricated, **0 false positives on the 49
+tutor-own spans**, so the tutor's hypotheticals and scare quotes are untouched (rubric §1(d)). The
+part that does the work is **not** the verb list but the CLAUSE-BREAK test: 34 of the 57 pre-change
+spans sit in sentences that open *"You've treated the 94% accuracy …"* and then hand the quote to a
+different subject.
+
+## ✅ CLOSED 2026-09-06 (j) — `sanitizeAfmWrapper` DELETED THE POINTER BEAT. Fixed, and the guard turned out to be missing 30 of 38 restatements as well.
+
+**Branch `fix/reveal-quotation-and-sanitizer-cut` — NOT MERGED** (the run's tripwire axis fails; see
+`docs/rollbacks/result_20260906_quotation_and_sanitizer.md`). The cut condition itself is fixed and
+fixtured.
+
+**The cut is now a heading SHAPE test, not a phrase test** (`isBuildHeadingLine`): markdown `#`, a
+wholly bold line, a bold opener that never closes (the token-cap stub), a numbered/`Step N` line.
+A bold line ending in sentence punctuation is PROSE — the deliberate escape, because under-cutting
+leaves a stray line and over-cutting deletes a beat the student needed. All three pre-existing
+fixture cases are bold-shaped and still cut; the phrase list is retired.
+
+📐 **AND THE PHRASE TEST WAS WRONG IN BOTH DIRECTIONS — this is the part nobody was looking for.**
+With the model's `---` divider removed, the OLD cut stops **8 of 38** build restatements measured
+across the gate and drill runs; the shape test stops **38/38**. Thirty open `**The accuracy claim**`
+or `**Benchmarking Programme for Viña del Sol: Evaluation and Assessment**` — real build headings
+naming neither phrase. **The old cut's coverage rested entirely on the model happening to write a
+divider first.**
+
+🔴 **`[reveal:wrapper-cut]` IS NEW, AND IT SHOWS THE GUARD IS LOAD-BEARING.** The wrapper model
+restates the worked answer on **29 of 30 case reveals and 10 of 10 drill reveals** — 33,634 and
+9,451 characters, ~1,000 per reveal — against a prompt that says *"do NOT begin the worked answer"*.
+Every cut removed a divider plus a restatement; **zero removed a beat**. `sanitizeAfmWrapper` is the
+only thing between a student and a duplicated, model-authored, figure-unverified second answer, and
+**nothing logged that until now**.
+
+**The audit now reads the SERVED wrapper**, not the raw model output — the half that made run 13
+invisible. Pinned MUST-FAIL in `test-case-reveal-routing.ts`.
+
+📐 **FIRE RATE ON EXISTING CAPTURES, asked for and answered with its limits.** Case surface: **1
+detectable fire in 80 served wrappers**; exposure is low because **79 of 80 model wrappers are a
+single paragraph** and 20 of 80 name the worked answer, all in the first. ⚠️ **The rate cannot be
+recovered from stored data** — every capture holds the POST-cut string, so the available raw
+wrappers are exactly the uncut ones; 1/80 is a lower bound detectable only where the pointer was
+removed. **Drill surface: there are ZERO drill-reveal captures in `docs/rollbacks/`**, so it was
+measured directly (`quotefix_drill_n10_20260906.json`): **all 10 cuts fire at a `---`, where old and
+new are identical — the fix changed nothing that surface serves**, and the buggy phrase half never
+fired.
+
+<details><summary>The original finding, kept for the record</summary>
+
+## 🔴 (j) as first written — `sanitizeAfmWrapper` DELETES THE POINTER BEAT
 
 Found by a 1/30 disagreement, not by looking: the harness scored one reveal **off-list** while the
 server logged **`[reveal:pointer-off-list]` zero times**. Those two read DIFFERENT STRINGS. The
@@ -146,6 +271,8 @@ diagnosis.
 which has **no pointer audit at all**, so the same cut there is silent by construction. Not
 measured. ⚠️ Fixing the audit (check the SERVED string) and fixing the cut are two different
 changes; the audit change alone would only make the deletion visible.
+
+</details>
 
 ## 🟠 LOGGED 2026-09-06 (b) — THE 43/91 DRILL RENDERING DEFECT, LIVE FROM 2026-09-04, FIXED
 

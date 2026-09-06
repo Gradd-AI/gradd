@@ -1,0 +1,1274 @@
+{
+  "account": {
+    "uid": "6357aac8-0c32-499f-bc97-32942f580d86",
+    "email": "case-n30-1788716858354@gradd.ai"
+  },
+  "base": "http://localhost:3112",
+  "case_id": "a2000000-0000-4000-8000-0000000000d1",
+  "requirement_id": "83c9e788-d79a-45b7-b7bc-725288f00802",
+  "seed": "a",
+  "sections": [
+    "The accuracy claim",
+    "The app-usage recommendation",
+    "Training-data limitations",
+    "Insights that can be acted on",
+    "The \"model is complete\" claim",
+    "Conclusion"
+  ],
+  "answer": "The churn model is a strong piece of work and the board can rely on it.\n\nThe 94% accuracy figure is the key validation. Only about 6% of Vesla's customers churn in a typical year, so a model that is right 94% of the time is performing far above the underlying rate of the event it is predicting, and that margin is what gives comfort that the classifications are genuine rather than chance. On any reasonable reading that is an excellent result and I would accept the analyst's conclusion on it.\n\nThe strongest finding is the app-usage effect. The model has identified mobile-app usage as the dominant predictor of retention, so requiring customers to download the app at checkout is the single highest-return action available and should be implemented across all markets this quarter. The customer-services finding is the same kind of result: more than two contacts a year drives churn, so reducing contact volume through better self-service will reduce churn directly.\n\nOn the data, the two training years give the model a broad base. The inclusion of the sitewide discounting year is an advantage, because it exposes the model to a wider range of purchasing behaviour than a normal year would, and the exclusion of customers who joined in the last twelve months keeps the training set clean of incomplete histories.\n\nThe flagged list should go to marketing monthly as the analyst proposes, with vouchers issued immediately so the retention budget is working. I agree the model can be treated as complete: retraining is expensive and the accuracy already achieved does not leave much room to improve.",
+  "reveal_ask": "show me the answer",
+  "runs": [
+    {
+      "run": 1,
+      "progress_rows_before_post": 0,
+      "legs": [
+        {
+          "leg": "miss1_hint",
+          "status": 200,
+          "message_kind": "hint",
+          "intent": "attempt",
+          "reply": "You've treated the 94% accuracy as though it tells you the model is doing real predictive work — but when only 6% of customers churn, a model that classifies everyone as \"will not churn\" would already hit 94% accuracy without learning anything at all, so that figure alone doesn't prove the model is catching the actual churners.\n\n**Next move:** work out what accuracy you'd expect from a naive model that simply predicts \"no churn\" for every single customer, then use that benchmark to ask what margin of genuine predictive skill the 94% figure actually represents.",
+          "latency_ms": 6284,
+          "gap": [
+            {
+              "at": "case_gap_verdict",
+              "parsed": true,
+              "creditable": 0,
+              "derived": 1,
+              "correct": false,
+              "label": "Student misidentified 94% accuracy as meaningful, ignoring base-rate illusion entirely"
+            }
+          ],
+          "reveal": [],
+          "offList": [],
+          "unsourced": [],
+          "unquoted": [],
+          "wrapperCut": []
+        },
+        {
+          "leg": "miss2_teach",
+          "status": 200,
+          "message_kind": "teaching",
+          "intent": "attempt",
+          "reply": "You've spotted that 94% accuracy looks strong, and you're right that it sits well above the 6% base churn rate. But you've stopped the analysis there — and that's the diagnostic gap.\n\nHere's what matters: a model that says \"nobody will churn\" would also be right 94% of the time (because only 6% actually do churn). So the accuracy figure alone doesn't tell you whether the model is doing real predictive work or just defaulting to the majority class. The question is not \"is 94% a big number?\" but \"**what proportion of the customers the model flags as at-risk actually do churn, and what proportion of actual churners does it catch?**\" Those are the numbers that tell you whether the app-usage finding and the customer-services finding are real signals or artefacts of how the model handles class imbalance.\n\nThat's the one move that unblocks this: go back to your answer and insert a sentence naming what information you would need to see in order to judge whether the model's predictions are genuine — something like \"the model's precision and recall on the churn class would be needed to establish whether 94% accuracy reflects genuine predictive power or a bias toward the non-churning majority.\" That one sentence reframes the whole assessment and shows you're applying the technique to *this* scenario's own facts, not accepting the analyst's comfort about accuracy at face value.\n\nOnce you've done that, the downstream cautions about app-requirement, customer-services action, and data handling will land differently.",
+          "latency_ms": 8671,
+          "gap": [
+            {
+              "at": "case_gap_verdict",
+              "parsed": true,
+              "creditable": 0,
+              "derived": 1,
+              "correct": false,
+              "label": "Student accepted base-rate accuracy as genuine predictive power without questioning class imbalance"
+            }
+          ],
+          "reveal": [],
+          "offList": [],
+          "unsourced": [],
+          "unquoted": [],
+          "wrapperCut": []
+        },
+        {
+          "leg": "reveal",
+          "status": 200,
+          "message_kind": "reveal",
+          "intent": "reveal",
+          "reply": "You've treated the 94% accuracy figure as licence to trust the model, but that's exactly the trap the examiner is testing for. With only ~6% of customers churning, a model that simply predicts \"no churn\" for everyone scores 94% — so the headline number is nearly worthless on its own and tells you almost nothing about whether the model actually catches real churners or wastes the marketing budget on false alarms. The board needs churner-level precision and recall, not overall accuracy, before it can act on the flagged list. Start by reading **The accuracy claim** section below to see how to challenge the statistic and what evidence you should demand instead, then practise that base-rate skepticism on a fresh dataset where the event rate is different (say, 2% fraud, or 40% customer repeat purchase) — what does an accuracy figure tell you then?\n\n*© Gradd — for your personal exam preparation.*\n\n---\n\n## The accuracy claim\n\nThe headline 94% accuracy should not be accepted at face value. Around 6% of Vesla's customers churn in a typical year, so a model that simply predicted \"no customer will churn\" would be about 94% accurate while identifying no churners at all. Accuracy is the wrong measure for such an imbalanced outcome; the board should ask how many actual churners the model correctly identifies (recall), what proportion of flagged customers would actually have churned (precision), and the number and cost of false positives, ideally weighted by the cost of a voucher against the margin retained, since those figures determine whether the retention budget is being aimed at the right people. The output is also a bare flagged/not-flagged list with no probability score, so marketing cannot rank or prioritise the customers most at risk. Until they are reported, the output cannot be relied upon.\n\n## The app-usage recommendation\n\nThe finding that app users churn less is a correlation in the training data; the analyst's recommendation to force app downloads treats it as a cause. It is at least as plausible that Vesla's most engaged, loyal customers are the ones who choose to install the app — in which case compelling less engaged customers to download it would not make them loyal, and adding friction at checkout could itself increase abandonment. The insight worth acting on is the association; the causal claim needs testing (for example, a controlled trial of app prompts) before any checkout mandate.\n\n## Training-data limitations\n\nTwo features of the training data limit what the output can say about next year. First, one of the two training years contained Vesla's largest-ever sitewide discounting campaign, so purchasing behaviour in that year is unlikely to represent a normal year — patterns the model learned may partly reflect the promotion rather than durable customer behaviour. Second, customers who joined within the last twelve months were excluded, so the model has not learned from new-customer behaviour and any predictions for that segment may be unreliable; if the scoring process also excludes them, the flagged list will systematically miss a group the board needs to understand, since it needs to know whether recent acquisition is converting into repeat purchasing.\n\n## Insights that can be acted on\n\nThe customer-services signal — more than two contacts in a year associating with churn — is plausible, actionable and cheap to act on: it suggests a service-friction signal worth investigating as a possible churn driver, regardless of the model. Feeding flagged customers to marketing is reasonable as a pilot, provided the flag quality is first verified (above) and the results of the vouchers are measured against a control group, so Vesla learns whether the intervention works rather than assuming it.\n\n## The \"model is complete\" claim\n\nThe recommendation to treat the model as complete should be rejected. Customer behaviour shifts, the training window is already unrepresentative, and the model has never been validated in live use. The board should require periodic retraining and ongoing monitoring of the model's live hit rate; the cost of retraining should be weighed against the cost of a growing retention budget aimed by a decaying model.\n\n## Conclusion\n\nThe model is a promising start but not yet a safe basis for decisions. Before reliance: report churner-level performance rather than headline accuracy, test the app-usage claim rather than mandating downloads, extend the data to cover new customers and normal trading years, pilot the voucher list against a control group, and schedule retraining.",
+          "latency_ms": 7645,
+          "gap": [],
+          "reveal": [
+            {
+              "design": "B",
+              "paper": "APM",
+              "reached_from": "struggle",
+              "nothingCreditable": true,
+              "conditioned": true,
+              "sections": 6,
+              "reframe": true
+            }
+          ],
+          "offList": [],
+          "unsourced": [],
+          "unquoted": [],
+          "wrapperCut": [
+            {
+              "surface": "case",
+              "paper": "APM",
+              "reached_from": "struggle",
+              "kept": 853,
+              "removed": 1387,
+              "removed_head": "---\n\n**The accuracy claim**\n\nA headline accuracy of 94% is close to meaningless in this context and should not give the "
+            }
+          ]
+        }
+      ],
+      "score": {
+        "verdict": "in_list",
+        "sections_named": [
+          "The accuracy claim"
+        ],
+        "section_index": [
+          1
+        ],
+        "wrapper": "You've treated the 94% accuracy figure as licence to trust the model, but that's exactly the trap the examiner is testing for. With only ~6% of customers churning, a model that simply predicts \"no churn\" for everyone scores 94% — so the headline number is nearly worthless on its own and tells you almost nothing about whether the model actually catches real churners or wastes the marketing budget on false alarms. The board needs churner-level precision and recall, not overall accuracy, before it can act on the flagged list. Start by reading **The accuracy claim** section below to see how to challenge the statistic and what evidence you should demand instead, then practise that base-rate skepticism on a fresh dataset where the event rate is different (say, 2% fraud, or 40% customer repeat purchase) — what does an accuracy figure tell you then?\n\n*© Gradd — for your personal exam preparation.*",
+        "wrapper_chars": 902,
+        "wrapper_has_heading": false,
+        "wrapper_has_rule": false,
+        "wrapper_ends_mid_sentence": false,
+        "separator_present": true,
+        "artefact_chars": 3660,
+        "tail_intact": true,
+        "quotation": {
+          "spans": [
+            {
+              "quoted": "no churn",
+              "student_attributed": false,
+              "trigger": null,
+              "verbatim": null
+            }
+          ],
+          "total": 1,
+          "student_attributed": 0,
+          "fabricated_surviving": 0
+        }
+      },
+      "reveal_log": {
+        "design": "B",
+        "paper": "APM",
+        "reached_from": "struggle",
+        "nothingCreditable": true,
+        "conditioned": true,
+        "sections": 6,
+        "reframe": true
+      }
+    },
+    {
+      "run": 2,
+      "progress_rows_before_post": 0,
+      "legs": [
+        {
+          "leg": "miss1_hint",
+          "status": 200,
+          "message_kind": "hint",
+          "intent": "attempt",
+          "reply": "The 94% accuracy figure is doing too much work in your answer—you've accepted it as the green light without asking what it's actually *measuring* against in this specific scenario, which changes everything about whether it's a real signal or an illusion created by the base rate of the event itself.\n\nHere's the single next move: work out what accuracy *would be* if the model simply predicted \"no churn\" for every single customer, given that only 6% churn in a typical year—and then ask yourself whether the 94% figure tells you anything the model is actually *doing* that a naive classifier wouldn't also do.",
+          "latency_ms": 5288,
+          "gap": [
+            {
+              "at": "case_gap_verdict",
+              "parsed": true,
+              "creditable": 0,
+              "derived": 1,
+              "correct": false,
+              "label": "Student accepted analyst's conclusions uncritically instead of independently evaluating model limitations"
+            }
+          ],
+          "reveal": [],
+          "offList": [],
+          "unsourced": [],
+          "unquoted": [],
+          "wrapperCut": []
+        },
+        {
+          "leg": "miss2_teach",
+          "status": 200,
+          "message_kind": "teaching",
+          "intent": "attempt",
+          "reply": "I need to stop you here on the foundational move, because it's where everything else depends on it.\n\nYou've correctly spotted that 94% accuracy beats the 6% base rate, and that's the right instinct — but you've then *stopped* there and treated that as a reason to trust the model's specific recommendations. That's the trap. Here's what you need to do instead: **use the base rate to *interrogate* what the accuracy figure actually tells you, not to validate it.**\n\nIf a model simply predicted \"nobody will churn\" every single time, it would be right 94% of the time by default. The 94% accuracy figure does *not* tell you whether the model is actually *distinguishing* between the customers who churn and the ones who don't — it just tells you the model's overall correctness score. To know whether the model has genuine discriminatory power, you need to look at *how* it sorts the two groups: the people it flags as high-risk versus the ones it doesn't. And the data provided does not give you that breakdown at all.\n\nThat's your one move: before you accept any of the three recommendations (app requirement, customer-services action, monthly flagged list), add a sentence that names what information is *missing* — specifically, what would you need to see about how the model actually sorts high-churn from low-churn customers, and why the accuracy figure alone cannot tell you whether that sorting is real.",
+          "latency_ms": 7638,
+          "gap": [
+            {
+              "at": "case_gap_verdict",
+              "parsed": true,
+              "creditable": 0,
+              "derived": 1,
+              "correct": false,
+              "label": "Student conflated base-rate accuracy with genuine model discriminatory power"
+            }
+          ],
+          "reveal": [],
+          "offList": [],
+          "unsourced": [],
+          "unquoted": [],
+          "wrapperCut": []
+        },
+        {
+          "leg": "reveal",
+          "status": 200,
+          "message_kind": "reveal",
+          "intent": "reveal",
+          "reply": "Your last attempt mistook a vanishingly thin margin of overall accuracy for genuine model power—the critical trap on this question. When the base rate of an event is 6%, a model that simply predicts \"no churn\" for everyone scores 94% accurate without learning anything at all, so that headline figure tells the board almost nothing about whether the model actually discriminates between churners and non-churners. The reframe here is that you need to flip from accepting the analyst's assertions to interrogating the evidence behind them: What proportion of *actual* churners does the model catch? Of those it flags, how many would genuinely churn? That's where the real power lives—or doesn't. Start with **The accuracy claim** in the worked answer below to see how to dismantle that headline and what metrics should replace it, then apply that same \"what's really being measured?\" lens to a fresh case where a fraud-detection model reports 99.8% accuracy on a dataset where fraud occurs in 0.2% of transactions.\n\n*© Gradd — for your personal exam preparation.*\n\n---\n\n## The accuracy claim\n\nThe headline 94% accuracy should not be accepted at face value. Around 6% of Vesla's customers churn in a typical year, so a model that simply predicted \"no customer will churn\" would be about 94% accurate while identifying no churners at all. Accuracy is the wrong measure for such an imbalanced outcome; the board should ask how many actual churners the model correctly identifies (recall), what proportion of flagged customers would actually have churned (precision), and the number and cost of false positives, ideally weighted by the cost of a voucher against the margin retained, since those figures determine whether the retention budget is being aimed at the right people. The output is also a bare flagged/not-flagged list with no probability score, so marketing cannot rank or prioritise the customers most at risk. Until they are reported, the output cannot be relied upon.\n\n## The app-usage recommendation\n\nThe finding that app users churn less is a correlation in the training data; the analyst's recommendation to force app downloads treats it as a cause. It is at least as plausible that Vesla's most engaged, loyal customers are the ones who choose to install the app — in which case compelling less engaged customers to download it would not make them loyal, and adding friction at checkout could itself increase abandonment. The insight worth acting on is the association; the causal claim needs testing (for example, a controlled trial of app prompts) before any checkout mandate.\n\n## Training-data limitations\n\nTwo features of the training data limit what the output can say about next year. First, one of the two training years contained Vesla's largest-ever sitewide discounting campaign, so purchasing behaviour in that year is unlikely to represent a normal year — patterns the model learned may partly reflect the promotion rather than durable customer behaviour. Second, customers who joined within the last twelve months were excluded, so the model has not learned from new-customer behaviour and any predictions for that segment may be unreliable; if the scoring process also excludes them, the flagged list will systematically miss a group the board needs to understand, since it needs to know whether recent acquisition is converting into repeat purchasing.\n\n## Insights that can be acted on\n\nThe customer-services signal — more than two contacts in a year associating with churn — is plausible, actionable and cheap to act on: it suggests a service-friction signal worth investigating as a possible churn driver, regardless of the model. Feeding flagged customers to marketing is reasonable as a pilot, provided the flag quality is first verified (above) and the results of the vouchers are measured against a control group, so Vesla learns whether the intervention works rather than assuming it.\n\n## The \"model is complete\" claim\n\nThe recommendation to treat the model as complete should be rejected. Customer behaviour shifts, the training window is already unrepresentative, and the model has never been validated in live use. The board should require periodic retraining and ongoing monitoring of the model's live hit rate; the cost of retraining should be weighed against the cost of a growing retention budget aimed by a decaying model.\n\n## Conclusion\n\nThe model is a promising start but not yet a safe basis for decisions. Before reliance: report churner-level performance rather than headline accuracy, test the app-usage claim rather than mandating downloads, extend the data to cover new customers and normal trading years, pilot the voucher list against a control group, and schedule retraining.",
+          "latency_ms": 7583,
+          "gap": [],
+          "reveal": [
+            {
+              "design": "B",
+              "paper": "APM",
+              "reached_from": "struggle",
+              "nothingCreditable": true,
+              "conditioned": true,
+              "sections": 6,
+              "reframe": true
+            }
+          ],
+          "offList": [],
+          "unsourced": [
+            {
+              "surface": "case",
+              "paper": "APM",
+              "reached_from": "struggle",
+              "unsourced": [
+                "99.8"
+              ],
+              "checked": 5
+            }
+          ],
+          "unquoted": [],
+          "wrapperCut": [
+            {
+              "surface": "case",
+              "paper": "APM",
+              "reached_from": "struggle",
+              "kept": 1013,
+              "removed": 1325,
+              "removed_head": "---\n\n**The accuracy claim**\n\nThe 94% accuracy headline is not a reliable foundation for board decisions. With a base chu"
+            }
+          ]
+        }
+      ],
+      "score": {
+        "verdict": "in_list",
+        "sections_named": [
+          "The accuracy claim"
+        ],
+        "section_index": [
+          1
+        ],
+        "wrapper": "Your last attempt mistook a vanishingly thin margin of overall accuracy for genuine model power—the critical trap on this question. When the base rate of an event is 6%, a model that simply predicts \"no churn\" for everyone scores 94% accurate without learning anything at all, so that headline figure tells the board almost nothing about whether the model actually discriminates between churners and non-churners. The reframe here is that you need to flip from accepting the analyst's assertions to interrogating the evidence behind them: What proportion of *actual* churners does the model catch? Of those it flags, how many would genuinely churn? That's where the real power lives—or doesn't. Start with **The accuracy claim** in the worked answer below to see how to dismantle that headline and what metrics should replace it, then apply that same \"what's really being measured?\" lens to a fresh case where a fraud-detection model reports 99.8% accuracy on a dataset where fraud occurs in 0.2% of transactions.\n\n*© Gradd — for your personal exam preparation.*",
+        "wrapper_chars": 1062,
+        "wrapper_has_heading": false,
+        "wrapper_has_rule": false,
+        "wrapper_ends_mid_sentence": false,
+        "separator_present": true,
+        "artefact_chars": 3660,
+        "tail_intact": true,
+        "quotation": {
+          "spans": [
+            {
+              "quoted": "no churn",
+              "student_attributed": false,
+              "trigger": null,
+              "verbatim": null
+            },
+            {
+              "quoted": "what's really being measured?",
+              "student_attributed": false,
+              "trigger": null,
+              "verbatim": null
+            }
+          ],
+          "total": 2,
+          "student_attributed": 0,
+          "fabricated_surviving": 0
+        }
+      },
+      "reveal_log": {
+        "design": "B",
+        "paper": "APM",
+        "reached_from": "struggle",
+        "nothingCreditable": true,
+        "conditioned": true,
+        "sections": 6,
+        "reframe": true
+      }
+    },
+    {
+      "run": 3,
+      "progress_rows_before_post": 0,
+      "legs": [
+        {
+          "leg": "miss1_hint",
+          "status": 200,
+          "message_kind": "hint",
+          "intent": "attempt",
+          "reply": "You've validated the 94% accuracy without asking what it's actually *saying* — and in a scenario where 94% of customers don't churn anyway, a model that predicts \"nobody churns\" would hit 94% right without predicting anything at all. That's the critical gap: you need to show what the model is *actually doing* relative to that dumb baseline, not just celebrate the headline number.\n\n**Next move:** Take the 6% churn rate as given, and work through what 94% accuracy means in this specific context — particularly, what proportion of the customers it flags as at-risk actually do churn, and whether that's better than random. That's where you'll find whether the model is genuinely useful or just riding the base rate.",
+          "latency_ms": 5836,
+          "gap": [
+            {
+              "at": "case_gap_verdict",
+              "parsed": true,
+              "creditable": 0,
+              "derived": 1,
+              "correct": false,
+              "label": "Student misread base-rate accuracy paradox, validating 94% figure uncritically"
+            }
+          ],
+          "reveal": [],
+          "offList": [],
+          "unsourced": [],
+          "unquoted": [],
+          "wrapperCut": []
+        },
+        {
+          "leg": "miss2_teach",
+          "status": 200,
+          "message_kind": "teaching",
+          "intent": "attempt",
+          "reply": "I need to flag a critical issue that's sitting underneath your entire reasoning, and it's going to require you to rethink most of what you've written.\n\nYou've treated the 94% accuracy as evidence that the model is skilled. But here's the trap: if 94% of Vesla's customers do *not* churn in a typical year (the scenario tells you ~6% churn), then a model that simply predicts \"no churn\" for every single customer would also be 94% accurate — without doing any predictive work at all. That's the baseline you need to compare the model *against*, not treat it as standalone success. The real question is: how much better than \"always predict no churn\" is this model actually performing? The analyst's report doesn't tell you that figure. Without it, you cannot tell whether the 94% reflects genuine pattern-finding or just reflects the class imbalance baked into the training data.\n\nThat single gap — failing to demand a baseline comparison — collapses the confidence you can safely place in the recommendations that follow (the app requirement, the customer-services insight, the monthly flagged-list approach). Each of those rests on trusting the model's ability to distinguish churners from non-churners.\n\nHere's your one concrete next move: add a sentence to your answer that says the 94% accuracy cannot be interpreted as evidence of model quality unless it is compared to the accuracy of a naive model that predicts no churn for all customers — and that this comparison is missing from the analyst's report. That single addition reframes your entire assessment and opens up the right set of questions about what the board can actually act on.",
+          "latency_ms": 8054,
+          "gap": [
+            {
+              "at": "case_gap_verdict",
+              "parsed": true,
+              "creditable": 0,
+              "derived": 1,
+              "correct": false,
+              "label": "Student misread class-imbalance trap, treating baseline accuracy as genuine model skill"
+            }
+          ],
+          "reveal": [],
+          "offList": [],
+          "unsourced": [],
+          "unquoted": [],
+          "wrapperCut": []
+        },
+        {
+          "leg": "reveal",
+          "status": 200,
+          "message_kind": "reveal",
+          "intent": "reveal",
+          "reply": "You've spotted that 94% is a headline figure, but you've stopped short of the critical move that unlocks this question. The trap you've walked into is **treating baseline accuracy as genuine model skill** — the examiner wants you to recognise that with a 6% churn rate, predicting \"no churn for anyone\" would hit 94% accuracy for free, so that number tells you almost nothing about whether the model is actually catching churners or just getting lucky by guessing the majority class. That's the first domino; once it falls, the app-usage recommendation and the flagged-list rollout both become much riskier. Start by reading **The accuracy claim** section below, which shows you how to challenge the headline and what metrics (recall, precision, cost of false positives) the board actually needs before trusting the output. Then take that framing to a fresh scenario: if you were told a rare-event model had achieved 99% accuracy on a dataset where the event occurred in only 2% of cases, what single question would you ask first to know whether the model was worth deploying?\n\n*© Gradd — for your personal exam preparation.*\n\n---\n\n## The accuracy claim\n\nThe headline 94% accuracy should not be accepted at face value. Around 6% of Vesla's customers churn in a typical year, so a model that simply predicted \"no customer will churn\" would be about 94% accurate while identifying no churners at all. Accuracy is the wrong measure for such an imbalanced outcome; the board should ask how many actual churners the model correctly identifies (recall), what proportion of flagged customers would actually have churned (precision), and the number and cost of false positives, ideally weighted by the cost of a voucher against the margin retained, since those figures determine whether the retention budget is being aimed at the right people. The output is also a bare flagged/not-flagged list with no probability score, so marketing cannot rank or prioritise the customers most at risk. Until they are reported, the output cannot be relied upon.\n\n## The app-usage recommendation\n\nThe finding that app users churn less is a correlation in the training data; the analyst's recommendation to force app downloads treats it as a cause. It is at least as plausible that Vesla's most engaged, loyal customers are the ones who choose to install the app — in which case compelling less engaged customers to download it would not make them loyal, and adding friction at checkout could itself increase abandonment. The insight worth acting on is the association; the causal claim needs testing (for example, a controlled trial of app prompts) before any checkout mandate.\n\n## Training-data limitations\n\nTwo features of the training data limit what the output can say about next year. First, one of the two training years contained Vesla's largest-ever sitewide discounting campaign, so purchasing behaviour in that year is unlikely to represent a normal year — patterns the model learned may partly reflect the promotion rather than durable customer behaviour. Second, customers who joined within the last twelve months were excluded, so the model has not learned from new-customer behaviour and any predictions for that segment may be unreliable; if the scoring process also excludes them, the flagged list will systematically miss a group the board needs to understand, since it needs to know whether recent acquisition is converting into repeat purchasing.\n\n## Insights that can be acted on\n\nThe customer-services signal — more than two contacts in a year associating with churn — is plausible, actionable and cheap to act on: it suggests a service-friction signal worth investigating as a possible churn driver, regardless of the model. Feeding flagged customers to marketing is reasonable as a pilot, provided the flag quality is first verified (above) and the results of the vouchers are measured against a control group, so Vesla learns whether the intervention works rather than assuming it.\n\n## The \"model is complete\" claim\n\nThe recommendation to treat the model as complete should be rejected. Customer behaviour shifts, the training window is already unrepresentative, and the model has never been validated in live use. The board should require periodic retraining and ongoing monitoring of the model's live hit rate; the cost of retraining should be weighed against the cost of a growing retention budget aimed by a decaying model.\n\n## Conclusion\n\nThe model is a promising start but not yet a safe basis for decisions. Before reliance: report churner-level performance rather than headline accuracy, test the app-usage claim rather than mandating downloads, extend the data to cover new customers and normal trading years, pilot the voucher list against a control group, and schedule retraining.",
+          "latency_ms": 7918,
+          "gap": [],
+          "reveal": [
+            {
+              "design": "B",
+              "paper": "APM",
+              "reached_from": "struggle",
+              "nothingCreditable": true,
+              "conditioned": true,
+              "sections": 6,
+              "reframe": true
+            }
+          ],
+          "offList": [],
+          "unsourced": [],
+          "unquoted": [],
+          "wrapperCut": [
+            {
+              "surface": "case",
+              "paper": "APM",
+              "reached_from": "struggle",
+              "kept": 1076,
+              "removed": 994,
+              "removed_head": "---\n\n**The accuracy claim**\n\nA model that predicts \"all customers retain\" would achieve approximately 94% accuracy in Ve"
+            }
+          ]
+        }
+      ],
+      "score": {
+        "verdict": "in_list",
+        "sections_named": [
+          "The accuracy claim"
+        ],
+        "section_index": [
+          1
+        ],
+        "wrapper": "You've spotted that 94% is a headline figure, but you've stopped short of the critical move that unlocks this question. The trap you've walked into is **treating baseline accuracy as genuine model skill** — the examiner wants you to recognise that with a 6% churn rate, predicting \"no churn for anyone\" would hit 94% accuracy for free, so that number tells you almost nothing about whether the model is actually catching churners or just getting lucky by guessing the majority class. That's the first domino; once it falls, the app-usage recommendation and the flagged-list rollout both become much riskier. Start by reading **The accuracy claim** section below, which shows you how to challenge the headline and what metrics (recall, precision, cost of false positives) the board actually needs before trusting the output. Then take that framing to a fresh scenario: if you were told a rare-event model had achieved 99% accuracy on a dataset where the event occurred in only 2% of cases, what single question would you ask first to know whether the model was worth deploying?\n\n*© Gradd — for your personal exam preparation.*",
+        "wrapper_chars": 1125,
+        "wrapper_has_heading": false,
+        "wrapper_has_rule": false,
+        "wrapper_ends_mid_sentence": false,
+        "separator_present": true,
+        "artefact_chars": 3660,
+        "tail_intact": true,
+        "quotation": {
+          "spans": [
+            {
+              "quoted": "no churn for anyone",
+              "student_attributed": false,
+              "trigger": null,
+              "verbatim": null
+            }
+          ],
+          "total": 1,
+          "student_attributed": 0,
+          "fabricated_surviving": 0
+        }
+      },
+      "reveal_log": {
+        "design": "B",
+        "paper": "APM",
+        "reached_from": "struggle",
+        "nothingCreditable": true,
+        "conditioned": true,
+        "sections": 6,
+        "reframe": true
+      }
+    },
+    {
+      "run": 4,
+      "progress_rows_before_post": 0,
+      "legs": [
+        {
+          "leg": "miss1_hint",
+          "status": 200,
+          "message_kind": "hint",
+          "intent": "attempt",
+          "reply": "You've treated 94% accuracy as the headline validation—but you need to check it against what would happen if the model simply predicted \"no churn\" for every single customer, because that's the real benchmark here, not gut feeling.\n\n**Next move:** work out what percentage of customers the model would get right if it made zero predictions of churn (just said \"everyone stays\"), then ask yourself whether 94% accuracy still sounds like evidence the model is working.",
+          "latency_ms": 4857,
+          "gap": [
+            {
+              "at": "case_gap_verdict",
+              "parsed": true,
+              "creditable": 0,
+              "derived": 1,
+              "correct": false,
+              "label": "Student misread 94% accuracy as meaningful, ignoring class-imbalance baseline problem"
+            }
+          ],
+          "reveal": [],
+          "offList": [],
+          "unsourced": [],
+          "unquoted": [],
+          "wrapperCut": []
+        },
+        {
+          "leg": "miss2_teach",
+          "status": 200,
+          "message_kind": "teaching",
+          "intent": "attempt",
+          "reply": "You've applied a common sense check to the 94% figure — baseline rate versus accuracy — and that's a sound instinct. But you've drawn the wrong conclusion from it, and that mistake runs through the whole answer.\n\nHere's the trap: when the underlying event is rare (6% churn), a model that simply predicts \"no churn\" for everyone will be right 94% of the time without learning anything at all. The model's raw accuracy tells you nothing about whether it has genuinely identified the customers who will churn; it only tells you that it agrees with the class distribution in the data. You need to ask a different question: **of the customers the model flagged as at-risk, how many actually churned?** That is precision. And **of the customers who actually did churn, how many did the model catch?** That is recall. The summary report gives you neither — only raw accuracy — and without them, you cannot tell whether the model is distinguishing real churn signals from noise or just reflecting the imbalance in the training data.\n\nThat absence matters enormously for every action the analyst proposes. The app-usage and customer-services findings rest on the assumption that the model has correctly identified which customers are truly at risk. The recommendation to require the app at checkout and the monthly flagged-list to marketing both assume the model's classifications are sound. But if raw accuracy is masking poor precision or recall, those actions could harm the business (forcing app downloads on customers who were never going to churn anyway) or waste retention budget (vouchers sent to customers the model mislabelled).\n\nThe data-handling issues you haven't mentioned also matter — customer data on personal laptops, shared logins, undeactivated access — but the core analytical gap is this one: **rewrite the sentence where you accept the 94% accuracy, and instead say that accuracy",
+          "latency_ms": 8744,
+          "gap": [
+            {
+              "at": "case_gap_verdict",
+              "parsed": true,
+              "creditable": 0,
+              "derived": 1,
+              "correct": false,
+              "label": "Student accepted 94% accuracy without recognising class-imbalance invalidates that metric"
+            }
+          ],
+          "reveal": [],
+          "offList": [],
+          "unsourced": [],
+          "unquoted": [],
+          "wrapperCut": []
+        },
+        {
+          "leg": "reveal",
+          "status": 200,
+          "message_kind": "reveal",
+          "intent": "reveal",
+          "reply": "You've walked into the **base-rate trap**: accepting a 94% accuracy headline without asking what it actually means when the event you're trying to predict is rare. When only 6% of customers churn, a model that simply predicts \"no churn\" for everyone is already 94% accurate—so that number tells you almost nothing about whether the model is catching real churners or generating false alarms that will waste the marketing budget. The misconception is treating accuracy as a sufficient validation metric in a class-imbalance problem; what the board actually needs are churner-level measures (recall and precision) plus cost-benefit reasoning. Start by reading **The accuracy claim** section below, which walks through why the headline figure is a mirage and what metrics matter instead—then apply that same scepticism to any machine-learning output you see that leads with a single aggregate accuracy number.\n\n*© Gradd — for your personal exam preparation.*\n\n---\n\n## The accuracy claim\n\nThe headline 94% accuracy should not be accepted at face value. Around 6% of Vesla's customers churn in a typical year, so a model that simply predicted \"no customer will churn\" would be about 94% accurate while identifying no churners at all. Accuracy is the wrong measure for such an imbalanced outcome; the board should ask how many actual churners the model correctly identifies (recall), what proportion of flagged customers would actually have churned (precision), and the number and cost of false positives, ideally weighted by the cost of a voucher against the margin retained, since those figures determine whether the retention budget is being aimed at the right people. The output is also a bare flagged/not-flagged list with no probability score, so marketing cannot rank or prioritise the customers most at risk. Until they are reported, the output cannot be relied upon.\n\n## The app-usage recommendation\n\nThe finding that app users churn less is a correlation in the training data; the analyst's recommendation to force app downloads treats it as a cause. It is at least as plausible that Vesla's most engaged, loyal customers are the ones who choose to install the app — in which case compelling less engaged customers to download it would not make them loyal, and adding friction at checkout could itself increase abandonment. The insight worth acting on is the association; the causal claim needs testing (for example, a controlled trial of app prompts) before any checkout mandate.\n\n## Training-data limitations\n\nTwo features of the training data limit what the output can say about next year. First, one of the two training years contained Vesla's largest-ever sitewide discounting campaign, so purchasing behaviour in that year is unlikely to represent a normal year — patterns the model learned may partly reflect the promotion rather than durable customer behaviour. Second, customers who joined within the last twelve months were excluded, so the model has not learned from new-customer behaviour and any predictions for that segment may be unreliable; if the scoring process also excludes them, the flagged list will systematically miss a group the board needs to understand, since it needs to know whether recent acquisition is converting into repeat purchasing.\n\n## Insights that can be acted on\n\nThe customer-services signal — more than two contacts in a year associating with churn — is plausible, actionable and cheap to act on: it suggests a service-friction signal worth investigating as a possible churn driver, regardless of the model. Feeding flagged customers to marketing is reasonable as a pilot, provided the flag quality is first verified (above) and the results of the vouchers are measured against a control group, so Vesla learns whether the intervention works rather than assuming it.\n\n## The \"model is complete\" claim\n\nThe recommendation to treat the model as complete should be rejected. Customer behaviour shifts, the training window is already unrepresentative, and the model has never been validated in live use. The board should require periodic retraining and ongoing monitoring of the model's live hit rate; the cost of retraining should be weighed against the cost of a growing retention budget aimed by a decaying model.\n\n## Conclusion\n\nThe model is a promising start but not yet a safe basis for decisions. Before reliance: report churner-level performance rather than headline accuracy, test the app-usage claim rather than mandating downloads, extend the data to cover new customers and normal trading years, pilot the voucher list against a control group, and schedule retraining.",
+          "latency_ms": 7666,
+          "gap": [],
+          "reveal": [
+            {
+              "design": "B",
+              "paper": "APM",
+              "reached_from": "struggle",
+              "nothingCreditable": true,
+              "conditioned": true,
+              "sections": 6,
+              "reframe": true
+            }
+          ],
+          "offList": [],
+          "unsourced": [],
+          "unquoted": [],
+          "wrapperCut": [
+            {
+              "surface": "case",
+              "paper": "APM",
+              "reached_from": "struggle",
+              "kept": 906,
+              "removed": 1525,
+              "removed_head": "---\n\n**The accuracy claim**\n\nA 94% accuracy rate appears strong until you account for class imbalance. With a 6% baselin"
+            }
+          ]
+        }
+      ],
+      "score": {
+        "verdict": "in_list",
+        "sections_named": [
+          "The accuracy claim"
+        ],
+        "section_index": [
+          1
+        ],
+        "wrapper": "You've walked into the **base-rate trap**: accepting a 94% accuracy headline without asking what it actually means when the event you're trying to predict is rare. When only 6% of customers churn, a model that simply predicts \"no churn\" for everyone is already 94% accurate—so that number tells you almost nothing about whether the model is catching real churners or generating false alarms that will waste the marketing budget. The misconception is treating accuracy as a sufficient validation metric in a class-imbalance problem; what the board actually needs are churner-level measures (recall and precision) plus cost-benefit reasoning. Start by reading **The accuracy claim** section below, which walks through why the headline figure is a mirage and what metrics matter instead—then apply that same scepticism to any machine-learning output you see that leads with a single aggregate accuracy number.\n\n*© Gradd — for your personal exam preparation.*",
+        "wrapper_chars": 955,
+        "wrapper_has_heading": false,
+        "wrapper_has_rule": false,
+        "wrapper_ends_mid_sentence": false,
+        "separator_present": true,
+        "artefact_chars": 3660,
+        "tail_intact": true,
+        "quotation": {
+          "spans": [
+            {
+              "quoted": "no churn",
+              "student_attributed": false,
+              "trigger": null,
+              "verbatim": null
+            }
+          ],
+          "total": 1,
+          "student_attributed": 0,
+          "fabricated_surviving": 0
+        }
+      },
+      "reveal_log": {
+        "design": "B",
+        "paper": "APM",
+        "reached_from": "struggle",
+        "nothingCreditable": true,
+        "conditioned": true,
+        "sections": 6,
+        "reframe": true
+      }
+    },
+    {
+      "run": 5,
+      "progress_rows_before_post": 0,
+      "legs": [
+        {
+          "leg": "miss1_hint",
+          "status": 200,
+          "message_kind": "hint",
+          "intent": "attempt",
+          "reply": "You've built your whole case on the 94% accuracy figure, but you're reading it backwards: a model that says \"no churn\" to 94 customers when the baseline churn rate is 6% will be right 94 times without the model doing anything at all. What you need to know is how much better the model performs *above* that free throw.\n\n**Next move:** Work out what accuracy you'd get if the model simply predicted \"no churn\" for every single customer — no machine learning, no app data, no customer-service records, just bet against churn every time. Once you see that number, ask yourself: does 94% beat it by enough to matter, or only by a rounding error?",
+          "latency_ms": 5654,
+          "gap": [
+            {
+              "at": "case_gap_verdict",
+              "parsed": true,
+              "creditable": 0,
+              "derived": 1,
+              "correct": false,
+              "label": "Student mistook baseline-matching accuracy for genuine model discriminative power"
+            }
+          ],
+          "reveal": [],
+          "offList": [],
+          "unsourced": [],
+          "unquoted": [],
+          "wrapperCut": []
+        },
+        {
+          "leg": "miss2_teach",
+          "status": 200,
+          "message_kind": "teaching",
+          "intent": "attempt",
+          "reply": "I'm going to pause you here on something fundamental that shifts how you should read the entire model.\n\nYou've noted that 94% accuracy is well above the 6% churn rate, and you've treated that as reassuring. But here's what that actually means: if the model simply predicted \"no churn\" for every single customer, it would be right 94% of the time without learning anything at all. So accuracy alone tells you almost nothing about whether the model is distinguishing between churners and non-churners — it just tells you the model is predicting the majority class. That's the trap the headline figure sets, and it's why you need to ask a different question: *of the customers the model flags as high-risk, how many actually churn?* That's what would tell you whether the recommendations are safe to act on.\n\nOnce you've grasped that the 94% accuracy doesn't mean what it appears to mean in this context, go back and reread the two main recommendations — the app requirement and the customer-services one — and ask yourself: does the model actually show that those *cause* lower churn, or only that they're *correlated* with it? That distinction matters enormously for whether Vesla should implement them.\n\nShow me how you'd reframe your assessment of those two findings in light of that.",
+          "latency_ms": 7253,
+          "gap": [
+            {
+              "at": "case_gap_verdict",
+              "parsed": true,
+              "creditable": 0,
+              "derived": 1,
+              "correct": false,
+              "label": "Student misread class-imbalance problem, treating headline accuracy as genuine predictive power"
+            }
+          ],
+          "reveal": [],
+          "offList": [],
+          "unsourced": [],
+          "unquoted": [],
+          "wrapperCut": []
+        },
+        {
+          "leg": "reveal",
+          "status": 200,
+          "message_kind": "reveal",
+          "intent": "reveal",
+          "reply": "The first move where your answer breaks down is treating that 94% accuracy as meaningful validation on its own. You've walked into the **base-rate trap** — when only 6% of customers actually churn, a model that simply predicts \"no churn\" for everyone is already 94% accurate, so that headline number tells you almost nothing about whether the model is actually catching the churners you need to target. The board needs churner-level diagnostic measures (recall and precision) plus a cost–benefit calculation before trusting the flagged list at all. Start by reading **The accuracy claim** section below, which breaks down why accuracy alone misleads here and what metrics actually matter; then apply that lens to evaluate whether a model trained on incomplete and distorted historical data should steer a live retention campaign.\n\n*© Gradd — for your personal exam preparation.*\n\n---\n\n## The accuracy claim\n\nThe headline 94% accuracy should not be accepted at face value. Around 6% of Vesla's customers churn in a typical year, so a model that simply predicted \"no customer will churn\" would be about 94% accurate while identifying no churners at all. Accuracy is the wrong measure for such an imbalanced outcome; the board should ask how many actual churners the model correctly identifies (recall), what proportion of flagged customers would actually have churned (precision), and the number and cost of false positives, ideally weighted by the cost of a voucher against the margin retained, since those figures determine whether the retention budget is being aimed at the right people. The output is also a bare flagged/not-flagged list with no probability score, so marketing cannot rank or prioritise the customers most at risk. Until they are reported, the output cannot be relied upon.\n\n## The app-usage recommendation\n\nThe finding that app users churn less is a correlation in the training data; the analyst's recommendation to force app downloads treats it as a cause. It is at least as plausible that Vesla's most engaged, loyal customers are the ones who choose to install the app — in which case compelling less engaged customers to download it would not make them loyal, and adding friction at checkout could itself increase abandonment. The insight worth acting on is the association; the causal claim needs testing (for example, a controlled trial of app prompts) before any checkout mandate.\n\n## Training-data limitations\n\nTwo features of the training data limit what the output can say about next year. First, one of the two training years contained Vesla's largest-ever sitewide discounting campaign, so purchasing behaviour in that year is unlikely to represent a normal year — patterns the model learned may partly reflect the promotion rather than durable customer behaviour. Second, customers who joined within the last twelve months were excluded, so the model has not learned from new-customer behaviour and any predictions for that segment may be unreliable; if the scoring process also excludes them, the flagged list will systematically miss a group the board needs to understand, since it needs to know whether recent acquisition is converting into repeat purchasing.\n\n## Insights that can be acted on\n\nThe customer-services signal — more than two contacts in a year associating with churn — is plausible, actionable and cheap to act on: it suggests a service-friction signal worth investigating as a possible churn driver, regardless of the model. Feeding flagged customers to marketing is reasonable as a pilot, provided the flag quality is first verified (above) and the results of the vouchers are measured against a control group, so Vesla learns whether the intervention works rather than assuming it.\n\n## The \"model is complete\" claim\n\nThe recommendation to treat the model as complete should be rejected. Customer behaviour shifts, the training window is already unrepresentative, and the model has never been validated in live use. The board should require periodic retraining and ongoing monitoring of the model's live hit rate; the cost of retraining should be weighed against the cost of a growing retention budget aimed by a decaying model.\n\n## Conclusion\n\nThe model is a promising start but not yet a safe basis for decisions. Before reliance: report churner-level performance rather than headline accuracy, test the app-usage claim rather than mandating downloads, extend the data to cover new customers and normal trading years, pilot the voucher list against a control group, and schedule retraining.",
+          "latency_ms": 7640,
+          "gap": [],
+          "reveal": [
+            {
+              "design": "B",
+              "paper": "APM",
+              "reached_from": "struggle",
+              "nothingCreditable": true,
+              "conditioned": true,
+              "sections": 6,
+              "reframe": true
+            }
+          ],
+          "offList": [],
+          "unsourced": [],
+          "unquoted": [],
+          "wrapperCut": [
+            {
+              "surface": "case",
+              "paper": "APM",
+              "reached_from": "struggle",
+              "kept": 829,
+              "removed": 1454,
+              "removed_head": "---\n\n**The accuracy claim**\n\nA model that predicts \"no churn\" for every customer achieves approximately 94% accuracy giv"
+            }
+          ]
+        }
+      ],
+      "score": {
+        "verdict": "in_list",
+        "sections_named": [
+          "The accuracy claim"
+        ],
+        "section_index": [
+          1
+        ],
+        "wrapper": "The first move where your answer breaks down is treating that 94% accuracy as meaningful validation on its own. You've walked into the **base-rate trap** — when only 6% of customers actually churn, a model that simply predicts \"no churn\" for everyone is already 94% accurate, so that headline number tells you almost nothing about whether the model is actually catching the churners you need to target. The board needs churner-level diagnostic measures (recall and precision) plus a cost–benefit calculation before trusting the flagged list at all. Start by reading **The accuracy claim** section below, which breaks down why accuracy alone misleads here and what metrics actually matter; then apply that lens to evaluate whether a model trained on incomplete and distorted historical data should steer a live retention campaign.\n\n*© Gradd — for your personal exam preparation.*",
+        "wrapper_chars": 878,
+        "wrapper_has_heading": false,
+        "wrapper_has_rule": false,
+        "wrapper_ends_mid_sentence": false,
+        "separator_present": true,
+        "artefact_chars": 3660,
+        "tail_intact": true,
+        "quotation": {
+          "spans": [
+            {
+              "quoted": "no churn",
+              "student_attributed": false,
+              "trigger": null,
+              "verbatim": null
+            }
+          ],
+          "total": 1,
+          "student_attributed": 0,
+          "fabricated_surviving": 0
+        }
+      },
+      "reveal_log": {
+        "design": "B",
+        "paper": "APM",
+        "reached_from": "struggle",
+        "nothingCreditable": true,
+        "conditioned": true,
+        "sections": 6,
+        "reframe": true
+      }
+    },
+    {
+      "run": 6,
+      "progress_rows_before_post": 0,
+      "legs": [
+        {
+          "leg": "miss1_hint",
+          "status": 200,
+          "message_kind": "hint",
+          "intent": "attempt",
+          "reply": "You've treated 94% accuracy as a measure of how well the model discriminates between churners and non-churners, but when only 6% of customers churn, a model that simply predicts \"no churn\" for everyone would hit 94% accuracy without doing any real work — so that headline number doesn't actually tell you whether the model is catching the right people or just hiding behind the base rate.\n\n**Next move:** Work out what fraction of the customers the model flags as \"will churn\" actually do churn when you follow up with them (that's called precision, or positive predictive value), and separately what fraction of the people who *actually* churn does the model catch (recall). Those two numbers will tell you whether the 94% is real insight or statistical camouflage. Pull those out of the data if it's there, or — if it's not — name that as a gap the board needs closed before acting on the model at all.",
+          "latency_ms": 5899,
+          "gap": [
+            {
+              "at": "case_gap_verdict",
+              "parsed": true,
+              "creditable": 0,
+              "derived": 1,
+              "correct": false,
+              "label": "Student misidentified base-rate-equal accuracy as genuine model discriminative power"
+            }
+          ],
+          "reveal": [],
+          "offList": [],
+          "unsourced": [],
+          "unquoted": [],
+          "wrapperCut": []
+        },
+        {
+          "leg": "miss2_teach",
+          "status": 200,
+          "message_kind": "teaching",
+          "intent": "attempt",
+          "reply": "You've graded the 94% accuracy as excellent by comparing it to the 6% baseline churn rate — but you've actually identified the problem without naming it. Let me sharpen this: if 94% of customers *don't* churn and the model simply predicts \"no churn\" for everyone, it would achieve exactly that 94% accuracy, and it would be worthless for targeting retention offers. The real question is not whether the model beats the baseline; it's whether it actually *separates* the 6% who will churn from the 94% who won't. That separation is what marketing needs to act on — and 94% overall accuracy tells you almost nothing about whether the model can do that.\n\nOnce you reset on that diagnostic, the app usage and customer-services findings shift significantly. They're no longer \"strong predictors we should act on\" — they're claims that need scrutiny against a much harder test: **Is the model actually finding a causal driver of churn, or has it picked up a *symptom* or *correlation that won't survive real-world deployment?** Customers who contact services twice might churn *because* they're already dissatisfied, not because contact causes churn; and app adoption might be what *happens* to loyal customers, not what *creates* them.\n\nThe training data detail also swings: the inclusion of the sitewide-discount year is now a weakness, not a strength, because customers' behaviour under an exceptional clearing sale is a poor template for predicting churn under normal conditions.\n\nHere's your concrete next move: **Rewrite the opening claim.** Instead of \"The churn model is a strong piece of work and the board can rely on it,\" write something that names what \"strong accuracy\" actually requires in this scenario — i.e. what precision and recall (or sensitivity and specificity",
+          "latency_ms": 8691,
+          "gap": [
+            {
+              "at": "case_gap_verdict",
+              "parsed": true,
+              "creditable": 0,
+              "derived": 1,
+              "correct": false,
+              "label": "Student conflated baseline accuracy rate with genuine model predictive power, missing imbalanced-class flaw"
+            }
+          ],
+          "reveal": [],
+          "offList": [],
+          "unsourced": [],
+          "unquoted": [],
+          "wrapperCut": []
+        },
+        {
+          "leg": "reveal",
+          "status": 200,
+          "message_kind": "reveal",
+          "intent": "reveal",
+          "reply": "You've accepted the 94% accuracy headline at face value, but you've walked into the base-rate trap—the real misconception here is that *accuracy alone tells you whether a model is trustworthy*. When only 6% of customers churn, a model that simply predicts \"no churn\" for everyone is already 94% accurate without doing any real work. The board needs to know recall (how many actual churners the model catches) and precision (how many flagged customers would genuinely churn), not just an overall accuracy figure that's artificially inflated by the imbalanced class problem. Start by reading **The accuracy claim** section below, which shows why that headline obscures the real performance question, then apply that same skepticism to any future ML result that leads with a single accuracy metric without breaking down performance by class.\n\n*© Gradd — for your personal exam preparation.*\n\n---\n\n## The accuracy claim\n\nThe headline 94% accuracy should not be accepted at face value. Around 6% of Vesla's customers churn in a typical year, so a model that simply predicted \"no customer will churn\" would be about 94% accurate while identifying no churners at all. Accuracy is the wrong measure for such an imbalanced outcome; the board should ask how many actual churners the model correctly identifies (recall), what proportion of flagged customers would actually have churned (precision), and the number and cost of false positives, ideally weighted by the cost of a voucher against the margin retained, since those figures determine whether the retention budget is being aimed at the right people. The output is also a bare flagged/not-flagged list with no probability score, so marketing cannot rank or prioritise the customers most at risk. Until they are reported, the output cannot be relied upon.\n\n## The app-usage recommendation\n\nThe finding that app users churn less is a correlation in the training data; the analyst's recommendation to force app downloads treats it as a cause. It is at least as plausible that Vesla's most engaged, loyal customers are the ones who choose to install the app — in which case compelling less engaged customers to download it would not make them loyal, and adding friction at checkout could itself increase abandonment. The insight worth acting on is the association; the causal claim needs testing (for example, a controlled trial of app prompts) before any checkout mandate.\n\n## Training-data limitations\n\nTwo features of the training data limit what the output can say about next year. First, one of the two training years contained Vesla's largest-ever sitewide discounting campaign, so purchasing behaviour in that year is unlikely to represent a normal year — patterns the model learned may partly reflect the promotion rather than durable customer behaviour. Second, customers who joined within the last twelve months were excluded, so the model has not learned from new-customer behaviour and any predictions for that segment may be unreliable; if the scoring process also excludes them, the flagged list will systematically miss a group the board needs to understand, since it needs to know whether recent acquisition is converting into repeat purchasing.\n\n## Insights that can be acted on\n\nThe customer-services signal — more than two contacts in a year associating with churn — is plausible, actionable and cheap to act on: it suggests a service-friction signal worth investigating as a possible churn driver, regardless of the model. Feeding flagged customers to marketing is reasonable as a pilot, provided the flag quality is first verified (above) and the results of the vouchers are measured against a control group, so Vesla learns whether the intervention works rather than assuming it.\n\n## The \"model is complete\" claim\n\nThe recommendation to treat the model as complete should be rejected. Customer behaviour shifts, the training window is already unrepresentative, and the model has never been validated in live use. The board should require periodic retraining and ongoing monitoring of the model's live hit rate; the cost of retraining should be weighed against the cost of a growing retention budget aimed by a decaying model.\n\n## Conclusion\n\nThe model is a promising start but not yet a safe basis for decisions. Before reliance: report churner-level performance rather than headline accuracy, test the app-usage claim rather than mandating downloads, extend the data to cover new customers and normal trading years, pilot the voucher list against a control group, and schedule retraining.",
+          "latency_ms": 7541,
+          "gap": [],
+          "reveal": [
+            {
+              "design": "B",
+              "paper": "APM",
+              "reached_from": "struggle",
+              "nothingCreditable": true,
+              "conditioned": true,
+              "sections": 6,
+              "reframe": true
+            }
+          ],
+          "offList": [],
+          "unsourced": [],
+          "unquoted": [],
+          "wrapperCut": [
+            {
+              "surface": "case",
+              "paper": "APM",
+              "reached_from": "struggle",
+              "kept": 838,
+              "removed": 1557,
+              "removed_head": "---\n\n**The accuracy claim**\n\nA model predicting that no customer will churn would be correct 94% of the time, given that"
+            }
+          ]
+        }
+      ],
+      "score": {
+        "verdict": "in_list",
+        "sections_named": [
+          "The accuracy claim"
+        ],
+        "section_index": [
+          1
+        ],
+        "wrapper": "You've accepted the 94% accuracy headline at face value, but you've walked into the base-rate trap—the real misconception here is that *accuracy alone tells you whether a model is trustworthy*. When only 6% of customers churn, a model that simply predicts \"no churn\" for everyone is already 94% accurate without doing any real work. The board needs to know recall (how many actual churners the model catches) and precision (how many flagged customers would genuinely churn), not just an overall accuracy figure that's artificially inflated by the imbalanced class problem. Start by reading **The accuracy claim** section below, which shows why that headline obscures the real performance question, then apply that same skepticism to any future ML result that leads with a single accuracy metric without breaking down performance by class.\n\n*© Gradd — for your personal exam preparation.*",
+        "wrapper_chars": 887,
+        "wrapper_has_heading": false,
+        "wrapper_has_rule": false,
+        "wrapper_ends_mid_sentence": false,
+        "separator_present": true,
+        "artefact_chars": 3660,
+        "tail_intact": true,
+        "quotation": {
+          "spans": [
+            {
+              "quoted": "no churn",
+              "student_attributed": false,
+              "trigger": null,
+              "verbatim": null
+            }
+          ],
+          "total": 1,
+          "student_attributed": 0,
+          "fabricated_surviving": 0
+        }
+      },
+      "reveal_log": {
+        "design": "B",
+        "paper": "APM",
+        "reached_from": "struggle",
+        "nothingCreditable": true,
+        "conditioned": true,
+        "sections": 6,
+        "reframe": true
+      }
+    },
+    {
+      "run": 7,
+      "progress_rows_before_post": 0,
+      "legs": [
+        {
+          "leg": "miss1_hint",
+          "status": 200,
+          "message_kind": "hint",
+          "intent": "attempt",
+          "reply": "You've treated the 94% accuracy as evidence the model works, but you've skipped the crucial step: **what would happen if the model just predicted \"nobody churns\" every single time?** Work that out — it's one sentence of arithmetic — and then ask yourself whether 94% accuracy still sounds like proof the model is actually spotting churn risk.",
+          "latency_ms": 4545,
+          "gap": [
+            {
+              "at": "case_gap_verdict",
+              "parsed": true,
+              "creditable": 0,
+              "derived": 1,
+              "correct": false,
+              "label": "Student accepted base-rate accuracy as genuine predictive power without questioning class imbalance"
+            }
+          ],
+          "reveal": [],
+          "offList": [],
+          "unsourced": [],
+          "unquoted": [],
+          "wrapperCut": []
+        },
+        {
+          "leg": "miss2_teach",
+          "status": 200,
+          "message_kind": "teaching",
+          "intent": "attempt",
+          "reply": "I need to be direct here: you've described what the analyst said, not evaluated whether it's safe to act on. The requirement is asking you to **challenge the claims against what the scenario actually tells you** — to spot where the model's recommendations rest on shaky ground, not to repeat them back as settled.\n\nStart over with this question in mind: **what are the red flags in how this model was built and what it's claiming to show?** There are several. The 94% accuracy figure is one — you noted it beats the base rate, but have you thought about *what that accuracy is actually measuring here*? And the two recommendations (require the app, act on the flagged list) — before Vesla rolls those out across all markets, what does the scenario tell you about whether the model's findings are reliable enough to deserve that weight? \n\nRead the background and data-handling sections again with scepticism, not acceptance — they contain material facts that should make you question whether the analyst's confidence is warranted.",
+          "latency_ms": 6847,
+          "gap": [
+            {
+              "at": "case_gap_verdict",
+              "parsed": true,
+              "creditable": 0,
+              "derived": 1,
+              "correct": false,
+              "label": "Student endorsed every model claim instead of critically evaluating each against scenario facts"
+            }
+          ],
+          "reveal": [],
+          "offList": [],
+          "unsourced": [],
+          "unquoted": [],
+          "wrapperCut": []
+        },
+        {
+          "leg": "reveal",
+          "status": 200,
+          "message_kind": "reveal",
+          "intent": "reveal",
+          "reply": "Your response accepts the analyst's claims instead of treating them as hypotheses to test against the scenario facts—that's the critical-evaluation gap on this question type. The misconception: you treated a high-accuracy headline figure as comfort when in fact a model that says nobody churns would also be ~94% accurate given the base rate, so the board needs churner-level precision and recall, not just overall accuracy, before deploying a flagged list. Start by reading **The accuracy claim** section, which shows why that headline needs to be unpacked and what evidence the board actually needs to make a deployment decision. Then apply the same challenge to a fresh scenario: imagine a model built to flag fraudulent transactions in a bank where fraud occurs in 0·8% of all transactions—what accuracy threshold would mean nothing, and what metrics would you demand instead before greenlighting an automated block?\n\n*© Gradd — for your personal exam preparation.*\n\n---\n\n## The accuracy claim\n\nThe headline 94% accuracy should not be accepted at face value. Around 6% of Vesla's customers churn in a typical year, so a model that simply predicted \"no customer will churn\" would be about 94% accurate while identifying no churners at all. Accuracy is the wrong measure for such an imbalanced outcome; the board should ask how many actual churners the model correctly identifies (recall), what proportion of flagged customers would actually have churned (precision), and the number and cost of false positives, ideally weighted by the cost of a voucher against the margin retained, since those figures determine whether the retention budget is being aimed at the right people. The output is also a bare flagged/not-flagged list with no probability score, so marketing cannot rank or prioritise the customers most at risk. Until they are reported, the output cannot be relied upon.\n\n## The app-usage recommendation\n\nThe finding that app users churn less is a correlation in the training data; the analyst's recommendation to force app downloads treats it as a cause. It is at least as plausible that Vesla's most engaged, loyal customers are the ones who choose to install the app — in which case compelling less engaged customers to download it would not make them loyal, and adding friction at checkout could itself increase abandonment. The insight worth acting on is the association; the causal claim needs testing (for example, a controlled trial of app prompts) before any checkout mandate.\n\n## Training-data limitations\n\nTwo features of the training data limit what the output can say about next year. First, one of the two training years contained Vesla's largest-ever sitewide discounting campaign, so purchasing behaviour in that year is unlikely to represent a normal year — patterns the model learned may partly reflect the promotion rather than durable customer behaviour. Second, customers who joined within the last twelve months were excluded, so the model has not learned from new-customer behaviour and any predictions for that segment may be unreliable; if the scoring process also excludes them, the flagged list will systematically miss a group the board needs to understand, since it needs to know whether recent acquisition is converting into repeat purchasing.\n\n## Insights that can be acted on\n\nThe customer-services signal — more than two contacts in a year associating with churn — is plausible, actionable and cheap to act on: it suggests a service-friction signal worth investigating as a possible churn driver, regardless of the model. Feeding flagged customers to marketing is reasonable as a pilot, provided the flag quality is first verified (above) and the results of the vouchers are measured against a control group, so Vesla learns whether the intervention works rather than assuming it.\n\n## The \"model is complete\" claim\n\nThe recommendation to treat the model as complete should be rejected. Customer behaviour shifts, the training window is already unrepresentative, and the model has never been validated in live use. The board should require periodic retraining and ongoing monitoring of the model's live hit rate; the cost of retraining should be weighed against the cost of a growing retention budget aimed by a decaying model.\n\n## Conclusion\n\nThe model is a promising start but not yet a safe basis for decisions. Before reliance: report churner-level performance rather than headline accuracy, test the app-usage claim rather than mandating downloads, extend the data to cover new customers and normal trading years, pilot the voucher list against a control group, and schedule retraining.",
+          "latency_ms": 7799,
+          "gap": [],
+          "reveal": [
+            {
+              "design": "B",
+              "paper": "APM",
+              "reached_from": "struggle",
+              "nothingCreditable": true,
+              "conditioned": true,
+              "sections": 6,
+              "reframe": true
+            }
+          ],
+          "offList": [],
+          "unsourced": [],
+          "unquoted": [
+            {
+              "surface": "case",
+              "paper": "APM",
+              "reached_from": "struggle",
+              "quoted": "nobody churns",
+              "trigger": "you treated",
+              "checked": 1,
+              "quoted_total": 1
+            }
+          ],
+          "wrapperCut": [
+            {
+              "surface": "case",
+              "paper": "APM",
+              "reached_from": "struggle",
+              "kept": 922,
+              "removed": 1292,
+              "removed_head": "---\n\nThe accuracy claim\n\nThe analyst's headline finding is that the model \"achieves 94% accuracy,\" presented as \"an exce"
+            }
+          ]
+        }
+      ],
+      "score": {
+        "verdict": "in_list",
+        "sections_named": [
+          "The accuracy claim"
+        ],
+        "section_index": [
+          1
+        ],
+        "wrapper": "Your response accepts the analyst's claims instead of treating them as hypotheses to test against the scenario facts—that's the critical-evaluation gap on this question type. The misconception: you treated a high-accuracy headline figure as comfort when in fact a model that says nobody churns would also be ~94% accurate given the base rate, so the board needs churner-level precision and recall, not just overall accuracy, before deploying a flagged list. Start by reading **The accuracy claim** section, which shows why that headline needs to be unpacked and what evidence the board actually needs to make a deployment decision. Then apply the same challenge to a fresh scenario: imagine a model built to flag fraudulent transactions in a bank where fraud occurs in 0·8% of all transactions—what accuracy threshold would mean nothing, and what metrics would you demand instead before greenlighting an automated block?\n\n*© Gradd — for your personal exam preparation.*",
+        "wrapper_chars": 969,
+        "wrapper_has_heading": false,
+        "wrapper_has_rule": false,
+        "wrapper_ends_mid_sentence": false,
+        "separator_present": true,
+        "artefact_chars": 3660,
+        "tail_intact": true,
+        "quotation": {
+          "spans": [],
+          "total": 0,
+          "student_attributed": 0,
+          "fabricated_surviving": 0
+        }
+      },
+      "reveal_log": {
+        "design": "B",
+        "paper": "APM",
+        "reached_from": "struggle",
+        "nothingCreditable": true,
+        "conditioned": true,
+        "sections": 6,
+        "reframe": true
+      }
+    },
+    {
+      "run": 8,
+      "progress_rows_before_post": 0,
+      "legs": [
+        {
+          "leg": "miss1_hint",
+          "status": 200,
+          "message_kind": "hint",
+          "intent": "attempt",
+          "reply": "**The sharpest gap:** You've treated 94% accuracy as meaningful validation, but you haven't asked what the model would score if it simply predicted \"no churn\" for every single customer — and that matters enormously here.\n\n**Next move:** Work out what percentage of Vesla's actual customer base would be classified as \"no churn\" if the model just said that for everyone, every time. Then ask yourself: is 94% accuracy actually telling you the model is finding real patterns, or is it mostly just agreeing with the base rate?",
+          "latency_ms": 4655,
+          "gap": [
+            {
+              "at": "case_gap_verdict",
+              "parsed": true,
+              "creditable": 0,
+              "derived": 1,
+              "correct": false,
+              "label": "Student accepted base-rate accuracy as meaningful without testing recall or precision"
+            }
+          ],
+          "reveal": [],
+          "offList": [],
+          "unsourced": [],
+          "unquoted": [],
+          "wrapperCut": []
+        },
+        {
+          "leg": "miss2_teach",
+          "status": 200,
+          "message_kind": "teaching",
+          "intent": "attempt",
+          "reply": "You've identified the right concern — and you've even stated it correctly — but you haven't yet *applied* it to the scenario to decide what the board should actually do.\n\nYou correctly note that the underlying churn rate is about 6%, so 94% accuracy could just mean the model is saying \"nobody churns\" to nearly everyone. That's a real risk. But to judge whether this model is actually working or just mimicking that baseline, you need to ask: *what would 94% accuracy look like if the model did nothing but predict the base rate?* Work that out from the scenario's own numbers, then compare it to what the analyst is claiming. Once you know whether 94% is genuinely above the \"predict nothing\" floor or right at it, you'll know whether the model has real signal or not — and that answer changes everything the board should do next.\n\nThat's the move that unlocks whether app-download mandates and immediate voucher campaigns are safe bets or mistakes: the numbers in the scenario tell you.",
+          "latency_ms": 6462,
+          "gap": [
+            {
+              "at": "case_gap_verdict",
+              "parsed": true,
+              "creditable": 0,
+              "derived": 1,
+              "correct": false,
+              "label": "Student confused class-imbalance baseline accuracy with genuine predictive power"
+            }
+          ],
+          "reveal": [],
+          "offList": [],
+          "unsourced": [],
+          "unquoted": [],
+          "wrapperCut": []
+        },
+        {
+          "leg": "reveal",
+          "status": 200,
+          "message_kind": "reveal",
+          "intent": "reveal",
+          "reply": "You've walked into the **base-rate accuracy trap** — the move that breaks this answer open. When ~6% of customers actually churn, a naive model that simply predicts \"no churn\" for everyone scores 94% accuracy with zero predictive power. The board needs churner-level metrics (recall, precision, and the cost of false positives) to know whether the flagged list is actually worth acting on, not just a headline accuracy figure that sits suspiciously close to the baseline rate. Start by reading **The accuracy claim** section below — that's where the reframe happens — and then trace through how that same lens should demolish the app-usage recommendation. Once you've seen how to challenge the numbers, apply it to a fresh scenario: if a model flags 5% of a customer base as likely to churn but doesn't report how many real churners it actually catches, what hard questions would you ask before funding a retention campaign around it?\n\n*© Gradd — for your personal exam preparation.*\n\n---\n\n## The accuracy claim\n\nThe headline 94% accuracy should not be accepted at face value. Around 6% of Vesla's customers churn in a typical year, so a model that simply predicted \"no customer will churn\" would be about 94% accurate while identifying no churners at all. Accuracy is the wrong measure for such an imbalanced outcome; the board should ask how many actual churners the model correctly identifies (recall), what proportion of flagged customers would actually have churned (precision), and the number and cost of false positives, ideally weighted by the cost of a voucher against the margin retained, since those figures determine whether the retention budget is being aimed at the right people. The output is also a bare flagged/not-flagged list with no probability score, so marketing cannot rank or prioritise the customers most at risk. Until they are reported, the output cannot be relied upon.\n\n## The app-usage recommendation\n\nThe finding that app users churn less is a correlation in the training data; the analyst's recommendation to force app downloads treats it as a cause. It is at least as plausible that Vesla's most engaged, loyal customers are the ones who choose to install the app — in which case compelling less engaged customers to download it would not make them loyal, and adding friction at checkout could itself increase abandonment. The insight worth acting on is the association; the causal claim needs testing (for example, a controlled trial of app prompts) before any checkout mandate.\n\n## Training-data limitations\n\nTwo features of the training data limit what the output can say about next year. First, one of the two training years contained Vesla's largest-ever sitewide discounting campaign, so purchasing behaviour in that year is unlikely to represent a normal year — patterns the model learned may partly reflect the promotion rather than durable customer behaviour. Second, customers who joined within the last twelve months were excluded, so the model has not learned from new-customer behaviour and any predictions for that segment may be unreliable; if the scoring process also excludes them, the flagged list will systematically miss a group the board needs to understand, since it needs to know whether recent acquisition is converting into repeat purchasing.\n\n## Insights that can be acted on\n\nThe customer-services signal — more than two contacts in a year associating with churn — is plausible, actionable and cheap to act on: it suggests a service-friction signal worth investigating as a possible churn driver, regardless of the model. Feeding flagged customers to marketing is reasonable as a pilot, provided the flag quality is first verified (above) and the results of the vouchers are measured against a control group, so Vesla learns whether the intervention works rather than assuming it.\n\n## The \"model is complete\" claim\n\nThe recommendation to treat the model as complete should be rejected. Customer behaviour shifts, the training window is already unrepresentative, and the model has never been validated in live use. The board should require periodic retraining and ongoing monitoring of the model's live hit rate; the cost of retraining should be weighed against the cost of a growing retention budget aimed by a decaying model.\n\n## Conclusion\n\nThe model is a promising start but not yet a safe basis for decisions. Before reliance: report churner-level performance rather than headline accuracy, test the app-usage claim rather than mandating downloads, extend the data to cover new customers and normal trading years, pilot the voucher list against a control group, and schedule retraining.",
+          "latency_ms": 7140,
+          "gap": [],
+          "reveal": [
+            {
+              "design": "B",
+              "paper": "APM",
+              "reached_from": "struggle",
+              "nothingCreditable": true,
+              "conditioned": true,
+              "sections": 6,
+              "reframe": true
+            }
+          ],
+          "offList": [],
+          "unsourced": [],
+          "unquoted": [],
+          "wrapperCut": [
+            {
+              "surface": "case",
+              "paper": "APM",
+              "reached_from": "struggle",
+              "kept": 934,
+              "removed": 1357,
+              "removed_head": "---\n\n**The accuracy claim**\n\nA 94% accuracy figure is close to worthless in isolation when the underlying churn rate is "
+            }
+          ]
+        }
+      ],
+      "score": {
+        "verdict": "in_list",
+        "sections_named": [
+          "The accuracy claim"
+        ],
+        "section_index": [
+          1
+        ],
+        "wrapper": "You've walked into the **base-rate accuracy trap** — the move that breaks this answer open. When ~6% of customers actually churn, a naive model that simply predicts \"no churn\" for everyone scores 94% accuracy with zero predictive power. The board needs churner-level metrics (recall, precision, and the cost of false positives) to know whether the flagged list is actually worth acting on, not just a headline accuracy figure that sits suspiciously close to the baseline rate. Start by reading **The accuracy claim** section below — that's where the reframe happens — and then trace through how that same lens should demolish the app-usage recommendation. Once you've seen how to challenge the numbers, apply it to a fresh scenario: if a model flags 5% of a customer base as likely to churn but doesn't report how many real churners it actually catches, what hard questions would you ask before funding a retention campaign around it?\n\n*© Gradd — for your personal exam preparation.*",
+        "wrapper_chars": 983,
+        "wrapper_has_heading": false,
+        "wrapper_has_rule": false,
+        "wrapper_ends_mid_sentence": false,
+        "separator_present": true,
+        "artefact_chars": 3660,
+        "tail_intact": true,
+        "quotation": {
+          "spans": [
+            {
+              "quoted": "no churn",
+              "student_attributed": false,
+              "trigger": null,
+              "verbatim": null
+            }
+          ],
+          "total": 1,
+          "student_attributed": 0,
+          "fabricated_surviving": 0
+        }
+      },
+      "reveal_log": {
+        "design": "B",
+        "paper": "APM",
+        "reached_from": "struggle",
+        "nothingCreditable": true,
+        "conditioned": true,
+        "sections": 6,
+        "reframe": true
+      }
+    },
+    {
+      "run": 9,
+      "progress_rows_before_post": 0,
+      "legs": [
+        {
+          "leg": "miss1_hint",
+          "status": 200,
+          "message_kind": "hint",
+          "intent": "attempt",
+          "reply": "You've read the 94% accuracy as comfort that the model works, but you haven't asked what it would predict if it classified *every single customer as \"will not churn\"* — and that's the move that exposes the real problem here.\n\n**Next move:** Work out what accuracy you'd get from a naive model that just predicts \"no churn\" for everyone, using the baseline churn rate Vesla gave you. Then ask yourself whether the 94% figure still looks like evidence the model has learned something real.",
+          "latency_ms": 4873,
+          "gap": [
+            {
+              "at": "case_gap_verdict",
+              "parsed": true,
+              "creditable": 0,
+              "derived": 1,
+              "correct": false,
+              "label": "Student conflated base-rate accuracy with genuine predictive power, missing class-imbalance problem"
+            }
+          ],
+          "reveal": [],
+          "offList": [],
+          "unsourced": [],
+          "unquoted": [],
+          "wrapperCut": []
+        },
+        {
+          "leg": "miss2_teach",
+          "status": 200,
+          "message_kind": "teaching",
+          "intent": "attempt",
+          "reply": "You've spotted the base-rate accuracy paradox correctly — 94% looks impressive until you realise the model could achieve 94% accuracy by simply predicting \"no churn\" for everyone, given that only 6% actually churn. But here's what your answer does next: it **accepts that this means nothing**, and then **moves on as if the model is still trustworthy**. That's the trap.\n\nThe real question the requirement is asking you is this: **what would you actually need to see** to know the model is discriminating between churners and non-churners, rather than just guessing \"no churn\" most of the time? Once you know what that evidence would look like, you can then assess whether the analyst's report actually gives it to you. It doesn't. The 94% figure tells you nothing about whether the model is separating the signal from the noise — you need a completely different set of metrics to answer that.\n\n**Next move:** rewrite the accuracy paragraph. Start by naming what the 94% figure **cannot** tell you (hint: it cannot tell you how many of the customers the model **flags as churn risks** actually churn, or how many true churners it misses). Then say what you **would need to see** in the report instead — not a number, just the *type* of evidence — to know the model is working. That's your grounding. Once you've done that, you'll have the lens to re-examine the app-usage and customer-services claims with real scepticism.",
+          "latency_ms": 7900,
+          "gap": [
+            {
+              "at": "case_gap_verdict",
+              "parsed": true,
+              "creditable": 0,
+              "derived": 1,
+              "correct": false,
+              "label": "Student misidentified base-rate accuracy paradox as genuine model performance signal"
+            }
+          ],
+          "reveal": [],
+          "offList": [],
+          "unsourced": [],
+          "unquoted": [],
+          "wrapperCut": []
+        },
+        {
+          "leg": "reveal",
+          "status": 200,
+          "message_kind": "reveal",
+          "intent": "reveal",
+          "reply": "You've done the work to spot that 94% accuracy needs hard scrutiny against the base rate, which is exactly right—but then you've used that insight to *accept* the analyst's conclusions rather than to *dismantle* them. The misconception here is **treating a high-sounding accuracy figure as validation of model usefulness without challenging what that accuracy actually tells us about the board's ability to act**. A model that never flags anyone for churn would be 94% right; the real questions are whether it catches the churners it claims to find (recall) and whether those it flags would genuinely have churned (precision)—metrics the analyst never provided. Start with **The accuracy claim** section below, which walks through why the headline number is nearly meaningless in isolation and what the board needs instead; then apply that same discipline to the app-usage and customer-services findings by asking yourself: *is this correlation being misread as causation, and what would it actually cost to implement without a pilot?*\n\n*© Gradd — for your personal exam preparation.*\n\n---\n\n## The accuracy claim\n\nThe headline 94% accuracy should not be accepted at face value. Around 6% of Vesla's customers churn in a typical year, so a model that simply predicted \"no customer will churn\" would be about 94% accurate while identifying no churners at all. Accuracy is the wrong measure for such an imbalanced outcome; the board should ask how many actual churners the model correctly identifies (recall), what proportion of flagged customers would actually have churned (precision), and the number and cost of false positives, ideally weighted by the cost of a voucher against the margin retained, since those figures determine whether the retention budget is being aimed at the right people. The output is also a bare flagged/not-flagged list with no probability score, so marketing cannot rank or prioritise the customers most at risk. Until they are reported, the output cannot be relied upon.\n\n## The app-usage recommendation\n\nThe finding that app users churn less is a correlation in the training data; the analyst's recommendation to force app downloads treats it as a cause. It is at least as plausible that Vesla's most engaged, loyal customers are the ones who choose to install the app — in which case compelling less engaged customers to download it would not make them loyal, and adding friction at checkout could itself increase abandonment. The insight worth acting on is the association; the causal claim needs testing (for example, a controlled trial of app prompts) before any checkout mandate.\n\n## Training-data limitations\n\nTwo features of the training data limit what the output can say about next year. First, one of the two training years contained Vesla's largest-ever sitewide discounting campaign, so purchasing behaviour in that year is unlikely to represent a normal year — patterns the model learned may partly reflect the promotion rather than durable customer behaviour. Second, customers who joined within the last twelve months were excluded, so the model has not learned from new-customer behaviour and any predictions for that segment may be unreliable; if the scoring process also excludes them, the flagged list will systematically miss a group the board needs to understand, since it needs to know whether recent acquisition is converting into repeat purchasing.\n\n## Insights that can be acted on\n\nThe customer-services signal — more than two contacts in a year associating with churn — is plausible, actionable and cheap to act on: it suggests a service-friction signal worth investigating as a possible churn driver, regardless of the model. Feeding flagged customers to marketing is reasonable as a pilot, provided the flag quality is first verified (above) and the results of the vouchers are measured against a control group, so Vesla learns whether the intervention works rather than assuming it.\n\n## The \"model is complete\" claim\n\nThe recommendation to treat the model as complete should be rejected. Customer behaviour shifts, the training window is already unrepresentative, and the model has never been validated in live use. The board should require periodic retraining and ongoing monitoring of the model's live hit rate; the cost of retraining should be weighed against the cost of a growing retention budget aimed by a decaying model.\n\n## Conclusion\n\nThe model is a promising start but not yet a safe basis for decisions. Before reliance: report churner-level performance rather than headline accuracy, test the app-usage claim rather than mandating downloads, extend the data to cover new customers and normal trading years, pilot the voucher list against a control group, and schedule retraining.",
+          "latency_ms": 7720,
+          "gap": [],
+          "reveal": [
+            {
+              "design": "B",
+              "paper": "APM",
+              "reached_from": "struggle",
+              "nothingCreditable": true,
+              "conditioned": true,
+              "sections": 6,
+              "reframe": true
+            }
+          ],
+          "offList": [],
+          "unsourced": [],
+          "unquoted": [],
+          "wrapperCut": [
+            {
+              "surface": "case",
+              "paper": "APM",
+              "reached_from": "struggle",
+              "kept": 1035,
+              "removed": 1253,
+              "removed_head": "---\n\n**The accuracy claim**\n\nThe 94% accuracy figure cannot stand alone as evidence that the model is fit for purpose. V"
+            }
+          ]
+        }
+      ],
+      "score": {
+        "verdict": "in_list",
+        "sections_named": [
+          "The accuracy claim"
+        ],
+        "section_index": [
+          1
+        ],
+        "wrapper": "You've done the work to spot that 94% accuracy needs hard scrutiny against the base rate, which is exactly right—but then you've used that insight to *accept* the analyst's conclusions rather than to *dismantle* them. The misconception here is **treating a high-sounding accuracy figure as validation of model usefulness without challenging what that accuracy actually tells us about the board's ability to act**. A model that never flags anyone for churn would be 94% right; the real questions are whether it catches the churners it claims to find (recall) and whether those it flags would genuinely have churned (precision)—metrics the analyst never provided. Start with **The accuracy claim** section below, which walks through why the headline number is nearly meaningless in isolation and what the board needs instead; then apply that same discipline to the app-usage and customer-services findings by asking yourself: *is this correlation being misread as causation, and what would it actually cost to implement without a pilot?*\n\n*© Gradd — for your personal exam preparation.*",
+        "wrapper_chars": 1084,
+        "wrapper_has_heading": false,
+        "wrapper_has_rule": false,
+        "wrapper_ends_mid_sentence": false,
+        "separator_present": true,
+        "artefact_chars": 3660,
+        "tail_intact": true,
+        "quotation": {
+          "spans": [],
+          "total": 0,
+          "student_attributed": 0,
+          "fabricated_surviving": 0
+        }
+      },
+      "reveal_log": {
+        "design": "B",
+        "paper": "APM",
+        "reached_from": "struggle",
+        "nothingCreditable": true,
+        "conditioned": true,
+        "sections": 6,
+        "reframe": true
+      }
+    },
+    {
+      "run": 10,
+      "progress_rows_before_post": 0,
+      "legs": [
+        {
+          "leg": "miss1_hint",
+          "status": 200,
+          "message_kind": "hint",
+          "intent": "attempt",
+          "reply": "The 94% accuracy figure is doing no work here — you're right that it beats the base rate, but you haven't asked yourself what that actually *means* the model is doing, and that's where the real question sits.\n\n**Next move:** If 94% of Vesla's customers don't churn, what would a model achieve just by predicting *nobody* churns? Work that number out and write it down next to the 94%.",
+          "latency_ms": 4522,
+          "gap": [
+            {
+              "at": "case_gap_verdict",
+              "parsed": true,
+              "creditable": 0,
+              "derived": 1,
+              "correct": false,
+              "label": "Student misread baseline-rate accuracy trap as genuine model performance signal"
+            }
+          ],
+          "reveal": [],
+          "offList": [],
+          "unsourced": [],
+          "unquoted": [],
+          "wrapperCut": []
+        },
+        {
+          "leg": "miss2_teach",
+          "status": 200,
+          "message_kind": "teaching",
+          "intent": "attempt",
+          "reply": "You've read \"94% accuracy\" as a strong signal, but you've missed the critical scepticism move that this requirement demands: you need to **apply that accuracy figure to Vesla's own baseline**, not just admire it in isolation.\n\nVesla's churn rate is 6% — that means 94% of customers do *not* churn in a typical year. So a model that simply predicts \"no churn\" for every single customer will achieve 94% accuracy without doing any useful work at all. Your job now is to ask yourself: *does the 94% figure tell us whether the model is actually better than that trivial rule?* What would you need to know to answer that question, and what does the summary report actually tell you?\n\nOnce you've worked through that, come back and rewrite the opening paragraph on accuracy — that's where the judgement needs to land before you can safety-check the app-usage and customer-services claims.",
+          "latency_ms": 6771,
+          "gap": [
+            {
+              "at": "case_gap_verdict",
+              "parsed": true,
+              "creditable": 0,
+              "derived": 1,
+              "correct": false,
+              "label": "Student misread 94% accuracy as genuine signal, ignoring base-rate equivalence problem"
+            }
+          ],
+          "reveal": [],
+          "offList": [],
+          "unsourced": [],
+          "unquoted": [],
+          "wrapperCut": []
+        },
+        {
+          "leg": "reveal",
+          "status": 200,
+          "message_kind": "reveal",
+          "intent": "reveal",
+          "reply": "You've treated the 94% accuracy figure as a green light, but that's the base-rate trap — with only 6% of customers actually churning, a model that simply predicts \"no churn\" for everyone would also hit 94% accuracy, so the headline number tells you almost nothing about whether the model is actually catching real churners or flooding the team with false alarms. The misconception here is accepting management's assertions at face value instead of interrogating what accuracy actually means in a severely imbalanced dataset. Start by reading **The accuracy claim** section below, which shows you why you need churner-level precision and recall instead, and then apply that same skepticism to a fresh scenario: if a model flags 20% of your customer base as at-risk but only 8% of those actually churn, how would you decide whether to roll it out?\n\n*© Gradd — for your personal exam preparation.*\n\n---\n\n## The accuracy claim\n\nThe headline 94% accuracy should not be accepted at face value. Around 6% of Vesla's customers churn in a typical year, so a model that simply predicted \"no customer will churn\" would be about 94% accurate while identifying no churners at all. Accuracy is the wrong measure for such an imbalanced outcome; the board should ask how many actual churners the model correctly identifies (recall), what proportion of flagged customers would actually have churned (precision), and the number and cost of false positives, ideally weighted by the cost of a voucher against the margin retained, since those figures determine whether the retention budget is being aimed at the right people. The output is also a bare flagged/not-flagged list with no probability score, so marketing cannot rank or prioritise the customers most at risk. Until they are reported, the output cannot be relied upon.\n\n## The app-usage recommendation\n\nThe finding that app users churn less is a correlation in the training data; the analyst's recommendation to force app downloads treats it as a cause. It is at least as plausible that Vesla's most engaged, loyal customers are the ones who choose to install the app — in which case compelling less engaged customers to download it would not make them loyal, and adding friction at checkout could itself increase abandonment. The insight worth acting on is the association; the causal claim needs testing (for example, a controlled trial of app prompts) before any checkout mandate.\n\n## Training-data limitations\n\nTwo features of the training data limit what the output can say about next year. First, one of the two training years contained Vesla's largest-ever sitewide discounting campaign, so purchasing behaviour in that year is unlikely to represent a normal year — patterns the model learned may partly reflect the promotion rather than durable customer behaviour. Second, customers who joined within the last twelve months were excluded, so the model has not learned from new-customer behaviour and any predictions for that segment may be unreliable; if the scoring process also excludes them, the flagged list will systematically miss a group the board needs to understand, since it needs to know whether recent acquisition is converting into repeat purchasing.\n\n## Insights that can be acted on\n\nThe customer-services signal — more than two contacts in a year associating with churn — is plausible, actionable and cheap to act on: it suggests a service-friction signal worth investigating as a possible churn driver, regardless of the model. Feeding flagged customers to marketing is reasonable as a pilot, provided the flag quality is first verified (above) and the results of the vouchers are measured against a control group, so Vesla learns whether the intervention works rather than assuming it.\n\n## The \"model is complete\" claim\n\nThe recommendation to treat the model as complete should be rejected. Customer behaviour shifts, the training window is already unrepresentative, and the model has never been validated in live use. The board should require periodic retraining and ongoing monitoring of the model's live hit rate; the cost of retraining should be weighed against the cost of a growing retention budget aimed by a decaying model.\n\n## Conclusion\n\nThe model is a promising start but not yet a safe basis for decisions. Before reliance: report churner-level performance rather than headline accuracy, test the app-usage claim rather than mandating downloads, extend the data to cover new customers and normal trading years, pilot the voucher list against a control group, and schedule retraining.",
+          "latency_ms": 7498,
+          "gap": [],
+          "reveal": [
+            {
+              "design": "B",
+              "paper": "APM",
+              "reached_from": "struggle",
+              "nothingCreditable": true,
+              "conditioned": true,
+              "sections": 6,
+              "reframe": true
+            }
+          ],
+          "offList": [],
+          "unsourced": [],
+          "unquoted": [],
+          "wrapperCut": [
+            {
+              "surface": "case",
+              "paper": "APM",
+              "reached_from": "struggle",
+              "kept": 845,
+              "removed": 1278,
+              "removed_head": "---\n\n**The accuracy claim**\n\nThe headline figure of 94% accuracy is not a reliable performance measure in this context a"
+            }
+          ]
+        }
+      ],
+      "score": {
+        "verdict": "in_list",
+        "sections_named": [
+          "The accuracy claim"
+        ],
+        "section_index": [
+          1
+        ],
+        "wrapper": "You've treated the 94% accuracy figure as a green light, but that's the base-rate trap — with only 6% of customers actually churning, a model that simply predicts \"no churn\" for everyone would also hit 94% accuracy, so the headline number tells you almost nothing about whether the model is actually catching real churners or flooding the team with false alarms. The misconception here is accepting management's assertions at face value instead of interrogating what accuracy actually means in a severely imbalanced dataset. Start by reading **The accuracy claim** section below, which shows you why you need churner-level precision and recall instead, and then apply that same skepticism to a fresh scenario: if a model flags 20% of your customer base as at-risk but only 8% of those actually churn, how would you decide whether to roll it out?\n\n*© Gradd — for your personal exam preparation.*",
+        "wrapper_chars": 894,
+        "wrapper_has_heading": false,
+        "wrapper_has_rule": false,
+        "wrapper_ends_mid_sentence": false,
+        "separator_present": true,
+        "artefact_chars": 3660,
+        "tail_intact": true,
+        "quotation": {
+          "spans": [
+            {
+              "quoted": "no churn",
+              "student_attributed": false,
+              "trigger": null,
+              "verbatim": null
+            }
+          ],
+          "total": 1,
+          "student_attributed": 0,
+          "fabricated_surviving": 0
+        }
+      },
+      "reveal_log": {
+        "design": "B",
+        "paper": "APM",
+        "reached_from": "struggle",
+        "nothingCreditable": true,
+        "conditioned": true,
+        "sections": 6,
+        "reframe": true
+      }
+    }
+  ]
+}
