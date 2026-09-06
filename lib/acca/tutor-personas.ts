@@ -904,16 +904,59 @@ export const AFM_REVEAL_SEPARATOR = '\n\n---\n\n';
 // its token budget — leaving a truncated stub above the real (separately appended) answer.
 // This cuts the wrapper at the first horizontal rule OR the first heading that looks like it is
 // starting to restate the build, so the served reveal never shows a spurious half-heading.
+//
+// 🔴 THE CUT CONDITION WAS A PHRASE TEST AND IT ATE THE POINTER BEAT (fixed 2026-09-06).
+// It cut at `\n[^\n]*(worked answer|investment appraisal)` — ANY line, after a newline, CONTAINING
+// those words. But the reveal system prompt INSTRUCTS the model to "say WHICH PART of the worked
+// answer below to read first", so the sentence the pointer beat is supposed to produce is exactly
+// the sentence this deleted. A two-paragraph wrapper whose second paragraph read *"Start by
+// reading **Training-data limitations** in the worked answer below…"* was cut from 397 bytes to
+// 279, losing BOTH the pointer and the closing beat. Measured at 1/30 on the case surface (run 13
+// of the creditable seed), where the single-paragraph majority escaped only by accident. The
+// DRILL route has the same prompt phrase and no pointer audit at all, so the same cut there is
+// silent by construction.
+//
+// THE FIX IS A SHAPE TEST, NOT A LONGER PHRASE LIST. What the guard is actually for is a HEADING —
+// the model starting its own `**WORKED ANSWER**` / `**Investment appraisal — IRR**` block before
+// its token cap. A heading is recognisable by SHAPE and does not need to be enumerated: a markdown
+// `#` heading, a line that is wholly bold (or opens bold and never closes it — the truncated form),
+// or a numbered/`Step N` build line. Flowing prose that MENTIONS the worked answer is not a
+// heading and is left alone. All three pre-existing fixture cases are bold-shaped and still cut.
+//
+// ⚠️ THE ESCAPE IS DELIBERATE AND IT IS THE SAFE DIRECTION: a bold line that ends in sentence
+// punctuation is prose (`**Credit where it's due:** you spotted the base-rate trap.`), never a
+// heading. Under-cutting leaves a stray bold line; over-cutting deletes a beat the student needed,
+// which is the failure this fix exists to stop.
 export function sanitizeAfmWrapper(raw: string): string {
   let w = raw;
   // First markdown horizontal rule (--- / *** / ___ on its own line) → cut there.
   const hr = w.search(/\n[ \t]*([-*_]){3,}[ \t]*(\n|$)/);
   if (hr !== -1) w = w.slice(0, hr);
-  // A line that begins to restate the worked answer ("worked answer", "investment appraisal",
-  // or a numbered/"Step" build heading) → cut there.
-  const build = w.search(/\n[^\n]*(worked answer|investment appraisal|^\s*\*\*(step|1[.)]))/im);
-  if (build !== -1) w = w.slice(0, build);
+  // First HEADING-SHAPED line after a newline → cut there.
+  const lines = w.split('\n');
+  let consumed = 0;
+  for (let i = 0; i < lines.length; i++) {
+    if (i > 0 && isBuildHeadingLine(lines[i])) { w = w.slice(0, consumed - 1); break; }
+    consumed += lines[i].length + 1;
+  }
   return w.trimEnd();
+}
+
+/**
+ * Is this line a HEADING rather than prose? Shape only — no phrase list, so a heading the model
+ * invents a new name for is caught and a sentence that names the worked answer is not.
+ */
+export function isBuildHeadingLine(line: string): boolean {
+  const t = line.trim();
+  if (t === '') return false;
+  if (/^#{1,6}\s/.test(t)) return true;                      // markdown ATX heading
+  if (/^(?:\*\*)?(?:step\s+\d|\d+[.)])\s/i.test(t)) return true;  // numbered / "Step N" build line
+  if (t.startsWith('**')) {
+    if (/[.!?]["'”’)*]*$/.test(t)) return false;              // ends a sentence → prose
+    if (/^\*\*.*\*\*[:：]?$/.test(t)) return true;            // wholly bold → heading
+    if (!t.slice(2).includes('**')) return true;              // bold opened, never closed → stub
+  }
+  return false;
 }
 
 // ── THE APPENDED ARTEFACT'S PARAGRAPH NORMALISER ─────────────────────────────
