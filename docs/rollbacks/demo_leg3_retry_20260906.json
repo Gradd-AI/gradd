@@ -1,0 +1,753 @@
+{
+ "email": "grant+demo6@live.ie",
+ "last": {
+  "paper": {
+   "id": "afm-paper-1",
+   "paper": "AFM",
+   "title": "AFM Mock Paper 1",
+   "duration_minutes": 195
+  },
+  "attempt": {
+   "id": "5bbaa972-670f-4f06-a651-b857b07c06c1",
+   "mock_id": "afm-paper-1",
+   "started_at": "2026-09-06T20:21:30.929+00:00",
+   "ends_at": "2026-09-06T23:36:30.929+00:00",
+   "completed": true,
+   "completed_at": "2026-09-06T20:21:43.815+00:00"
+  },
+  "debrief": {
+   "not_evaluated": null,
+   "headline": {
+    "code": "end_of_paper_collapse",
+    "statement": "End-of-paper collapse. Between submitting Q2 (ii) and finishing, under a minute elapsed across Q3 (i)–Q3 (ii), against a combined budget of 39 minutes.",
+    "source": "pacing_finding",
+    "evidence": {
+     "suffix_from": 7,
+     "suffix_to": 8,
+     "suffix_actual_minutes": 0,
+     "suffix_budget_minutes": 39,
+     "triggers": [
+      "time"
+     ],
+     "window_costs_marks": true
+    }
+   },
+   "secondary": [],
+   "requirements": [
+    {
+     "paper_order": 1,
+     "requirement_id": "49830c65-679e-4929-9a3f-a84c81dcdcad",
+     "case_id": "aa000000-0000-4000-8000-00000000a001",
+     "label": "(i) B3e — 10 marks",
+     "display_name": "Q1 (i)",
+     "verdict": "partial",
+     "marks_awarded": 3,
+     "marks_available": 10,
+     "marks_lost": 7,
+     "band": "weak",
+     "what_was_lost": "3 of 10 marks — 7 lost.",
+     "why": "You correctly identify the right method: ungear the peer's equity beta, regear to Solenne's own capital structure, and apply CAPM to obtain a project-specific WACC. You also correctly state why the group WACC is inappropriate — it embeds the risk of existing chemicals operations rather than Brazilian bioethanol risk. However, you produce no numbers at any step, which is where the bulk of the marks lie.\n\nThe calculation requires you to work through each step explicitly:\n\n1. Ungear the peer beta using the peer's own 34% tax rate: β_a = 1.35 × 60/(60 + 40×(1−0.34)) = 0.938.\n2. Regear to Solenne's 70:30 structure using Solenne's 25% tax rate: β_e = 0.938 × (70 + 30×(1−0.25))/70 = 1.239.\n3. Apply CAPM: Ke = 4.5% + 1.239 × 6.0% = 11.93%.\n4. Compute WACC: 11.93% × 0.70 + 5.5%×(1−0.25) × 0.30 = 9.59%.\n\nYou also needed to explain explicitly why different tax rates apply at the two stages — the peer's 34% strips out the peer's own debt tax shield; Solenne's 25% adds back the shield that Solenne's own structure creates. Without any of these figures or that specific tax-rate explanation, your answer cannot earn the marks attached to the calculation.",
+     "why_source": "marker_verdict",
+     "why_display": "expanded",
+     "next_action": "Re-work this requirement from the method up, against the point named above, before re-attempting it.",
+     "next_action_source": "band_definition",
+     "practise_area": "B3",
+     "pacing_note": "Under a minute elapsed between starting the paper and submitting Q1 (i). This interval includes reading the scenario and exhibits, so it carries no budget comparison.",
+     "pacing_flag": "no_ratio",
+     "answer_state": "answered"
+    },
+    {
+     "paper_order": 2,
+     "requirement_id": "d57989a7-4d59-4e90-90bd-deb2e43f1e12",
+     "case_id": "aa000000-0000-4000-8000-00000000a001",
+     "label": "(ii) B5b — 16 marks",
+     "display_name": "Q1 (ii)",
+     "verdict": "partial",
+     "marks_awarded": 4,
+     "marks_available": 16,
+     "marks_lost": 12,
+     "band": "weak",
+     "what_was_lost": "4 of 16 marks — 12 lost.",
+     "why": "Your description of the methodology is correct throughout. You correctly identify: free cash flow as PBIT less 34% tax plus depreciation less reinvestment less working capital increase; growth at 3%; PPP-derived forward rates using the 4.5% Brazilian and 2.0% eurozone inflation rates; the double-tax conclusion that Brazilian corporate tax at 34% exceeds French tax at 25% so no additional French charge arises; and that the 15% withholding is deducted separately on remittance before conversion.\n\nHowever, you produce no figures at any step, which is where almost all the marks reside on a 16-mark calculation requirement.\n\nThe base-year BRL free cash flow is: 320 × (1−0.34) + 80 − 60 − 20 = BRL 211.2m. After withholding at 15%, the year-1 net remittance is BRL 179.5m (given in Exhibit 3, confirming your formula). PPP-derived spot rates run from BRL 5.7373 in year 1 to BRL 6.1695 in year 4. Converting and discounting at 9.59% with an initial euro outlay of BRL 480m ÷ 5.60 = EUR 85.7m produces an NPV of approximately EUR 15.1m. Without any of these figures you cannot demonstrate the calculation, and the advice to the board (accept or reject, and on what NPV) is therefore also absent.",
+     "why_source": "marker_verdict",
+     "why_display": "expanded",
+     "next_action": "Re-work this requirement from the method up, against the point named above, before re-attempting it.",
+     "next_action_source": "band_definition",
+     "practise_area": "B5",
+     "pacing_note": "Under a minute elapsed between submitting Q1 (i) and submitting Q1 (ii), against a 31-minute budget.",
+     "pacing_flag": "under",
+     "answer_state": "answered"
+    },
+    {
+     "paper_order": 3,
+     "requirement_id": "c3dc709a-ed91-4aab-8ac1-d54b5d5c23a6",
+     "case_id": "aa000000-0000-4000-8000-00000000a001",
+     "label": "(iii) E2b — 8 marks",
+     "display_name": "Q1 (iii)",
+     "verdict": "partial",
+     "marks_awarded": 2,
+     "marks_available": 8,
+     "marks_lost": 6,
+     "band": "weak",
+     "what_was_lost": "2 of 8 marks — 6 lost.",
+     "why": "You correctly describe the mechanics of both hedges: borrowing BRL against the future receipt, converting at spot and depositing in euros for the money-market hedge; and fixing the rate via a forward contract. You also correctly identify the decision rule — compare the locked-in euro receipt from each and choose the higher.\n\nHowever, you produce no figures for either hedge and give no explicit recommendation, which is where the marks are.\n\nFor the forward hedge: BRL 179.5m ÷ 5.66 (the three-month forward rate) = EUR 31.7m locked in.\n\nFor the money-market hedge: discount BRL 179.5m at the BRL borrowing rate for three months (12%/4 = 3%) to find the amount to borrow today — BRL 174.3m. Convert at spot 5.60 to get EUR 31.1m. Deposit in euros at the euro deposit rate (2%/4 = 0.5%) to produce EUR 31.3m at settlement.\n\nThe forward delivers EUR 31.7m versus EUR 31.3m for the money-market hedge — a EUR 0.4m advantage — so the recommendation is the forward contract. Without these figures and a clear recommendation you cannot earn the marks for the comparison and conclusion.",
+     "why_source": "marker_verdict",
+     "why_display": "expanded",
+     "next_action": "Re-work this requirement from the method up, against the point named above, before re-attempting it.",
+     "next_action_source": "band_definition",
+     "practise_area": "E2",
+     "pacing_note": "Under a minute elapsed between submitting Q1 (ii) and submitting Q1 (iii), against a 15-minute budget.",
+     "pacing_flag": "under",
+     "answer_state": "answered"
+    },
+    {
+     "paper_order": 4,
+     "requirement_id": "bb0b269d-6326-4134-8418-b38db8e2a73e",
+     "case_id": "aa000000-0000-4000-8000-00000000a001",
+     "label": "(iv) E1a — 6 marks",
+     "display_name": "Q1 (iv)",
+     "verdict": "partial",
+     "marks_awarded": 1,
+     "marks_available": 6,
+     "marks_lost": 5,
+     "band": "weak",
+     "what_was_lost": "1 of 6 marks — 5 lost.",
+     "why": "Your single sentence captures two legitimate points — centralising expertise and enabling intra-group netting — but the answer stops there, leaving the large majority of the required analysis absent.\n\nA full evaluation needed to cover both sides of the argument. On the case for a group treasury: beyond netting, you needed to address the ability to raise group funding more cheaply than four separate desks, the ability to impose a consistent FX and interest-rate risk policy, and — critically — the fact that none of the existing European subsidiaries has any capability in managing a Brazilian exposure, which is precisely the gap a Lyon treasury addresses.\n\nOn the costs and risks: you needed to acknowledge that establishing a central function requires investment in systems, dealing lines and specialist staff, and that the non-executive director's concern about adding a layer that slows subsidiaries down is a genuine operational risk, not just a theoretical objection.\n\nOn the impact on the subsidiary desks specifically: you needed to state that they would lose autonomy over their own bank facilities, local cash positions and FX decisions — a concrete change to how they operate — and then discuss whether a hybrid model (Lyon owning group funding, netting and policy while subsidiaries retain day-to-day local cash management) could resolve the tension.\n\nFinally, you needed a recommendation. On balance, the Brazilian exposure makes the case for a group treasury compelling, provided it is structured as a policy-setting and netting hub rather than a centralised approver of every local transaction.",
+     "why_source": "marker_verdict",
+     "why_display": "expanded",
+     "next_action": "Re-work this requirement from the method up, against the point named above, before re-attempting it.",
+     "next_action_source": "band_definition",
+     "practise_area": "E1",
+     "pacing_note": "Under a minute elapsed between submitting Q1 (iii) and submitting Q1 (iv), against an 11-minute budget.",
+     "pacing_flag": "under",
+     "answer_state": "answered"
+    },
+    {
+     "paper_order": 5,
+     "requirement_id": "296b541c-397b-4fec-b691-ca6871d2fb73",
+     "case_id": "aa000000-0000-4000-8000-00000000b101",
+     "label": "(i) B1a — 12 marks",
+     "display_name": "Q2 (i)",
+     "verdict": "partial",
+     "marks_awarded": 3,
+     "marks_available": 12,
+     "marks_lost": 9,
+     "band": "weak",
+     "what_was_lost": "3 of 12 marks — 9 lost.",
+     "why": "You correctly identify the right approach — discount each scenario's cash flows at 10%, weight the resulting NPVs by their probabilities to get the ENPV, and separately identify the probability of a negative outcome — and you make a sound point about the one-shot nature of the project meaning the ENPV alone is not a sufficient decision criterion. However, the requirement explicitly asks you to calculate these figures, and you have not done so. There are no discounted cash flow workings, no individual scenario NPVs, no ENPV figure, and no stated probability of a negative NPV anywhere in your answer. The three scenario NPVs (Strong: GBP 253.2m, Base: GBP 19.3m, Weak: GBP -208.7m) needed to be computed by discounting each year's cash flows at 10% and deducting the GBP 500m outlay. From those, the ENPV works out to GBP 43.9m and the probability of a negative NPV is 20% (only the weak demand scenario, with probability 0.20, produces a negative NPV). Without these numbers, the advisory commentary has no foundation, and almost all the available marks for this requirement are for the numerical work and the interpretation of specific figures. Describing what you would do is not a substitute for doing it.",
+     "why_source": "marker_verdict",
+     "why_display": "expanded",
+     "next_action": "Re-work this requirement from the method up, against the point named above, before re-attempting it.",
+     "next_action_source": "band_definition",
+     "practise_area": "B1",
+     "pacing_note": "Under a minute elapsed between submitting Q1 (iv) and submitting Q2 (i), against a 23-minute budget.",
+     "pacing_flag": "under",
+     "answer_state": "answered"
+    },
+    {
+     "paper_order": 6,
+     "requirement_id": "03d6e7a5-535a-4ef8-8219-defa0de96fff",
+     "case_id": "aa000000-0000-4000-8000-00000000b101",
+     "label": "(ii) B1b — 8 marks",
+     "display_name": "Q2 (ii)",
+     "verdict": "partial",
+     "marks_awarded": 2,
+     "marks_available": 8,
+     "marks_lost": 6,
+     "band": "weak",
+     "what_was_lost": "2 of 8 marks — 6 lost.",
+     "why": "You correctly state that the simulation produces a distribution rather than a point estimate and that VaR represents the loss that will not be exceeded at the stated confidence level, and you identify that VaR says nothing about how severe losses beyond that threshold could be. These are valid points. However, your answer omits almost all the substantive content required. On part (a), you do not mention that the mean NPV of GBP 44m is positive (which provides an initial case for the project), you do not discuss the 22% probability of a negative NPV or explain why that figure is materially concerning at this project scale, and — critically — you do not address the standard deviation of GBP 60m at all. The standard deviation exceeding the mean is the central risk observation here: a coefficient of variation above one means the spread of outcomes is wider than the expected gain, making the project highly uncertain regardless of the positive mean. On part (b), you need to be specific: the GBP 52m VaR at 95% confidence means there is a 5% probability that the project loss will exceed GBP 52m. You should then advise the board concretely — the question is whether Brecon's balance sheet can absorb a loss of that magnitude without financial distress. Without the specific figures and without that concrete decision advice, the VaR explanation does not give the board anything actionable. None of the key numbers from the simulation appear in your answer.",
+     "why_source": "marker_verdict",
+     "why_display": "expanded",
+     "next_action": "Re-work this requirement from the method up, against the point named above, before re-attempting it.",
+     "next_action_source": "band_definition",
+     "practise_area": "B1",
+     "pacing_note": "Under a minute elapsed between submitting Q2 (i) and submitting Q2 (ii), against a 15-minute budget.",
+     "pacing_flag": "under",
+     "answer_state": "answered"
+    },
+    {
+     "paper_order": 7,
+     "requirement_id": "a69bf0f3-7df8-4406-ae18-1237964b9839",
+     "case_id": "aa000000-0000-4000-8000-00000000b201",
+     "label": "(i) E3a — 12 marks",
+     "display_name": "Q3 (i)",
+     "verdict": "lost",
+     "marks_awarded": 0,
+     "marks_available": 12,
+     "marks_lost": 12,
+     "band": "nothing",
+     "what_was_lost": "0 of 12 marks — 12 lost.",
+     "why": "Your answer identifies only that Aldebrino should sell futures and gives a one-line rationale for why a short position suits a borrower. While the directional point (sell) is correct, the requirement asks for a full numerical hedge calculation across two interest-rate scenarios. Every element of the computation is missing: you have not calculated the number of contracts (48,000,000 ÷ 1,000,000 × 6/3 = 96), worked out the basis at inception (100 − 4.00 − 95.55 = 0.45), estimated the unexpired basis at close (0.45 × 3/9 = 0.15), derived the expected closing futures prices under each scenario (94.85 when base rises to 5.0%; 96.65 when base falls to 3.2%), computed the money-market interest under each scenario, calculated the futures profit or loss, arrived at the net cost (EUR 1,152,000 in both cases), stated the effective annual rate (4.80%), or demonstrated that the same rate results regardless of which way rates move. Without those steps the requirement is unanswered. You should also note that a residual basis risk remains because the unexpired-basis assumption of linear decay may not hold.",
+     "why_source": "marker_verdict",
+     "why_display": "expanded",
+     "next_action": "Re-work this requirement from the method up — the marker recorded nothing that could earn credit.",
+     "next_action_source": "band_definition",
+     "practise_area": null,
+     "pacing_note": "Under a minute elapsed between submitting Q2 (ii) and submitting Q3 (i), against a 23-minute budget.",
+     "pacing_flag": "under",
+     "answer_state": "answered"
+    },
+    {
+     "paper_order": 8,
+     "requirement_id": "d7b61f93-ed7c-4f4e-a754-e484cbe4f016",
+     "case_id": "aa000000-0000-4000-8000-00000000b201",
+     "label": "(ii) E2a — 8 marks",
+     "display_name": "Q3 (ii)",
+     "verdict": "partial",
+     "marks_awarded": 4,
+     "marks_available": 8,
+     "marks_lost": 4,
+     "band": "competent",
+     "what_was_lost": "4 of 8 marks — 4 lost.",
+     "why": "You correctly identify all three exposures — transaction, translation, and economic — and assign broadly appropriate management tools to each, which covers the core of the requirement. There are, however, several material gaps. On transaction exposure, your answer is sound: contracted cash flows, appropriate instruments listed, correctly flagged as the priority hedge. On translation exposure, you note it affects reported figures rather than cash and mention matching — both correct — but you do not articulate the specific mechanism clearly: the US subsidiary's dollar net assets are retranslated at each year-end, moving the consolidated balance sheet. You flag gearing and covenant risk, which is good, but you do not state that a derivative overlay on translation exposure is generally not cost-effective once matching is in place. On economic exposure, you define it as the effect on future operating cash flows and mention operational diversification, but you omit two important points: first, that it cannot be hedged with a forward contract or similar financial instrument because the underlying cash flows are uncontracted and not yet quantifiable; and second, that pricing flexibility is a key operational lever alongside geographic diversification of production and markets. Finally, the sharper distinction — that translation is purely an accounting effect while transaction exposure moves actual cash received — could be stated more explicitly to show you understand why each demands a different management response.",
+     "why_source": "marker_verdict",
+     "why_display": "expanded",
+     "next_action": "The approach was right and a material point was missed. Close that one point, named above, and re-attempt this requirement.",
+     "next_action_source": "band_definition",
+     "practise_area": "E2",
+     "pacing_note": "Under a minute elapsed between submitting Q3 (i) and submitting Q3 (ii), against a 15-minute budget.",
+     "pacing_flag": "under",
+     "answer_state": "answered"
+    }
+   ],
+   "cases": [
+    {
+     "case_id": "aa000000-0000-4000-8000-00000000a001",
+     "title": "Solenne Industries SA",
+     "position": 1,
+     "display_name": "Q1",
+     "requirements": [
+      {
+       "paper_order": 1,
+       "requirement_id": "49830c65-679e-4929-9a3f-a84c81dcdcad",
+       "case_id": "aa000000-0000-4000-8000-00000000a001",
+       "label": "(i) B3e — 10 marks",
+       "display_name": "Q1 (i)",
+       "verdict": "partial",
+       "marks_awarded": 3,
+       "marks_available": 10,
+       "marks_lost": 7,
+       "band": "weak",
+       "what_was_lost": "3 of 10 marks — 7 lost.",
+       "why": "You correctly identify the right method: ungear the peer's equity beta, regear to Solenne's own capital structure, and apply CAPM to obtain a project-specific WACC. You also correctly state why the group WACC is inappropriate — it embeds the risk of existing chemicals operations rather than Brazilian bioethanol risk. However, you produce no numbers at any step, which is where the bulk of the marks lie.\n\nThe calculation requires you to work through each step explicitly:\n\n1. Ungear the peer beta using the peer's own 34% tax rate: β_a = 1.35 × 60/(60 + 40×(1−0.34)) = 0.938.\n2. Regear to Solenne's 70:30 structure using Solenne's 25% tax rate: β_e = 0.938 × (70 + 30×(1−0.25))/70 = 1.239.\n3. Apply CAPM: Ke = 4.5% + 1.239 × 6.0% = 11.93%.\n4. Compute WACC: 11.93% × 0.70 + 5.5%×(1−0.25) × 0.30 = 9.59%.\n\nYou also needed to explain explicitly why different tax rates apply at the two stages — the peer's 34% strips out the peer's own debt tax shield; Solenne's 25% adds back the shield that Solenne's own structure creates. Without any of these figures or that specific tax-rate explanation, your answer cannot earn the marks attached to the calculation.",
+       "why_source": "marker_verdict",
+       "why_display": "expanded",
+       "next_action": "Re-work this requirement from the method up, against the point named above, before re-attempting it.",
+       "next_action_source": "band_definition",
+       "practise_area": "B3",
+       "pacing_note": "Under a minute elapsed between starting the paper and submitting Q1 (i). This interval includes reading the scenario and exhibits, so it carries no budget comparison.",
+       "pacing_flag": "no_ratio",
+       "answer_state": "answered"
+      },
+      {
+       "paper_order": 2,
+       "requirement_id": "d57989a7-4d59-4e90-90bd-deb2e43f1e12",
+       "case_id": "aa000000-0000-4000-8000-00000000a001",
+       "label": "(ii) B5b — 16 marks",
+       "display_name": "Q1 (ii)",
+       "verdict": "partial",
+       "marks_awarded": 4,
+       "marks_available": 16,
+       "marks_lost": 12,
+       "band": "weak",
+       "what_was_lost": "4 of 16 marks — 12 lost.",
+       "why": "Your description of the methodology is correct throughout. You correctly identify: free cash flow as PBIT less 34% tax plus depreciation less reinvestment less working capital increase; growth at 3%; PPP-derived forward rates using the 4.5% Brazilian and 2.0% eurozone inflation rates; the double-tax conclusion that Brazilian corporate tax at 34% exceeds French tax at 25% so no additional French charge arises; and that the 15% withholding is deducted separately on remittance before conversion.\n\nHowever, you produce no figures at any step, which is where almost all the marks reside on a 16-mark calculation requirement.\n\nThe base-year BRL free cash flow is: 320 × (1−0.34) + 80 − 60 − 20 = BRL 211.2m. After withholding at 15%, the year-1 net remittance is BRL 179.5m (given in Exhibit 3, confirming your formula). PPP-derived spot rates run from BRL 5.7373 in year 1 to BRL 6.1695 in year 4. Converting and discounting at 9.59% with an initial euro outlay of BRL 480m ÷ 5.60 = EUR 85.7m produces an NPV of approximately EUR 15.1m. Without any of these figures you cannot demonstrate the calculation, and the advice to the board (accept or reject, and on what NPV) is therefore also absent.",
+       "why_source": "marker_verdict",
+       "why_display": "expanded",
+       "next_action": "Re-work this requirement from the method up, against the point named above, before re-attempting it.",
+       "next_action_source": "band_definition",
+       "practise_area": "B5",
+       "pacing_note": "Under a minute elapsed between submitting Q1 (i) and submitting Q1 (ii), against a 31-minute budget.",
+       "pacing_flag": "under",
+       "answer_state": "answered"
+      },
+      {
+       "paper_order": 3,
+       "requirement_id": "c3dc709a-ed91-4aab-8ac1-d54b5d5c23a6",
+       "case_id": "aa000000-0000-4000-8000-00000000a001",
+       "label": "(iii) E2b — 8 marks",
+       "display_name": "Q1 (iii)",
+       "verdict": "partial",
+       "marks_awarded": 2,
+       "marks_available": 8,
+       "marks_lost": 6,
+       "band": "weak",
+       "what_was_lost": "2 of 8 marks — 6 lost.",
+       "why": "You correctly describe the mechanics of both hedges: borrowing BRL against the future receipt, converting at spot and depositing in euros for the money-market hedge; and fixing the rate via a forward contract. You also correctly identify the decision rule — compare the locked-in euro receipt from each and choose the higher.\n\nHowever, you produce no figures for either hedge and give no explicit recommendation, which is where the marks are.\n\nFor the forward hedge: BRL 179.5m ÷ 5.66 (the three-month forward rate) = EUR 31.7m locked in.\n\nFor the money-market hedge: discount BRL 179.5m at the BRL borrowing rate for three months (12%/4 = 3%) to find the amount to borrow today — BRL 174.3m. Convert at spot 5.60 to get EUR 31.1m. Deposit in euros at the euro deposit rate (2%/4 = 0.5%) to produce EUR 31.3m at settlement.\n\nThe forward delivers EUR 31.7m versus EUR 31.3m for the money-market hedge — a EUR 0.4m advantage — so the recommendation is the forward contract. Without these figures and a clear recommendation you cannot earn the marks for the comparison and conclusion.",
+       "why_source": "marker_verdict",
+       "why_display": "expanded",
+       "next_action": "Re-work this requirement from the method up, against the point named above, before re-attempting it.",
+       "next_action_source": "band_definition",
+       "practise_area": "E2",
+       "pacing_note": "Under a minute elapsed between submitting Q1 (ii) and submitting Q1 (iii), against a 15-minute budget.",
+       "pacing_flag": "under",
+       "answer_state": "answered"
+      },
+      {
+       "paper_order": 4,
+       "requirement_id": "bb0b269d-6326-4134-8418-b38db8e2a73e",
+       "case_id": "aa000000-0000-4000-8000-00000000a001",
+       "label": "(iv) E1a — 6 marks",
+       "display_name": "Q1 (iv)",
+       "verdict": "partial",
+       "marks_awarded": 1,
+       "marks_available": 6,
+       "marks_lost": 5,
+       "band": "weak",
+       "what_was_lost": "1 of 6 marks — 5 lost.",
+       "why": "Your single sentence captures two legitimate points — centralising expertise and enabling intra-group netting — but the answer stops there, leaving the large majority of the required analysis absent.\n\nA full evaluation needed to cover both sides of the argument. On the case for a group treasury: beyond netting, you needed to address the ability to raise group funding more cheaply than four separate desks, the ability to impose a consistent FX and interest-rate risk policy, and — critically — the fact that none of the existing European subsidiaries has any capability in managing a Brazilian exposure, which is precisely the gap a Lyon treasury addresses.\n\nOn the costs and risks: you needed to acknowledge that establishing a central function requires investment in systems, dealing lines and specialist staff, and that the non-executive director's concern about adding a layer that slows subsidiaries down is a genuine operational risk, not just a theoretical objection.\n\nOn the impact on the subsidiary desks specifically: you needed to state that they would lose autonomy over their own bank facilities, local cash positions and FX decisions — a concrete change to how they operate — and then discuss whether a hybrid model (Lyon owning group funding, netting and policy while subsidiaries retain day-to-day local cash management) could resolve the tension.\n\nFinally, you needed a recommendation. On balance, the Brazilian exposure makes the case for a group treasury compelling, provided it is structured as a policy-setting and netting hub rather than a centralised approver of every local transaction.",
+       "why_source": "marker_verdict",
+       "why_display": "expanded",
+       "next_action": "Re-work this requirement from the method up, against the point named above, before re-attempting it.",
+       "next_action_source": "band_definition",
+       "practise_area": "E1",
+       "pacing_note": "Under a minute elapsed between submitting Q1 (iii) and submitting Q1 (iv), against an 11-minute budget.",
+       "pacing_flag": "under",
+       "answer_state": "answered"
+      }
+     ],
+     "technical_awarded": 10,
+     "technical_available": 40
+    },
+    {
+     "case_id": "aa000000-0000-4000-8000-00000000b101",
+     "title": "Brecon Renewables plc",
+     "position": 2,
+     "display_name": "Q2",
+     "requirements": [
+      {
+       "paper_order": 5,
+       "requirement_id": "296b541c-397b-4fec-b691-ca6871d2fb73",
+       "case_id": "aa000000-0000-4000-8000-00000000b101",
+       "label": "(i) B1a — 12 marks",
+       "display_name": "Q2 (i)",
+       "verdict": "partial",
+       "marks_awarded": 3,
+       "marks_available": 12,
+       "marks_lost": 9,
+       "band": "weak",
+       "what_was_lost": "3 of 12 marks — 9 lost.",
+       "why": "You correctly identify the right approach — discount each scenario's cash flows at 10%, weight the resulting NPVs by their probabilities to get the ENPV, and separately identify the probability of a negative outcome — and you make a sound point about the one-shot nature of the project meaning the ENPV alone is not a sufficient decision criterion. However, the requirement explicitly asks you to calculate these figures, and you have not done so. There are no discounted cash flow workings, no individual scenario NPVs, no ENPV figure, and no stated probability of a negative NPV anywhere in your answer. The three scenario NPVs (Strong: GBP 253.2m, Base: GBP 19.3m, Weak: GBP -208.7m) needed to be computed by discounting each year's cash flows at 10% and deducting the GBP 500m outlay. From those, the ENPV works out to GBP 43.9m and the probability of a negative NPV is 20% (only the weak demand scenario, with probability 0.20, produces a negative NPV). Without these numbers, the advisory commentary has no foundation, and almost all the available marks for this requirement are for the numerical work and the interpretation of specific figures. Describing what you would do is not a substitute for doing it.",
+       "why_source": "marker_verdict",
+       "why_display": "expanded",
+       "next_action": "Re-work this requirement from the method up, against the point named above, before re-attempting it.",
+       "next_action_source": "band_definition",
+       "practise_area": "B1",
+       "pacing_note": "Under a minute elapsed between submitting Q1 (iv) and submitting Q2 (i), against a 23-minute budget.",
+       "pacing_flag": "under",
+       "answer_state": "answered"
+      },
+      {
+       "paper_order": 6,
+       "requirement_id": "03d6e7a5-535a-4ef8-8219-defa0de96fff",
+       "case_id": "aa000000-0000-4000-8000-00000000b101",
+       "label": "(ii) B1b — 8 marks",
+       "display_name": "Q2 (ii)",
+       "verdict": "partial",
+       "marks_awarded": 2,
+       "marks_available": 8,
+       "marks_lost": 6,
+       "band": "weak",
+       "what_was_lost": "2 of 8 marks — 6 lost.",
+       "why": "You correctly state that the simulation produces a distribution rather than a point estimate and that VaR represents the loss that will not be exceeded at the stated confidence level, and you identify that VaR says nothing about how severe losses beyond that threshold could be. These are valid points. However, your answer omits almost all the substantive content required. On part (a), you do not mention that the mean NPV of GBP 44m is positive (which provides an initial case for the project), you do not discuss the 22% probability of a negative NPV or explain why that figure is materially concerning at this project scale, and — critically — you do not address the standard deviation of GBP 60m at all. The standard deviation exceeding the mean is the central risk observation here: a coefficient of variation above one means the spread of outcomes is wider than the expected gain, making the project highly uncertain regardless of the positive mean. On part (b), you need to be specific: the GBP 52m VaR at 95% confidence means there is a 5% probability that the project loss will exceed GBP 52m. You should then advise the board concretely — the question is whether Brecon's balance sheet can absorb a loss of that magnitude without financial distress. Without the specific figures and without that concrete decision advice, the VaR explanation does not give the board anything actionable. None of the key numbers from the simulation appear in your answer.",
+       "why_source": "marker_verdict",
+       "why_display": "expanded",
+       "next_action": "Re-work this requirement from the method up, against the point named above, before re-attempting it.",
+       "next_action_source": "band_definition",
+       "practise_area": "B1",
+       "pacing_note": "Under a minute elapsed between submitting Q2 (i) and submitting Q2 (ii), against a 15-minute budget.",
+       "pacing_flag": "under",
+       "answer_state": "answered"
+      }
+     ],
+     "technical_awarded": 5,
+     "technical_available": 20
+    },
+    {
+     "case_id": "aa000000-0000-4000-8000-00000000b201",
+     "title": "Aldebrino SpA",
+     "position": 3,
+     "display_name": "Q3",
+     "requirements": [
+      {
+       "paper_order": 7,
+       "requirement_id": "a69bf0f3-7df8-4406-ae18-1237964b9839",
+       "case_id": "aa000000-0000-4000-8000-00000000b201",
+       "label": "(i) E3a — 12 marks",
+       "display_name": "Q3 (i)",
+       "verdict": "lost",
+       "marks_awarded": 0,
+       "marks_available": 12,
+       "marks_lost": 12,
+       "band": "nothing",
+       "what_was_lost": "0 of 12 marks — 12 lost.",
+       "why": "Your answer identifies only that Aldebrino should sell futures and gives a one-line rationale for why a short position suits a borrower. While the directional point (sell) is correct, the requirement asks for a full numerical hedge calculation across two interest-rate scenarios. Every element of the computation is missing: you have not calculated the number of contracts (48,000,000 ÷ 1,000,000 × 6/3 = 96), worked out the basis at inception (100 − 4.00 − 95.55 = 0.45), estimated the unexpired basis at close (0.45 × 3/9 = 0.15), derived the expected closing futures prices under each scenario (94.85 when base rises to 5.0%; 96.65 when base falls to 3.2%), computed the money-market interest under each scenario, calculated the futures profit or loss, arrived at the net cost (EUR 1,152,000 in both cases), stated the effective annual rate (4.80%), or demonstrated that the same rate results regardless of which way rates move. Without those steps the requirement is unanswered. You should also note that a residual basis risk remains because the unexpired-basis assumption of linear decay may not hold.",
+       "why_source": "marker_verdict",
+       "why_display": "expanded",
+       "next_action": "Re-work this requirement from the method up — the marker recorded nothing that could earn credit.",
+       "next_action_source": "band_definition",
+       "practise_area": null,
+       "pacing_note": "Under a minute elapsed between submitting Q2 (ii) and submitting Q3 (i), against a 23-minute budget.",
+       "pacing_flag": "under",
+       "answer_state": "answered"
+      },
+      {
+       "paper_order": 8,
+       "requirement_id": "d7b61f93-ed7c-4f4e-a754-e484cbe4f016",
+       "case_id": "aa000000-0000-4000-8000-00000000b201",
+       "label": "(ii) E2a — 8 marks",
+       "display_name": "Q3 (ii)",
+       "verdict": "partial",
+       "marks_awarded": 4,
+       "marks_available": 8,
+       "marks_lost": 4,
+       "band": "competent",
+       "what_was_lost": "4 of 8 marks — 4 lost.",
+       "why": "You correctly identify all three exposures — transaction, translation, and economic — and assign broadly appropriate management tools to each, which covers the core of the requirement. There are, however, several material gaps. On transaction exposure, your answer is sound: contracted cash flows, appropriate instruments listed, correctly flagged as the priority hedge. On translation exposure, you note it affects reported figures rather than cash and mention matching — both correct — but you do not articulate the specific mechanism clearly: the US subsidiary's dollar net assets are retranslated at each year-end, moving the consolidated balance sheet. You flag gearing and covenant risk, which is good, but you do not state that a derivative overlay on translation exposure is generally not cost-effective once matching is in place. On economic exposure, you define it as the effect on future operating cash flows and mention operational diversification, but you omit two important points: first, that it cannot be hedged with a forward contract or similar financial instrument because the underlying cash flows are uncontracted and not yet quantifiable; and second, that pricing flexibility is a key operational lever alongside geographic diversification of production and markets. Finally, the sharper distinction — that translation is purely an accounting effect while transaction exposure moves actual cash received — could be stated more explicitly to show you understand why each demands a different management response.",
+       "why_source": "marker_verdict",
+       "why_display": "expanded",
+       "next_action": "The approach was right and a material point was missed. Close that one point, named above, and re-attempt this requirement.",
+       "next_action_source": "band_definition",
+       "practise_area": "E2",
+       "pacing_note": "Under a minute elapsed between submitting Q3 (i) and submitting Q3 (ii), against a 15-minute budget.",
+       "pacing_flag": "under",
+       "answer_state": "answered"
+      }
+     ],
+     "technical_awarded": 4,
+     "technical_available": 20
+    }
+   ],
+   "professional": [
+    {
+     "case_id": "aa000000-0000-4000-8000-00000000a001",
+     "title": "Solenne Industries SA",
+     "awarded": 3,
+     "available": 10,
+     "skills": [
+      {
+       "skill": "analysis_and_evaluation",
+       "band": "weak",
+       "why": "Your answer gestures at the right analytical steps but does not follow any of them through to a conclusion. In part (i) you correctly identify the need for a project-specific rate and mention ungearing and regearing, but you never actually perform the calculation: no numbers are used, no asset beta is derived, no WACC figure is produced. In part (ii) you describe the method for building free cash flows and translating them, and you correctly note that the 34% Brazilian rate exceeds the 25% French rate so no incremental French tax arises, but again no figures are computed, no NPV is reached, and no recommendation on viability follows. In part (iii) you outline the logic of a money-market hedge versus a forward in general terms but provide no arithmetic for either route — no locked-in euro amounts are compared and no recommendation is made. Part (iv) consists of a single sentence. Throughout, the analysis stays at the level of naming techniques rather than applying them: there is no estimation of outcomes, no quantified comparison of options, and no evidence-based recommendation on any of the four parts. To reach the professional standard, you would need to carry the numbers through each stage, show the working, and draw a reasoned conclusion from the results.",
+       "why_source": "marker_verdict"
+      },
+      {
+       "skill": "communication",
+       "band": "weak",
+       "why": "You write in note form throughout — short declarative sentences that list what could be done rather than informing a board of what has been done. There is no report structure: no introduction, no section headings appropriate to a board communication, no executive summary or conclusion. The tone is appropriate in places ('I would ungear a proxy bioethanol beta') but the absence of any developed argument or completed analysis means there is very little to communicate. A board audience needs clear conclusions and supporting reasoning; what you deliver is a methodology sketch. Part (iv) in particular — a single sentence — falls well short of the depth and format a board evaluation requires. To meet the standard, you would need to present findings in a structured report format, use headings to guide the reader, develop each point into a paragraph with reasoning and outcome, and ensure complex issues such as the double-tax treaty and the hedge comparison are simplified and explained for a non-technical board.",
+       "why_source": "marker_verdict"
+      },
+      {
+       "skill": "scepticism",
+       "band": "weak",
+       "why": "There is minimal evidence of an enquiring mind challenging the information presented. In part (i) you note that using the group WACC would 'understate the required return and make a marginal project look acceptable,' which is a reasonable sceptical observation, but it is brief and not developed. Elsewhere you accept all given data at face value: you do not question whether the proxy company is genuinely comparable, whether 3% growth in BRL cash flows is reasonable given 4.5% inflation, whether the withholding tax assumption is correct, or whether the money-market rates are consistent with the forward quoted. In part (iv) you do not engage at all with the non-executive director's concern that central treasury 'just adds a head-office layer that slows the subsidiaries down' — that is precisely the kind of assertion that warrants challenge or support with evidence, and you ignore it. To raise the quality here, you would need to interrogate the assumptions behind the data, acknowledge uncertainties, and engage critically with the competing views already present in the scenario.",
+       "why_source": "marker_verdict"
+      },
+      {
+       "skill": "commercial_acumen",
+       "band": "weak",
+       "why": "You show awareness that the project sits outside Solenne's existing risk profile and that centralising treasury could enable netting, which are commercially relevant observations. However, neither point is developed into a judgement about commercial viability. You do not consider what the NPV or IRR might imply about whether Rio Verde is worth pursuing, because you produce no figures. You do not discuss the practical commercial implications of establishing a treasury function — cost, transition risk, impact on subsidiary autonomy, or the timing given an imminent BRL remittance — beyond a single generalisation in part (iv). The non-executive director's commercial concern about speed and bureaucracy goes entirely unanswered. A commercially astute response would weigh the strategic rationale of entering Brazil for the first time, the currency and repatriation risks specific to this market, and the concrete trade-offs in treasury centralisation. Your answer identifies the surface issues but shows little of the judgement or insight needed to turn them into viable recommendations.",
+       "why_source": "marker_verdict"
+      }
+     ]
+    },
+    {
+     "case_id": "aa000000-0000-4000-8000-00000000b101",
+     "title": "Brecon Renewables plc",
+     "awarded": 1,
+     "available": 5,
+     "skills": [
+      {
+       "skill": "analysis_and_evaluation",
+       "band": "weak",
+       "why": "You outline the correct broad logic in both parts — weighting scenario NPVs by probability, noting ENPV is a repeated-game average, and identifying that the simulation provides a distribution — but you do not actually carry out any of the analysis you describe. In part (i) you state you 'would compute' each scenario's NPV yet provide no calculations at all: no discounted cash-flow figures, no individual scenario NPVs, no weighted ENPV, and no probability of loss. Saying 'if most of the probability sits on scenarios that destroy value' is speculative because you have not checked whether any scenario actually does destroy value. In part (ii) you correctly identify that VaR 'says nothing about how bad things get in the tail beyond it', but again there is no quantitative engagement: no use of the mean NPV of GBP 44 million, no commentary on the standard deviation of GBP 60 million relative to the mean, no connection between the 22% probability of negative NPV from the simulation and whatever probability of negative NPV the scenario analysis would have produced, and no comparison of the two analytical approaches. There is also no evaluation of what the risk profile means for Brecon's decision — whether the GBP 500 million commitment is justified, how the results balance costs, risks and benefits, or what recommendation follows. The answer shows awareness of method but replaces substance with intention, which falls well short of the depth of analysis and evaluation expected.",
+       "why_source": "marker_verdict"
+      },
+      {
+       "skill": "scepticism",
+       "band": "weak",
+       "why": "There is a trace of sceptical thinking in part (ii) when you note that VaR 'says nothing about how bad things get in the tail beyond it' — this is a genuine challenge to a limitation of the presented metric. However, this is the only point at which you question or probe the information given. You do not question the stated probabilities assigned to the three scenarios (0.30, 0.50, 0.20) or ask how they were derived. You do not challenge the 10% discount rate or query whether it adequately reflects Firth Array's specific risk profile. You do not probe the assumptions underlying the Monte Carlo simulation — for example, the distributions assumed for electricity price, turbine availability or construction cost, or the independence or correlation between those variables. You do not question whether the advisers' mean NPV of GBP 44 million is consistent with the ENPV implied by the scenario analysis, which would be a natural cross-check. You accept the VaR figure at face value except for the tail limitation. An enquiring mind would have surfaced at least some of these doubts explicitly and explained why they matter to the board's decision, rather than largely restating what the numbers say.",
+       "why_source": "marker_verdict"
+      }
+     ]
+    },
+    {
+     "case_id": "aa000000-0000-4000-8000-00000000b201",
+     "title": "Aldebrino SpA",
+     "awarded": 1,
+     "available": 5,
+     "skills": [
+      {
+       "skill": "analysis_and_evaluation",
+       "band": "weak",
+       "why": "Your answer identifies the correct direction of the futures trade and gives a plausible one-sentence rationale, but it stops well short of the analysis and evaluation expected. For part (i), you never calculate the number of contracts, apply the tick-size mechanism, work through the outcome under either the 5.0% or 3.2% rate scenario, or derive an effective borrowing cost to show the hedge actually locks the rate. Without those numbers the claim that 'the gain on the futures offsets the extra interest' is unsubstantiated assertion rather than demonstrated analysis. For part (ii), you provide accurate one-line definitions of each exposure and name some management techniques, but you do not evaluate the techniques against each other, weigh costs and benefits, or relate any of them to Aldebrino's specific situation — for example, why a forward might suit the 60–90 day receivables better than an option, or whether translation hedging via matching dollar borrowings is worth the cost given the exposure is non-cash. The judgement and reflective appraisal that distinguishes analysis from description is largely absent throughout.",
+       "why_source": "marker_verdict"
+      },
+      {
+       "skill": "scepticism",
+       "band": "nothing",
+       "why": "You do not question, probe or critically challenge any of the information or assumptions in the scenario. There is no sceptical enquiry anywhere in your answer — for example, you do not ask whether the futures hedge is exact given the mismatch between the six-month loan and three-month contracts, whether the company margin assumption is reliable, whether the lock-in achieved is genuinely preferable to remaining unhedged, or whether the board's framing of its exposures is complete. What you wrote is a straightforward descriptive answer with no enquiring-mind dimension at all, so there is nothing here on which this skill can be assessed.",
+       "why_source": "marker_verdict"
+      },
+      {
+       "skill": "commercial_acumen",
+       "band": "weak",
+       "why": "There are brief signs of commercial awareness — noting that translation exposure 'matters mainly where it drags on gearing or trips a covenant' shows some understanding of real-world consequences. However, you do not connect any recommendation to Aldebrino's actual circumstances: the scale of the EUR 48 million borrowing, the nature of its US subsidiary, the 60–90 day settlement window, the competitive threat from US-based rivals, or the board's stated priorities. Commercially viable solutions need to be grounded in the organisation's context, but your answer reads as a generic textbook summary. To reach a stronger band you would need to show judgement about which tools are most appropriate for this company's size and situation, acknowledge trade-offs such as the cost of options versus the certainty of forwards, and offer a specific recommendation rather than listing alternatives.",
+       "why_source": "marker_verdict"
+      }
+     ]
+    }
+   ],
+   "totals": {
+    "technical_awarded": 19,
+    "technical_available": 80,
+    "professional_awarded": 5,
+    "professional_available": 20
+   },
+   "limitations": []
+  },
+  "pacing": {
+   "not_evaluated": null,
+   "minutes_per_mark": 1.95,
+   "paper_clock_minutes": 195,
+   "requirement_budget_minutes": 156,
+   "rows": [
+    {
+     "paper_order": 1,
+     "requirement_id": "49830c65-679e-4929-9a3f-a84c81dcdcad",
+     "label": "(i) B3e — 10 marks",
+     "answer_state": "answered",
+     "is_first": true,
+     "marks_available": 10,
+     "budget_minutes": 19.5,
+     "interval_minutes": 0,
+     "ratio": null,
+     "flag": "no_ratio",
+     "band": "weak",
+     "marks_awarded": 3
+    },
+    {
+     "paper_order": 2,
+     "requirement_id": "d57989a7-4d59-4e90-90bd-deb2e43f1e12",
+     "label": "(ii) B5b — 16 marks",
+     "answer_state": "answered",
+     "is_first": false,
+     "marks_available": 16,
+     "budget_minutes": 31.2,
+     "interval_minutes": 0,
+     "ratio": 0,
+     "flag": "under",
+     "band": "weak",
+     "marks_awarded": 4
+    },
+    {
+     "paper_order": 3,
+     "requirement_id": "c3dc709a-ed91-4aab-8ac1-d54b5d5c23a6",
+     "label": "(iii) E2b — 8 marks",
+     "answer_state": "answered",
+     "is_first": false,
+     "marks_available": 8,
+     "budget_minutes": 15.6,
+     "interval_minutes": 0,
+     "ratio": 0,
+     "flag": "under",
+     "band": "weak",
+     "marks_awarded": 2
+    },
+    {
+     "paper_order": 4,
+     "requirement_id": "bb0b269d-6326-4134-8418-b38db8e2a73e",
+     "label": "(iv) E1a — 6 marks",
+     "answer_state": "answered",
+     "is_first": false,
+     "marks_available": 6,
+     "budget_minutes": 11.7,
+     "interval_minutes": 0,
+     "ratio": 0,
+     "flag": "under",
+     "band": "weak",
+     "marks_awarded": 1
+    },
+    {
+     "paper_order": 5,
+     "requirement_id": "296b541c-397b-4fec-b691-ca6871d2fb73",
+     "label": "(i) B1a — 12 marks",
+     "answer_state": "answered",
+     "is_first": false,
+     "marks_available": 12,
+     "budget_minutes": 23.4,
+     "interval_minutes": 0,
+     "ratio": 0,
+     "flag": "under",
+     "band": "weak",
+     "marks_awarded": 3
+    },
+    {
+     "paper_order": 6,
+     "requirement_id": "03d6e7a5-535a-4ef8-8219-defa0de96fff",
+     "label": "(ii) B1b — 8 marks",
+     "answer_state": "answered",
+     "is_first": false,
+     "marks_available": 8,
+     "budget_minutes": 15.6,
+     "interval_minutes": 0,
+     "ratio": 0,
+     "flag": "under",
+     "band": "weak",
+     "marks_awarded": 2
+    },
+    {
+     "paper_order": 7,
+     "requirement_id": "a69bf0f3-7df8-4406-ae18-1237964b9839",
+     "label": "(i) E3a — 12 marks",
+     "answer_state": "answered",
+     "is_first": false,
+     "marks_available": 12,
+     "budget_minutes": 23.4,
+     "interval_minutes": 0,
+     "ratio": 0,
+     "flag": "under",
+     "band": "nothing",
+     "marks_awarded": 0
+    },
+    {
+     "paper_order": 8,
+     "requirement_id": "d7b61f93-ed7c-4f4e-a754-e484cbe4f016",
+     "label": "(ii) E2a — 8 marks",
+     "answer_state": "answered",
+     "is_first": false,
+     "marks_available": 8,
+     "budget_minutes": 15.6,
+     "interval_minutes": 0,
+     "ratio": 0,
+     "flag": "under",
+     "band": "competent",
+     "marks_awarded": 4
+    }
+   ],
+   "first_requirement": {
+    "paper_order": 1,
+    "label": "(i) B3e — 10 marks",
+    "minutes": 0
+   },
+   "tail_minutes": 0,
+   "total_elapsed_minutes": 0.2,
+   "coverage": {
+    "total": 8,
+    "answered": 8,
+    "blank": 0,
+    "not_reached": 0,
+    "blank_orders": [],
+    "not_reached_orders": []
+   },
+   "findings": [
+    {
+     "code": "end_of_paper_collapse",
+     "severity": "high",
+     "statement": "End-of-paper collapse. Between submitting requirement 6 and finishing, under a minute elapsed across requirements 7–8, against a combined budget of 39 minutes.",
+     "evidence": {
+      "suffix_from": 7,
+      "suffix_to": 8,
+      "suffix_actual_minutes": 0,
+      "suffix_budget_minutes": 39,
+      "triggers": [
+       "time"
+      ]
+     }
+    },
+    {
+     "code": "requirement_under_budget",
+     "severity": "medium",
+     "statement": "Between submitting (i) B3e — 10 marks and submitting (ii) B5b — 16 marks, under a minute elapsed, against a 31-minute budget for (ii) B5b — 16 marks (16 marks).",
+     "evidence": {
+      "paper_order": 2,
+      "interval_minutes": 0,
+      "budget_minutes": 31.2,
+      "ratio": 0
+     }
+    },
+    {
+     "code": "requirement_under_budget",
+     "severity": "medium",
+     "statement": "Between submitting (ii) B5b — 16 marks and submitting (iii) E2b — 8 marks, under a minute elapsed, against a 15-minute budget for (iii) E2b — 8 marks (8 marks).",
+     "evidence": {
+      "paper_order": 3,
+      "interval_minutes": 0,
+      "budget_minutes": 15.6,
+      "ratio": 0
+     }
+    },
+    {
+     "code": "requirement_under_budget",
+     "severity": "medium",
+     "statement": "Between submitting (iii) E2b — 8 marks and submitting (iv) E1a — 6 marks, under a minute elapsed, against an 11-minute budget for (iv) E1a — 6 marks (6 marks).",
+     "evidence": {
+      "paper_order": 4,
+      "interval_minutes": 0,
+      "budget_minutes": 11.7,
+      "ratio": 0
+     }
+    },
+    {
+     "code": "requirement_under_budget",
+     "severity": "medium",
+     "statement": "Between submitting (iv) E1a — 6 marks and submitting (i) B1a — 12 marks, under a minute elapsed, against a 23-minute budget for (i) B1a — 12 marks (12 marks).",
+     "evidence": {
+      "paper_order": 5,
+      "interval_minutes": 0,
+      "budget_minutes": 23.4,
+      "ratio": 0
+     }
+    },
+    {
+     "code": "requirement_under_budget",
+     "severity": "medium",
+     "statement": "Between submitting (i) B1a — 12 marks and submitting (ii) B1b — 8 marks, under a minute elapsed, against a 15-minute budget for (ii) B1b — 8 marks (8 marks).",
+     "evidence": {
+      "paper_order": 6,
+      "interval_minutes": 0,
+      "budget_minutes": 15.6,
+      "ratio": 0
+     }
+    },
+    {
+     "code": "requirement_under_budget",
+     "severity": "medium",
+     "statement": "Between submitting (ii) B1b — 8 marks and submitting (i) E3a — 12 marks, under a minute elapsed, against a 23-minute budget for (i) E3a — 12 marks (12 marks).",
+     "evidence": {
+      "paper_order": 7,
+      "interval_minutes": 0,
+      "budget_minutes": 23.4,
+      "ratio": 0
+     }
+    },
+    {
+     "code": "requirement_under_budget",
+     "severity": "medium",
+     "statement": "Between submitting (i) E3a — 12 marks and submitting (ii) E2a — 8 marks, under a minute elapsed, against a 15-minute budget for (ii) E2a — 8 marks (8 marks).",
+     "evidence": {
+      "paper_order": 8,
+      "interval_minutes": 0,
+      "budget_minutes": 15.6,
+      "ratio": 0
+     }
+    },
+    {
+     "code": "finished_early",
+     "severity": "info",
+     "statement": "The attempt finished 194 minutes inside a 195-minute clock.",
+     "evidence": {
+      "total_elapsed_minutes": 0.2,
+      "minutes_remaining": 194.8
+     }
+    }
+   ]
+  },
+  "marked": true,
+  "marked_now": 0,
+  "skipped_concurrent": 0,
+  "weakness_rows": 0,
+  "resolved_rows": 0
+ }
+}

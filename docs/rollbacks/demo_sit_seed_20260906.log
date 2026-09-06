@@ -1,0 +1,14 @@
+2026-09-06T19:19:23.761Z  seed-demo-sit — target=prod base=https://www.gradd.ai email=grant+demo4@live.ie scale=1
+2026-09-06T19:19:23.764Z  plan: 167 min of waits against a 195-min clock; mark-after=true
+2026-09-06T19:19:23.766Z  ✓ answers: 8/8 sections parsed (R1:1631ch R2:1641ch R3:1095ch R4:1530ch R5:1867ch R6:1648ch R7:1008ch R8:960ch)
+2026-09-06T19:19:24.052Z  ✓ https://www.gradd.ai reachable, APM_CASES on (probe 401)
+2026-09-06T19:19:24.131Z  ✓ all 3 cases approved + published + mock_only + AFM
+2026-09-06T19:19:24.163Z  ✓ 8/8 requirements resolved, marks_guide agrees with the plan
+2026-09-06T19:19:24.199Z  ✓ account exists: grant+demo4@live.ie (49422997-ef54-4b0d-bd85-5ae3dc26091c)
+2026-09-06T19:19:24.228Z  ✓ account has no prior marking rows for these 3 cases
+2026-09-06T19:19:24.278Z  ✓ AFM entitlement already live
+2026-09-06T19:19:24.381Z  ✓ session cookie minted
+2026-09-06T19:19:26.007Z  ✓ attempt STARTED — started_at=2026-09-06T19:19:25.761+00:00 ends_at=2026-09-06T22:34:25.761+00:00
+2026-09-06T19:19:26.079Z  ⏱  R1 — waiting 34min (scaled 2040s), will submit at ~2026-09-06T19:53:26.079Z
+2026-09-06T19:53:30.591Z  ✓ R1 submitted — Solenne (i) B3e (1631 chars, budget 19.5min)
+2026-09-06T19:53:30.592Z  ⏱  R2 — waiting 42min (scaled 2520s), will submit at ~2026-09-06T20:35:30.592Z

@@ -313,3 +313,159 @@ a KPMG reviewer will produce by construction.
 Turns 2 and 3 currently argue against it. If the reveal must be shown, show it on a **weak**
 answer rather than a partly-right one — the credit-shaped fabrication that mode draws is far
 less visible than telling a good candidate they wrote nothing.
+
+---
+
+# 🔴 BLOCKER 2 — LEG 3 ENDS IN AN ERROR MESSAGE, AND THE MARKING ACTUALLY WORKED
+
+**This is the most serious thing found in the rehearsal. It is on the path of leg 3, every
+time, and it is not intermittent.**
+
+## What happens
+
+At the end of a sat AFM paper the client POSTs `/api/acca/sit/results` to mark it. Measured on
+production, 2026-09-06, on a real 8-requirement sitting with real answers:
+
+```
+POST /api/acca/sit/results   →  HTTP 524, empty body, after 125 seconds
+```
+
+**524 is Cloudflare's origin-timeout.** `www.gradd.ai` runs Cloudflare in front of Vercel
+(`Server: cloudflare` + `x-vercel-id` on the same response), and Cloudflare cuts a connection
+when the origin has been silent for ~100 s. It is not configurable below Enterprise.
+
+**The Vercel function does not stop when Cloudflare hangs up.** It keeps marking. Timestamps
+from `acca_case_marking`, same run:
+
+| | |
+|---|---|
+| Paper finished | 20:21:43 |
+| Case 1 marked | 20:23:10 |
+| Case 2 marked | 20:23:57 |
+| **Cloudflare returns 524** | **~20:23:49** |
+| Case 3 marked | **20:24:46** — *57 seconds after the browser was told it failed* |
+
+**So marking succeeds and the student is told it failed.** Three cases at roughly 45–50 s each
+is ~150 s of work against a ~100 s ceiling; the paper is structurally over the limit, not
+marginally.
+
+## What the presenter will see, in order
+
+`resultsOutcomeFor(status, code)` maps anything that is not 2xx/402/409 to `failed`, so a
+524 with an empty body lands on the error arm.
+
+| # | On screen | Wait | Reality |
+|---|---|---|---|
+| 1 | *"Marking your paper…"* | **125 s** | Working correctly |
+| 2 | **"Marking did not complete… try again"** + a **Try marking again** button | — | It is completing |
+| 3 | Press retry → the debrief loads in **3 s**, but **Q3 (i) and Q3 (ii) read "Not yet marked."** and the case total reads **`—/20`** | 3 s | The third case is still being marked by the first request |
+| 4 | Press retry again a minute later → **the complete, correct debrief** | 2 s | Everything was marked at 20:24:46 |
+
+**Roughly three minutes from the last answer to a correct band, two of them spent looking at an
+error message, with a partially-marked paper in between.** That is the moment the hour exists
+to reach.
+
+## Three things that are working, and should not be confused with the fault
+
+- **The system never lies.** `claimCase` writes the claim row with `technical_marks_available`
+  NULL, so a claim can never read as a result; the intermediate debrief says **"Not yet
+  marked."** per requirement and returns `marked: false`, `skipped_concurrent: 1`. It reports a
+  partial paper as partial.
+- **Nothing is lost and nothing is double-billed.** The retry at step 3 marked *nothing*
+  (`marked_now: 0`) — it correctly refused to re-mark a case another request was working on.
+- **The claim self-heals.** `CLAIM_STALE_MS` is 5 minutes, so a genuinely crashed run is taken
+  over by the next request rather than blocking the case forever.
+
+The defect is entirely that **the front door gives up before the kitchen does**, and the UI has
+no way to know the difference.
+
+## On the day
+
+**Do not sit the paper live.** Sit it before the room arrives, get the debrief to a correct
+state, and open it from `/acca/results`. If leg 3 must be live, say into the wait: *"marking a
+full paper is three cases and six model passes — it takes a couple of minutes"*, and **expect
+to press retry twice.** Do not let the first retry's `—/20` be the screen anyone reads.
+
+**Do not "fix" this by shortening the answers.** A shorter paper marks faster and hides it. The
+condition is a full paper, which is the product.
+
+---
+
+# LEG 3 — THE KEYBOARD, MARKED
+
+**`https://www.gradd.ai/acca/afm/mock` → Start.** AFM Mock Paper 1: three cases, eight
+requirements, 100 marks, a **195-minute countdown** set once at start and
+server-authoritative.
+
+## Route timings, measured
+
+| Step | Wait |
+|---|---|
+| `GET /api/acca/sit` — load the paper | **1.4–3.7 s** |
+| `POST action=start` | **0.9–1.7 s** |
+| Each answer submitted (×8) | **1.2–2.1 s** |
+| `POST action=finish` | **0.7 s** |
+| `POST /api/acca/sit/results` — marking | **see Blocker 2** |
+
+The submissions are fast because a sit write does no model work — it records `final_answer`
+and returns. **All the time in leg 3 is typing time plus the marking pass at the end.**
+
+## ⚠️ Eight native browser dialogs, and they are ugly
+
+Every submit fires a **`window.confirm`** (`components/acca/SitRunner.tsx:490`):
+
+> Submit this answer and move on?
+> This is final — you cannot come back to it.
+
+and on the last one, *"Submit this answer and finish the paper?"*. These are **Chrome system
+dialogs**, so they render as a grey OS-styled box captioned **"www.gradd.ai says"**, centred
+on screen, in the browser's font rather than the product's. Eight of them, in the most
+polished part of the demo.
+
+They are also load-bearing and correct — the submission genuinely is irreversible, because
+`app/api/acca/case/turn` refuses to overwrite a recorded answer (409 `already_submitted`).
+**The warning is right; only its dress is wrong.** Worth knowing before the room sees it, and
+worth a sentence: *"that's a real one-way door — the server refuses to take a second answer."*
+
+## What the marks looked like
+
+Eight short paragraphs, deliberately uneven in quality:
+
+| Requirement | Band | Marks |
+|---|---|---|
+| Q1 (i) discount rate | weak | 3/10 |
+| Q1 (ii) NPV in EUR | weak | 4/16 |
+| Q1 (iii) forward vs money-market | weak | 2/8 |
+| Q1 (iv) group treasury | weak | 1/6 |
+| Q2 (i) ENPV | weak | 3/12 |
+| Q2 (ii) Monte Carlo / VaR | weak | 2/8 |
+| Q3 (i) interest-rate futures | **nothing** | 0/12 |
+| Q3 (ii) FX exposures | **competent** | 4/8 |
+| **Paper** | | **19/80 technical, 5/20 PS** |
+
+**The marking discriminates, and that is the thing to show.** Q3 (ii) — the one answer that
+named all three exposure types and said how each is managed — is the only one that reached
+`competent`. Q3 (i), which asserted the right direction but produced no figures, banded
+`nothing`. The marker's own reasoning on Q1 (i) is quoted verbatim in the debrief and is
+correct: *"You correctly identify the right method… However, you produce no numbers at any
+step, which is where the bulk of the marks lie."*
+
+**Say:** *"Every one of these was a paragraph of plausible prose. It gave marks for the one
+that did the work and zero for the one that gestured at it."*
+
+## 🟠 The pacing headline mis-fires on a fast paper
+
+Every run in this rehearsal produced the same headline:
+
+> **End-of-paper collapse.** Between submitting Q2 (ii) and finishing, under a minute elapsed
+> across Q3 (i)–Q3 (ii), against a combined budget of 39 minutes.
+
+That is literally true of a paper submitted in twelve seconds, and it is the *only* headline
+available, so a fast run always looks like a collapse. **It does not affect a real sitting**
+(the seeded paper is paced to produce a genuine collapse at exactly this point, which is the
+narration). But it means **you cannot demonstrate leg 3 by rattling through the paper** — the
+debrief will accuse the candidate of collapsing at the end regardless of how they did.
+
+A blank paper produces the same headline naming **all eight** requirements as the "final"
+ones, which reads oddly: a paper nobody started is reported as a paper that collapsed at
+the end.
