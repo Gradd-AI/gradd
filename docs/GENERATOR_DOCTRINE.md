@@ -702,6 +702,62 @@ threshold — lowering it makes the arm easier to pass without making it easier 
 ~90 model calls and ~30 minutes of wall clock against a local dev server. That is the price of a
 result that can be cited. The alternative already has a price, and it has been paid twice.
 
+### P-M6(a) — A GATE OF `0/n` ON A RATE AXIS IS ITSELF AN UNRESOLVABLE THRESHOLD (correction, 2026-09-06)
+
+**AND THE INSTANCE IS THIS DOCUMENT.** P-M6 was banked at the top of this session. **The block
+after it, in the same session, set a gate of `0 attribution errors` at n=10** on the wrong-answer
+tripwire — a threshold finer than any n could resolve, written by the person who had just ruled
+that thresholds must be chosen against the instrument. It fired: **1/10**, against a banked
+pre-change seed-A baseline of **0/30**, Fisher p = 0.250. The axis was recorded as FAILING, and
+what it had actually measured was **a rate that had never been measured on that arm at all**.
+
+**WHY `0/n` IS THE WORST CASE, NOT THE STRICTEST.** Every other threshold trades sensitivity for
+size; `0/n` has no sensitivity at any size, because the null it tests — *the true rate is exactly
+zero* — is one no finite sample can support. A pass says only that the sample was too small to
+find one, and the 95% upper bound on `0/30` is **9.5%**, i.e. a clean run at n=30 is consistent
+with one reply in eleven carrying the defect. A single hit then reads as a regression when it is
+inside the interval the passing run already admitted. The two verdicts are not opposites; they are
+the same measurement rounded differently.
+
+⚠️ **AND `0/n` LOOKS LIKE A CATEGORICAL GATE WHEN IT IS NOT.** The quotation axis in the same run
+IS legitimately `0/30`, and the two are not the same kind of check even though they print the same
+way. The quotation gate is **mechanical**: a byte comparison over a classified span, where a
+survivor is a hole in the classifier and points at a specific line of code. The tripwire gate is
+**a rate on model behaviour**, where a survivor is a draw from a distribution. **Write `0/n` only
+where a single occurrence is a defect you can locate.** On a behavioural axis it is a rate gate
+wearing a categorical face, and it will be read as the categorical one.
+
+**THE CORRECTION, AND IT IS WHAT A TRIPWIRE IS FOR.** A regression tripwire does not test for zero
+errors. It tests for a **NEW ERROR CLASS** — one absent from the named baseline — and it **NAMES
+THE CLASSES IT IS WATCHING FOR** before the run. Its verdict is categorical because its question
+is: *did a shape appear that the baseline does not contain?* That question a single occurrence can
+answer, because the finding is the SHAPE, not the count.
+
+**How to write one:**
+
+1. **Name the baseline capture by file**, and say it was read for these classes specifically —
+   read, not grepped. (Here: the 30 pre-change seed-A openings, read individually, carrying **0**
+   of the run-9 inversion.)
+2. **Enumerate the classes the tripwire fires on**, from the rubric, before the run.
+3. **A hit is a finding to diagnose, never a number to compare** — report the verbatim text, the
+   class, and whether the mechanism could plausibly reach it from the change under test.
+4. **A hit in a class the baseline ALSO contains is not a tripwire hit.** It is a rate observation,
+   and it goes to the rate axis with its n and its p-value, where P-M6 governs it.
+
+📐 **APPLIED RETROSPECTIVELY TO THE RUN THAT PRODUCED THIS RULE:** run 9's inversion is class
+**C3(a)**, SEVERE, and it is **absent from the 30-reply baseline** — so under the corrected form it
+IS a tripwire hit, and a real one. What changes is the verdict attached to it. It is **not** a
+regression of the branch under test: nothing in the quotation check or the sanitizer cut touches
+the credit beat, the conditioned opening was armed when it fired, and removing the credit demand
+did not remove the behaviour. It is **the inversion, sighted on the arm where it had not been
+sighted before** — which is a finding about the credit mechanism, and it is why the span design in
+`AFM_SURFACED.md` is the next piece of work rather than another prompt edit.
+
+⚠️ **THE GATE AS WRITTEN WAS STILL BINDING AND WAS STILL OBEYED.** The run stopped at the report
+and did not merge, which was correct: a gate is not renegotiated by the party it fails, in the
+session it fails them. The correction is banked here and the merge was Grant's call, made on the
+mechanism.
+
 ## P-G3(b) — A FIXTURE THAT NEVER EXERCISED THE THING IT NAMED (instance, 2026-09-06)
 
 **The instance.** `test-case-reveal-routing`'s anti-truncation check compared the served reveal's
@@ -993,6 +1049,68 @@ a fixture. Record: `docs/redteam/summaries/2026-08-25-case-envelope-positive-con
 ⚠️ **STILL UNMEASURED:** an answer that is *weakly* creditable throughout — thin credit everywhere,
 nothing done well — is a third class. Both controls here are CLEANLY partial (one strand done
 well, others absent).
+
+## P-T5 — WHERE A DEFECT CLASS ALREADY HAS A PROVEN STRUCTURAL FIX IN THIS CODEBASE, GO THERE FIRST AND MEASURE TO CONFIRM (ruled 2026-09-06)
+
+**THE RULE.** Before writing an instruction against a defect, ask whether **this repository already
+contains a structural fix for that class of defect**, working, in production, measured. If it does,
+the first move is to **port the mechanism and measure to CONFIRM it transferred** — not to write a
+prompt edit and measure to ELIMINATE. The two are different experiments with different costs: a
+confirmation arm has a prior and a known shape, and an elimination arm has neither, so it must be
+re-run every time the number moves and it terminates only when someone decides it has.
+
+**THE PATTERN, NAMED, BECAUSE IT IS ONE PATTERN AND IT IS ALREADY HERE.** *The model may not name
+what code has not validated.* Code builds a **closed inventory** of legal referents, the prompt is
+told the inventory is the whole permitted set, and anything outside it cannot be uttered without
+the omission being visible. Three shipped instances:
+
+| the defect | the closed inventory | where |
+|---|---|---|
+| the outro invented drill names and topic areas | `resolvableTopics` — real published areas only, *"the only next-step areas you may name"* | `renderResolvableTopics`, `tutor-grounding.ts:280` |
+| the pointer beat pointed into a document the model had never seen (0/10 usable, 9/10 naming section #1 of six) | `revealArtefactSections(modelAnswer)` — the `## ` heading NAMES, three states (`undefined` / `[]` / non-empty) | `teach-engine.ts`, measured 30/30 in-list |
+| the wrapper cited words the student did not write | the ATTEMPT ITSELF, byte-compared | `enforceVerbatimQuotation`, `reveal-quotation.ts` |
+
+**THE INSTANCE, and it is the cost of not having this rule written down.** Invented figures on the
+tutor legs were fixed structurally **weeks ago** by exactly the first row of that table. The
+credit-fabrication workstream then spent, against the same class of defect:
+
+- **three prompt fixes** — `e31d683` (the credit opening's exit), `887b971` (no fabricated
+  attribution), `74f2ca5` (the hint leg's shape) — every one P-T2-compliant in shape, and **every
+  one moved its primary metric the wrong way** (`P-M4(a)`);
+- **three seed answers** — ANSWER-1, ANSWER-2, ANSWER-3 — of which the third is captured and
+  **still unscored**, which is what left the tenth `P-V4` instance unsupported;
+- **a deletion arm** — the conditioned opening, which removes the credit demand entirely when
+  nothing is creditable. It is armed, correct, and **the invention survives it**: seed A run 9
+  opened on an invented credit with `nothingCreditable = true` and no credit demand in the prompt
+  at all.
+
+Only then did the design reach for the same closed-inventory pattern — `creditable_span`, a
+verbatim substring of the attempt, byte-validated, with explicit null. **That design was available
+on day one.** It is the third row of the table with a different referent.
+
+📐 **THE DELETION ARM IS THE DIAGNOSTIC, AND IT SHOULD HAVE ENDED THE INSTRUCTIONAL PHASE ON ITS
+OWN.** Removing the demand is the strongest instructional edit available — there is no weaker thing
+left to say. **When the defect survives the demand's absence, no further instruction can reach it**,
+because the behaviour is not being caused by the instruction. That is the point at which the only
+remaining move is structural, and recognising it early is most of what this rule buys.
+
+⚠️ **"MEASURE TO CONFIRM" IS NOT "SKIP THE MEASUREMENT".** A ported mechanism can fail to transfer,
+and two of the three rows above shipped with a residual named in the module header. What changes is
+the SHAPE of the arm: a confirmation arm has a **mechanical** axis (did the span byte-match; is the
+named section on the list) which a single occurrence can locate, so it is gated the way `P-M6(a)`
+permits `0/n` to be gated. An elimination arm has only a rate.
+
+⚠️ **AND THE PORT IS NOT FREE — CHECK WHAT THE TARGET LEG RECEIVES.** The first row's fix does not
+reach the CASE surface at all: `call4_reveal` takes no `GroundingPack`, so `renderResolvableTopics`
+never runs there, which is why the case reveal's closing beat invents a numeric scenario **23/30**
+while the drill route's does not. **A structural fix that exists is not a structural fix that is
+wired** — `P-T1`. Establish which legs the mechanism actually reaches before claiming the class is
+closed on a surface.
+
+**THE SEARCH, AS AN ACT.** *"Does this codebase already fix this?"* is a grep and five minutes,
+and it is owed before the first prompt edit. Its output is either a mechanism to port or a written
+statement that none exists — and the second is what makes the instructional phase a considered
+choice rather than a default.
 
 ## THE 5-FIELD SWEEP RULE (operationalised)
 
@@ -1501,6 +1619,65 @@ over **733 digit-bearing student messages** by neutralising each marker in turn 
 shipped function: it saved **ZERO** — 20 fire with it on, 20 with it off. It had never once done
 its job in production, and nothing said so. A branch with no observed firings is a claim, not a
 guard; the reach is a number, and it is usually cheap to get.
+
+**P-V4 — ELEVENTH INSTANCE: A GUARD WHOSE TRIGGER IS INCIDENTAL TO THE THING IT GUARDS IS UNTESTED
+BY CONSTRUCTION (measured 2026-09-06).**
+
+*(Eleventh, not tenth: slot ten is the seed-answer instance in `AFM_SURFACED.md`, which is
+**unsupported, not refuted**, and is held open pending the ANSWER-3 scoring. Slot eleven is this
+one, and it is measured.)*
+
+**THE CHECK.** `sanitizeAfmWrapper` exists to stop the reveal wrapper restating the worked answer
+above the artefact — a duplicated, model-authored, figure-unverified second answer. Its cut fired
+on `\n[^\n]*(worked answer|investment appraisal)`: **any line, after a newline, containing one of
+two phrases.**
+
+| the proxy | the question | how they come apart |
+|---|---|---|
+| a line naming *"worked answer"* or *"investment appraisal"*, after a newline | **is this line the start of a build restatement** | a build restatement's heading is `**The accuracy claim**` or `**Benchmarking Programme for Viña del Sol: Evaluation and Assessment**` — a real heading naming neither phrase, on a line the model reached only because it happened to write a `---` divider first |
+
+📐 **MEASURED, AND THE NUMBER IS THE FINDING: with the model's `---` divider removed, the phrase cut
+stops 8 of 38 restatements. The heading-SHAPE test stops 38/38.** Thirty of the thirty-eight name
+neither phrase. **The old cut's coverage rested entirely on the model happening to write a divider
+first** — an incidental habit of the generation, not a property of the thing being cut. The guard
+had a 79% miss rate against its own stated purpose and read as working.
+
+**WHY IT SURVIVED REVIEW, WHICH IS THE P-V4 SHAPE.** The `---` divider and a build restatement
+co-occur most of the time, so on every input anyone tried, proxy and question agreed. The divider
+arm was doing the work and the phrase arm was getting the credit, and no test distinguishes an arm
+that fired from an arm that mattered.
+
+⚠️ **AND IT WAS WRONG IN THE OTHER DIRECTION TOO, WHICH IS WHAT MADE IT VISIBLE.**
+`REVEAL_AFM_WRAPPER_SYSTEM` instructs the model to *"say WHICH PART of the worked answer below to
+read first"* — so the sentence the pointer beat exists to produce is **the exact sentence the cut
+deleted**. The guard was under-cutting the thing it was for and over-cutting the thing it was
+told to preserve, on the same predicate. A proxy that is wrong in both directions at once is a
+proxy that was never separated from its question at all.
+
+**THE HABIT THIS ADDS.** When a guard's trigger is a token that merely **accompanies** the target
+— a divider, a blank line, a fence, a heading marker the generator usually but not always emits —
+say so in the comment, and **measure the guard with the accompaniment removed**. That single
+counterfactual is what separates *the guard works* from *the generation is currently cooperative*.
+The measurement is cheap: strip the incidental token from the captured corpus and re-run the
+shipped predicate. Here it was one pass over 38 restatements and it converted a belief into a
+number.
+
+🔴 **AND THE SAME RUN SHOWED THE GUARD IS LOAD-BEARING, NOT BELT-AND-BRACES.** The new
+`[reveal:wrapper-cut]` log is the first thing that ever recorded this: **the wrapper restates the
+worked answer on 29 of 30 case reveals and 10 of 10 drill reveals**, ~1,000 characters each,
+against a prompt that says *"do NOT begin the worked answer"*. The instruction is disobeyed
+essentially always and `sanitizeAfmWrapper` is the only thing between a student and the duplicate.
+**Nothing logged it until now** — which is `P-V4`'s other half: a guard's reach is a number, and it
+is usually cheap to get.
+
+⚠️ **THE HISTORIC FIRING RATE CANNOT BE RECOVERED, AND SAYING SO IS THE ANSWER.** Every stored
+capture holds the SERVED wrapper — post-cut — so the corpus of raw wrappers available is exactly
+the ones that were NOT cut, biased by construction. **1 detectable fire in 80 served case wrappers
+is a LOWER BOUND**, detectable only where the cut removed the pointer; a cut that removed only the
+closing beat leaves no signature at all. The drill surface had **zero** reveal captures in
+`docs/rollbacks/`, so it was measured directly instead (`quotefix_drill_n10_20260906.json`):
+`legacy_would_cut` 0/10 on the served text, all 10 cuts firing at a divider where old and new
+conditions are identical.
 
 **P-T3 — A GUARD THAT SHORT-CIRCUITS A CHECK MUST NOT EMIT A LABEL THAT READS AS THE CHECK HAVING
 PASSED (ruled 2026-08-22, measured).**
