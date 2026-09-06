@@ -472,7 +472,7 @@ when the session ends on a branch.
   `renderResolvableTopics` (the drill route's INVENTED-INVENTORY fix) never reaches it. Fixtures
   `npm run test:case-reveal-routing` (159).
 - **THE SERVED WRAPPER'S TWO GUARDS — `lib/acca/reveal-quotation.ts` + the sanitizer's SHAPE cut
-  (2026-09-06, branch `fix/reveal-quotation-and-sanitizer-cut`, NOT MERGED — one gate axis fails).**
+  (2026-09-06, MERGED at `ab194fe`, deployed `dpl_GERD7QsromUQ37g5FCoabQZAqDgb`).**
   Both surfaces, one definition each; the chain is `finishClean` → `sanitizeAfmWrapper` →
   `enforceVerbatimQuotation` → `assembleAfmReveal`, pinned in that ORDER by
   `test-case-reveal-routing.ts`.

@@ -2,6 +2,112 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
+## 🔴 OPEN 2026-09-06 (h2) — THE AFM ONWARD-TOPIC LIST IS A FIXED B1–B5 AND 16 OF 63 PUBLISHED AFM DRILLS SIT OUTSIDE IT
+
+**Split out of (h) as its own item on Grant's ruling: this half is LIVE on the drill route today,
+where (h) is a case-surface item with no fix.**
+
+`app/api/acca/tutor/route.ts:1323` — `const resolvableAreas = paper === 'AFM' ? ['B1','B2','B3',
+'B4','B5'] : []`. A hardcoded literal, identical for every drill, rendered by
+`renderResolvableTopics` into the reveal's closing beat as the onward topics the tutor may name.
+
+📐 **MEASURED 2026-09-06 against the live corpus, not inherited:** 63 published AFM drills, by area
+`A3:1 · A6:1 · B1:14 · B2:4 · B3:17 · B4:7 · B5:5 · E1:2 · E2:7 · E3:5`. **16 of 63 sit outside
+B1–B5.** So a student finishing an **E3a interest-rate-hedging** drill is told the onward areas are
+five B-section investment-appraisal topics, **none of them its own** — and the two AFM Section E
+calculator families (fxhedge E2b/E2c, irhedge E3a) plus the E-narrative cluster are exactly the
+newest content. The list was written when AFM was B-section only and has not moved since.
+
+⚠️ **THIS IS THE OPPOSITE FAILURE TO INVENTED-INVENTORY, AND THE SAME MECHANISM CAUSED BOTH.** The
+July fix replaced *"a topic the model invented"* with *"a topic from a fixed list"*; a fixed list
+is grounded but not RELEVANT, and the beat still ends up pointing somewhere the student was not.
+**Nothing gates it** — no fixture asserts the list covers the served corpus, and a new published
+area silently falls outside it, which is how this arrived.
+
+⚠️ **NOT FIXED HERE.** The obvious repair (derive the list from the drill's own area) is a content
++ label question, not a one-line change: it needs the same label-map discipline item (h) names, and
+`AFM_AREA_LABELS` has five entries against ten live AFM areas. **Sized, not started.**
+
+⚠️ **`[reveal:unsourced-figures]` FLAGGED ONLY 8 OF THE 23, AND THAT IS ITS DOCUMENTED CEILING**
+(`reveal-figure-audit.ts`, ceiling 2b: *"a coincidence passes"*). Fifteen invented figures collided
+with a number already present somewhere in context ∪ model_answer ∪ attempt. **Never quote the
+audit's count as a census of invented figures** — it is a lower bound, and this run measures the
+gap at 8/23.
+
+⚠️ **A SECOND CEILING, AND THE SEED-A PASS FOLDED IT INTO THE FIRST. THE AUDIT READS DIGITS; A
+NUMBER WRITTEN AS A WORD IS INVISIBLE TO IT.** On the creditable seed it flagged 6 of 12, and the
+six misses split two ways, not one: **3 by collision** (`£20`, `40%`, `18` — ceiling 2b) and **3 by
+construction** (`six months`, which carries no digit at all). *"Fifteen invented figures collided"*
+was therefore an over-attribution to collision; some share of them were never candidates.
+
+### 🔵 SCOPED 2026-09-06 — IT IS A DATA FIX, NOT A WIRE, AND THE WIRE IS ALREADY CORRECT
+
+Ruled at the top of this session: **record it, scope it, do not build it in this block.** The
+mechanism is fine — `renderResolvableTopics` renders whatever `resolvableAreas` contains, and it
+renders it correctly. **The defect is entirely in the literal.** Three pieces, all content:
+
+1. **EXTEND `AFM_AREA_LABELS` FROM FIVE ENTRIES TO TEN** (`tutor-grounding.ts:70`). Live areas are
+   `A3 · A6 · B1 · B2 · B3 · B4 · B5 · E1 · E2 · E3`; the map holds B1–B5. Each new entry is a
+   phrase a tutor says out loud (*"another interest-rate hedging drill"*), authored, not derived
+   from a code.
+2. **SELECT PER DRILL, not a fixed list.** The drill's own `lo_code` prefix is already in hand at
+   the call site. A student finishing E3a should be offered E-section neighbours first; B1–B5 for
+   an E3a drill is the defect, and it is not fixed by lengthening the list.
+3. **DERIVE OR CHECK AGAINST THE PUBLISHED CORPUS.** *"Another X drill"* asserts such a drill
+   EXISTS and is servable. The current list is a literal checked against nothing — which is how a
+   published area silently fell outside it. A fixture asserting every rendered area is present in
+   the published corpus is what stops the next one, and it is the cheap half.
+
+⚠️ **THE COUNT IS A LIVE STUDENT-FACING NUMBER, NOT A CODE-QUALITY OBSERVATION.** 16 of 63
+published AFM drills are served an onward list containing none of their own area, on the reveal —
+the turn the student reached by getting it wrong twice. It has been true since AFM Section E
+opened (fxhedge, 2026-07-23) and nothing has reported it.
+
+⚠️ **WHAT MUST NOT HAPPEN: DELETING THE LIST TO MAKE THE DEFECT GO AWAY.** `resolvableTopics` is
+empty on APM already, and the result is item (h) — the beat invents its own scenario. An empty
+inventory is not a safe default here; it is the other failure.
+
+
+## 🔴 OPEN 2026-09-06 (k) — THE WRAPPER RESTATES THE WORKED ANSWER ESSENTIALLY ALWAYS, AND ONE REGEX IS ALL THAT STOPS IT REACHING THE STUDENT
+
+**Merged to `main` at `ab194fe` — the CUT is fixed and fixtured. This item is what the fix
+revealed, and it is not fixed.**
+
+`REVEAL_AFM_WRAPPER_SYSTEM` says *"do NOT begin the worked answer"*. `[reveal:wrapper-cut]`, added
+on this branch and the first thing ever to log it, measures the compliance rate:
+
+📐 **29 of 30 case reveals and 10 of 10 drill reveals restate the worked answer above the
+artefact** — 33,634 characters on the case surface and 9,451 on the drill surface, **~1,000
+characters per reveal**. Every cut removed a divider plus a build restatement; **zero removed a
+beat**. The instruction is disobeyed essentially always, and `sanitizeAfmWrapper` is the only thing
+between a student and a **duplicated, model-authored, figure-unverified second answer** sitting
+above the code-owned one.
+
+🔴 **THIS IS A `P-T2` INSTANCE ON THE LIVE REVEAL, AND THE PROMPT SIDE HAS NEVER BEEN ATTEMPTED.**
+The prohibition is appended beside a demand that produces the behaviour: the wrapper is asked to
+diagnose, to name the move, and to point at a section — which is most of a restatement already —
+and then told not to write one. Nothing has tried removing the demand's *pressure* (P-T2's shape),
+because until this log existed nobody knew there was a rate to move. **The 39/40 is the baseline
+any such attempt is measured against**, and it is banked here for that purpose.
+
+⚠️ **THE GUARD IS A REGEX AND ITS COVERAGE IS NOW MEASURED, WHICH IS NOT THE SAME AS SAFE.** The
+heading-SHAPE test stops **38 of 38** measured restatements against the phrase test's 8 of 38 —
+but it stops them by recognising a HEADING, and a restatement that opens in prose has no heading to
+recognise. That case was not observed in 40 reveals; it is the shape to watch, and it is stated in
+`isBuildHeadingLine`'s own header alongside the deliberate prose escape (a bold line ending in
+sentence punctuation is never cut).
+
+⚠️ **A CUT THAT FIRES IS NOT A REVEAL THAT IS FINE.** Everything below the cut is discarded, so a
+wrapper whose closing beat sits *after* its restatement loses the beat silently. Zero observed in
+40 — every restatement ran to the end of the wrapper — but the log records only what was removed,
+not what the student consequently did not get. **`[reveal:wrapper-cut]` reports characters removed;
+it does not report whether a beat went with them.**
+
+**What would close it:** a rate that is not 39/40 after a P-T2-shaped edit to the demand, measured
+against this baseline on the same two surfaces. The guard stays either way — a prompt fix that
+halves the rate still leaves the duplicate on half the reveals.
+
+
 ## ✅ CLOSED 2026-09-06 (g) — THE CASE REVEAL'S POINTER BEAT AND ITS CREDIT DEMAND (n = 30)
 
 Both wiring fixes shipped on `feat/case-reveal-design-b`. Captures:
@@ -92,44 +198,6 @@ DATA is, and the data does not exist:
 drills; the case surface's own inventory is case requirements, not drills, so a faithful version
 of this beat on a case surface may need a SECOND inventory that has never been built at all.
 
-## 🔴 OPEN 2026-09-06 (h2) — THE AFM ONWARD-TOPIC LIST IS A FIXED B1–B5 AND 16 OF 63 PUBLISHED AFM DRILLS SIT OUTSIDE IT
-
-**Split out of (h) as its own item on Grant's ruling: this half is LIVE on the drill route today,
-where (h) is a case-surface item with no fix.**
-
-`app/api/acca/tutor/route.ts:1323` — `const resolvableAreas = paper === 'AFM' ? ['B1','B2','B3',
-'B4','B5'] : []`. A hardcoded literal, identical for every drill, rendered by
-`renderResolvableTopics` into the reveal's closing beat as the onward topics the tutor may name.
-
-📐 **MEASURED 2026-09-06 against the live corpus, not inherited:** 63 published AFM drills, by area
-`A3:1 · A6:1 · B1:14 · B2:4 · B3:17 · B4:7 · B5:5 · E1:2 · E2:7 · E3:5`. **16 of 63 sit outside
-B1–B5.** So a student finishing an **E3a interest-rate-hedging** drill is told the onward areas are
-five B-section investment-appraisal topics, **none of them its own** — and the two AFM Section E
-calculator families (fxhedge E2b/E2c, irhedge E3a) plus the E-narrative cluster are exactly the
-newest content. The list was written when AFM was B-section only and has not moved since.
-
-⚠️ **THIS IS THE OPPOSITE FAILURE TO INVENTED-INVENTORY, AND THE SAME MECHANISM CAUSED BOTH.** The
-July fix replaced *"a topic the model invented"* with *"a topic from a fixed list"*; a fixed list
-is grounded but not RELEVANT, and the beat still ends up pointing somewhere the student was not.
-**Nothing gates it** — no fixture asserts the list covers the served corpus, and a new published
-area silently falls outside it, which is how this arrived.
-
-⚠️ **NOT FIXED HERE.** The obvious repair (derive the list from the drill's own area) is a content
-+ label question, not a one-line change: it needs the same label-map discipline item (h) names, and
-`AFM_AREA_LABELS` has five entries against ten live AFM areas. **Sized, not started.**
-
-⚠️ **`[reveal:unsourced-figures]` FLAGGED ONLY 8 OF THE 23, AND THAT IS ITS DOCUMENTED CEILING**
-(`reveal-figure-audit.ts`, ceiling 2b: *"a coincidence passes"*). Fifteen invented figures collided
-with a number already present somewhere in context ∪ model_answer ∪ attempt. **Never quote the
-audit's count as a census of invented figures** — it is a lower bound, and this run measures the
-gap at 8/23.
-
-⚠️ **A SECOND CEILING, AND THE SEED-A PASS FOLDED IT INTO THE FIRST. THE AUDIT READS DIGITS; A
-NUMBER WRITTEN AS A WORD IS INVISIBLE TO IT.** On the creditable seed it flagged 6 of 12, and the
-six misses split two ways, not one: **3 by collision** (`£20`, `40%`, `18` — ceiling 2b) and **3 by
-construction** (`six months`, which carries no digit at all). *"Fifteen invented figures collided"*
-was therefore an over-attribution to collision; some share of them were never candidates.
-
 ## 🔴 OPEN 2026-09-06 (i) — A CREDITABLE ANSWER DRAWS FABRICATED QUOTATION, WHERE A WRONG ONE DRAWS NONE
 
 On the gated arm (nothing creditable, suppression armed) the fabricated-quotation count is
@@ -177,7 +245,7 @@ STUDENT-ATTRIBUTED that does not appear in the attempt **loses its quotation mar
 sentence as prose**. Never deleted, never rewritten, never substituted: the underlying claim was
 TRUE in all five original sightings and only the citation's precision was false. Logged at
 `[reveal:quote-unquoted]` so the rate stays visible. Fixtures `npm run test:reveal-quotation` (95),
-contract gate 82 → **83**. Branch `fix/reveal-quotation-and-sanitizer-cut`, **NOT MERGED**.
+contract gate 82 → **83**. Branch `fix/reveal-quotation-and-sanitizer-cut`, **MERGED to `main` at `ab194fe`**, deployed `dpl_GERD7QsromUQ37g5FCoabQZAqDgb` (contract gate 83/83 in the build log).
 
 📐 **SERVED 0/30 at n=30 on the same frozen seed** (`result_20260906_quotation_and_sanitizer.md`)
 — **and it took three runs and two named holes to get there**, both in the CLASSIFIER, never in the
@@ -209,9 +277,13 @@ different subject.
 
 ## ✅ CLOSED 2026-09-06 (j) — `sanitizeAfmWrapper` DELETED THE POINTER BEAT. Fixed, and the guard turned out to be missing 30 of 38 restatements as well.
 
-**Branch `fix/reveal-quotation-and-sanitizer-cut` — NOT MERGED** (the run's tripwire axis fails; see
-`docs/rollbacks/result_20260906_quotation_and_sanitizer.md`). The cut condition itself is fixed and
-fixtured.
+**Branch `fix/reveal-quotation-and-sanitizer-cut` — MERGED to `main` at `ab194fe`, deployed
+`dpl_GERD7QsromUQ37g5FCoabQZAqDgb`, contract gate 83/83 in the build log.** The tripwire axis failed
+the gate as it was written; that gate is corrected in `GENERATOR_DOCTRINE.md` as **P-M6(a)** — a
+`0/n` threshold on a rate axis is unresolvable at any n, and the merge was ruled on the mechanism
+(nothing in either change touches the credit beat; the conditioned opening was armed when it fired).
+See `docs/rollbacks/result_20260906_quotation_and_sanitizer.md`. The cut condition itself is fixed
+and fixtured.
 
 **The cut is now a heading SHAPE test, not a phrase test** (`isBuildHeadingLine`): markdown `#`, a
 wholly bold line, a bold opener that never closes (the token-cap stub), a numbered/`Step N` line.
