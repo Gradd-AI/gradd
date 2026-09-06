@@ -67,8 +67,10 @@ export function gapEstablishesNothingCorrect(diagnosis: string): boolean {
 /**
  * The opening instruction for call3_hint.
  *
- * `shipped` is BYTE-IDENTICAL to the pre-2026-08-22 string and is pinned as such by the fixtures,
- * so the historical baseline survives and this refactor cannot silently reword the live prompt.
+ * ⚠️ `shipped` IS NO LONGER THE PRE-2026-08-22 STRING. It was pinned byte-identical to it until
+ * 2026-09-06, when the credit demand was deleted from every arm (Grant-ruled). The fixtures now pin
+ * those bytes as the string that was REMOVED, so the historical baseline still survives — it has
+ * simply changed sides. Do not restore the old wording to make a stale pin pass.
  */
 export function hintOpeningInstruction(
   variant: HintOpeningVariant,
@@ -87,9 +89,17 @@ export function hintOpeningInstruction(
    */
   nothingCreditable = false,
 ): string {
+  // ── THE CREDIT DEMAND IS DELETED (2026-09-06, Grant-ruled) ─────────────────
+  // Was: 'First miss. Lead with the ONE specific thing they got right — name the real move, not
+  // vague praise — then name the single sharpest gap (just one, not a list) and one next move. '
+  //
+  // REMOVAL, NOT REPLACEMENT (P-T2). Nothing is put in its place and nothing names praise,
+  // credit, strength or correctness — an added prohibition primes the output it forbids, which
+  // is the mechanism measured at z = -3.65 on the PS descriptor leak. The name `SHIPPED` is kept
+  // for the arm's sake; it is no longer the pre-2026-08-22 string, and the fixture that pinned
+  // those bytes now pins them as the string that was REMOVED.
   const SHIPPED =
-    'First miss. Lead with the ONE specific thing they got right — name the real move, not ' +
-    'vague praise — then name the single sharpest gap (just one, not a list) and one next ' +
+    'First miss. Name the single sharpest gap (just one, not a list) and one next ' +
     'move. ';
   if (variant === 'shipped') return SHIPPED;
   // (c) NOTHING CREDITABLE — the branch that previously had no opening at all.
@@ -105,11 +115,22 @@ export function hintOpeningInstruction(
   // nothing about figures or arithmetic, because this arm serves discursive drills where a
   // "put the working on the page" instruction would misdescribe the requirement entirely.
   if (!nothingEstablished && nothingCreditable) {
+    // ── THE CREDIT LANGUAGE IS DELETED (2026-09-06, Grant-ruled) ─────────────
+    // Was: 'First miss, and the gap diagnosis above reports that nothing in the answer yet earns
+    // credit against this requirement. Open on the first thing that would: name the single
+    // specific move this requirement turns on, and what they would have to put on the page to
+    // make it. Then name the single sharpest gap (just one, not a list) and one next move. '
+    //
+    // Both sentences were ABOUT credit — the first reports its absence, the second asks for the
+    // thing that would earn it. Naming the absence is still naming it. What is left is the job:
+    // one gap, one next move.
+    //
+    // ⚠️ THIS ARM IS NOW BYTE-IDENTICAL TO `SHIPPED`, so `nothingCreditable` no longer moves the
+    // hint opening at all. Kept as a named arm rather than deleted: the branch is where a future
+    // conditioned opening would go, and collapsing it would erase the record that it once fired.
+    // Do NOT read a green (c) fixture as evidence that the condition changes anything.
     return (
-      'First miss, and the gap diagnosis above reports that nothing in the answer yet earns ' +
-      'credit against this requirement. Open on the first thing that would: name the single ' +
-      'specific move this requirement turns on, and what they would have to put on the page to ' +
-      'make it. Then name the single sharpest gap (just one, not a list) and one next move. '
+      'First miss. Name the single sharpest gap (just one, not a list) and one next move. '
     );
   }
   if (!nothingEstablished) return SHIPPED;

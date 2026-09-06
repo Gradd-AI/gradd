@@ -22,16 +22,42 @@ console.log('\nhint opening — the label states what was NOT established\n');
 // Break mode: a refactor "tidies" the live prompt while claiming to be variant-only, and the
 // pooled 38/40 baseline stops describing anything that exists.
 const SHIPPED_LABEL = 'states a figure but shows no working — cannot be credited';
+// ⚠️ REPINNED 2026-09-06 (Grant-ruled): the credit demand was DELETED from every opening arm.
+// The pin has changed sides, not disappeared — the removed string is pinned MUST-FAIL below,
+// which is the check that matters now (a pin on the new bytes alone would go green again the
+// moment somebody restored the old ones under a different name).
 const SHIPPED_OPENING =
+  'First miss. Name the single sharpest gap (just one, not a list) and one next ' +
+  'move. ';
+const REMOVED_CREDIT_OPENING =
   'First miss. Lead with the ONE specific thing they got right — name the real move, not ' +
   'vague praise — then name the single sharpest gap (just one, not a list) and one next ' +
   'move. ';
 ok('shipped guard label is byte-identical to the pre-change string',
   guardLabel('shipped') === SHIPPED_LABEL, JSON.stringify(guardLabel('shipped')));
-ok('shipped opening is byte-identical to the pre-change string',
+ok('shipped opening is byte-identical to the post-deletion string',
   hintOpeningInstruction('shipped', false) === SHIPPED_OPENING);
 ok('shipped opening is UNCHANGED even when nothing was established (variant, not condition)',
   hintOpeningInstruction('shipped', true) === SHIPPED_OPENING);
+// P-G3: the defect this catches is the deletion being quietly reverted.
+ok('MUST-FAIL: the deleted credit demand is not restored on ANY arm',
+  [
+    hintOpeningInstruction('shipped', false),
+    hintOpeningInstruction('shipped', true),
+    hintOpeningInstruction('conditional', false),
+    hintOpeningInstruction('conditional', true),
+    hintOpeningInstruction('conditional', false, true),
+    hintOpeningInstruction('conditional', true, true),
+  ].every((s) => s !== REMOVED_CREDIT_OPENING));
+// The ruling was about the DEMAND, not one sentence of it: no arm may ask for praise, credit,
+// strength, correctness or the student's own words back.
+ok('NO opening arm names credit, praise, strength or correctness',
+  [
+    hintOpeningInstruction('shipped', false),
+    hintOpeningInstruction('conditional', false),
+    hintOpeningInstruction('conditional', true),
+    hintOpeningInstruction('conditional', false, true),
+  ].every((s) => !/got right|praise|credit|well done|strength|what they had/i.test(s)));
 
 // ── 2. (a) THE LABEL NAMES THE SKIPPED DIMENSION ─────────────────────────────
 // Break mode: the new label is silent about the figure, which is the whole defect.
@@ -101,7 +127,13 @@ ok('(a) alone leaves the opening at shipped (so the arms are genuinely separable
 // an "advise the board" requirement to put arithmetic on the page.
 {
   const c = hintOpeningInstruction('conditional', false, true);
-  ok('(c) fires when nothing is creditable and derived did NOT fire', c !== SHIPPED_OPENING);
+  // ⚠️ (c) NO LONGER FIRES ANYTHING. Deleting its credit language (2026-09-06) left it byte-
+  // identical to the opening it used to replace, so `nothingCreditable` does not move the hint
+  // opening at all. Asserted rather than deleted: a reader finding a live `nothingCreditable`
+  // parameter and a green (c) section would otherwise conclude the condition still does
+  // something. It does not — and the arm stays only as the place a future one would go.
+  ok('(c) is now BYTE-IDENTICAL to the shipped opening — the condition is INERT',
+    c === SHIPPED_OPENING);
   ok('(c) is a DISTINCT opening, not (b) reused',
     c !== hintOpeningInstruction('conditional', true, false));
   ok('(c) is SHAPE-NEUTRAL — no figure/arithmetic/working language (it serves discursive drills)',
@@ -110,7 +142,8 @@ ok('(a) alone leaves the opening at shipped (so the arms are genuinely separable
     !/\bdo not\b|\bdon't\b|\bnever\b|\bavoid\b/i.test(c), c);
   ok('(c) never mentions praise or what they got right',
     !/got right|praise|well done/i.test(c), c);
-  ok('(c) gives a SATISFIABLE positive job', /Open on the first thing that would/.test(c));
+  ok('(c) gives a SATISFIABLE positive job (one gap, one next move — nothing about credit)',
+    /single sharpest gap/.test(c) && !/credit/i.test(c));
   ok('(c) still demands one gap and one next move',
     /single sharpest gap/.test(c) && /one next move/.test(c));
   // PRECEDENCE: (b) wins where it applies, so nothing measured changes shape.

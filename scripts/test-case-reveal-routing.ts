@@ -278,8 +278,12 @@ ok('AFM does NOT adopt the drill route design "B" (no verbatim-append instructio
     const trt = caseRevealSystem('routed_2p_conditioned', paper, true);
     ok(`#5 ${paper}: MUST-FAIL — (c) says "First miss"; the reveal fires at missCount >= 2`,
       /First miss/.test(HINT_C) && !/First miss/.test(trt));
-    ok(`#5 ${paper}: MUST-FAIL — (c) hands the job to the STUDENT ("put on the page")`,
-      /put on the page/.test(HINT_C) && !/put on the page/.test(trt));
+    // ⚠️ RE-ANCHORED 2026-09-06. This clause used to be `"put on the page"`, which the credit
+    // deletion removed from (c) along with the credit language around it. The claim is
+    // unchanged — (c) is a first-miss HINT and the reveal core is not — so it is re-anchored on
+    // a clause that still separates them rather than dropped.
+    ok(`#5 ${paper}: MUST-FAIL — the reveal core authorises the answer; (c) never does`,
+      /EARNED/.test(trt) && !/EARNED|worked answer|full model/i.test(HINT_C));
     ok(`#5 ${paper}: MUST-FAIL — (c) demands ONE gap; the reveal walks every move`,
       /just one, not a list/.test(HINT_C) && !/just one, not a list/.test(trt));
   }

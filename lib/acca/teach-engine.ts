@@ -715,8 +715,11 @@ async function call3_teach(
             ? "Second miss, and the answer is still on the WRONG SIDE of a settled choice stated " +
               'above. Do NOT credit them with that choice. State plainly which way round it goes ' +
               'and why, then the single next move.'
-            : "Second miss or stop-signal — they haven't cracked it yet. Still don't lecture: lead " +
-              'with the specific thing that IS working, then name the ONE gap that matters most ' +
+            // THE CREDIT DEMAND IS DELETED (2026-09-06, Grant-ruled). Was: "...Still don't
+            // lecture: lead with the specific thing that IS working, then name the ONE gap...".
+            // Removal only — nothing replaces it, and nothing added names praise or correctness.
+            : "Second miss or stop-signal — they haven't cracked it yet. Still don't lecture: " +
+              'name the ONE gap that matters most ' +
               '(one, sharply — not a list of four) and the single next move that unblocks it.') +
           ' Conversational prose, 3 sentences, 4 at the most — no numbered points or structured ' +
           'breakdown, a sharp tutor talking not a marked script. Use what the requirement demands ' +
