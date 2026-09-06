@@ -2,6 +2,129 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
+## ✅ CLOSED 2026-09-06 (g) — THE CASE REVEAL'S POINTER BEAT AND ITS CREDIT DEMAND (n = 30)
+
+Both wiring fixes shipped on `feat/case-reveal-design-b`. Captures:
+`docs/rollbacks/case_reveal_n30_seedA_20260906.json` (the gated arm) and
+`docs/rollbacks/case_reveal_n10_seedB_spread_20260906.json` (the spread control). Predictions
+banked before the run in `docs/rollbacks/predictions_20260906_n30.md`.
+
+**THE POINTER WAS STRUCTURALLY UNSATISFIABLE, NOT BADLY WORDED.** `REVEAL_AFM_WRAPPER_SYSTEM`
+tells the wrapper to *"say WHICH PART of the worked answer below to read first"*, and design B hands
+the artefact to `assembleAfmReveal` rather than to the model — so the wrapper was pointing into a
+document it had never seen. Measured 0/10 usable, 9/10 aiming at the opening section of six, which
+is what a model with no information does. **Migration `20260906120000` could not have moved that**,
+and the diagnosis that expected it to was wrong.
+
+📐 **MEASURED, n = 30, all four gates passed:** pointer names a listed heading **30/30** ·
+attribution **0/30** · truncation **0/30** · opens-on-credit with `creditable = 0` **0/30**
+(suppression armed 30/30). Wrapper headings/rules 0/30, mid-sentence 0/30, reveal latency p50 7.6s.
+
+⚠️ **THE SPREAD IS NOT VISIBLE FROM ONE SEED, AND 30/30 ON SECTION #1 IS NOT A DEFAULT.** All 30
+named *The accuracy claim*, which reads exactly like the pre-fix positional bias and is not: that
+seed's dominant error IS the base-rate misconception and the diagnose leg names it, so #1 is where
+"the one where that misconception is resolved" correctly points. **A working criterion SHOULD
+concentrate when the diagnosis is single-valued**, and no sample size distinguishes the two
+readings — it is a fixed-input problem, not an n problem. **The spread control settles it:** a
+second seed, correct on §1 and §2 and confidently wrong on the training data, moved the pointer to
+**#3 *Training-data limitations* 10/10**, with `creditable = 1` so the suppression correctly did
+NOT arm (`floor=false/cond=false` 10/10). Both arms of the conditioning are therefore demonstrated,
+not just the one the gate covers.
+
+## 🔴 OPEN 2026-09-06 (h) — THE CASE REVEAL'S CLOSING BEAT INVENTS A NUMERIC SCENARIO, AND IT HAS NO GROUNDED INVENTORY TO INVENT FROM
+
+The wrapper system says **"ABSOLUTE — CODE OWNS EVERY NUMBER: include NO figures"** and then asks
+it to *"point them to apply the key move on a FRESH question"*. With nothing real to point at, it
+writes one — *"a fraud-detection model … 99.8% legitimate"*, *"500 customers … £50 per voucher"*.
+
+📐 **23 of 30 wrappers carry a figure that is not the case's own 94% or 6%.** Every one sits in the
+closing hypothetical; **none is a claim about Vesla**, so the figure-integrity guarantee (the
+artefact is appended verbatim) is untouched. But the instruction is plainly violated.
+
+🔴 **PRE-EXISTING, NOT INTRODUCED — checked against the retained pre-change capture: 6 of 10**
+(`ship_candidate_case_20260906.json`). Per **P-M6** those two rates are NOT claimed to differ;
+6/10 vs 23/30 is exactly the kind of movement this sample cannot resolve. The finding is that the
+behaviour is there on both sides, not that it grew.
+
+📐 **THE CAUSE IS NAMED AND IT IS A MISSING WIRE.** The DRILL route's `call4_reveal` takes a
+`GroundingPack` and appends `renderResolvableTopics(grounding)` — built in the 2026-07-21
+persona-hardening pass as finding 5, **INVENTED-INVENTORY**, for this exact failure. **The CASE
+engine's `call4_reveal` takes no grounding at all**, so the one leg with a fix has it and the one
+without invents. Wiring it is the obvious next move and is a measurable change, not a free one.
+
+⚠️ **`[reveal:unsourced-figures]` FLAGGED ONLY 8 OF THE 23, AND THAT IS ITS DOCUMENTED CEILING**
+(`reveal-figure-audit.ts`, ceiling 2b: *"a coincidence passes"*). Fifteen invented figures collided
+with a number already present somewhere in context ∪ model_answer ∪ attempt. **Never quote the
+audit's count as a census of invented figures** — it is a lower bound, and this run measures the
+gap at 8/23.
+
+## 🔴 OPEN 2026-09-06 (i) — A CREDITABLE ANSWER DRAWS FABRICATED QUOTATION, WHERE A WRONG ONE DRAWS NONE
+
+On the gated arm (nothing creditable, suppression armed) the fabricated-quotation count is
+**0/30**: the only quoted strings are the tutor's own hypothetical (*"no churn"*), and the one
+student-attributed quote — *"excellent"*, run 14 — is verbatim.
+
+📐 **On the spread control, where the student HAD something creditable and the suppression did not
+arm, it is 2/10** — and both are quotation errors under C4, so attribution is also 2/10:
+
+- **run 1** — *You've treated **"we exposed the model to wider behaviour"** and **"we kept
+  incomplete histories out"** as defensible design decisions.* The student wrote *"it exposes the
+  model to a much wider range of purchasing behaviour"* and *"it keeps the training set clean of
+  incomplete histories"*. Neither quoted string is verbatim, and **both invent a first-person "we"
+  the student never used**.
+- **run 2** — *you read … as strengths that **"keep the training set clean,"*** against the
+  student's *"keeps the training set clean of incomplete histories"*. Inflection changed; C4 permits
+  only the quote glyph and truncation at a word boundary.
+
+**The credits themselves are all ACCURATE** — that student really did nail the base-rate trap and
+the correlation/causation point. The defect is the quotation marks, and it appears only where there
+is real content to quote. That is the **P-M4(a) mode shift running the other way**: that arm removed
+the marks and left the fabrication; this shows the marks return the moment the answer earns credit.
+⚠️ **n = 10 and it is not the gated arm** — under **P-M6** this is a SIGHTING that says where to
+look, never a rate. The arm that would settle it is a creditable-seed run at n = 30.
+
+## 🟠 LOGGED 2026-09-06 (b) — THE 43/91 DRILL RENDERING DEFECT, LIVE FROM 2026-09-04, FIXED
+
+43 of 91 published APM drills carry no markdown at all, and all 18 APM case `model_answer`s
+separated their sections with a SINGLE newline. `MessageRenderer` follows GFM and joins consecutive
+non-blank lines into one paragraph, so design B — which serves those bytes VERBATIM — rendered
+every section label swallowed into the sentence below it. **Live on the drill surface from
+2026-09-04**, when design B shipped there, and visible wherever the reveal was.
+
+Fixed by `normaliseRevealArtefact` (`1f32d8b`): inside the appended artefact only, every content
+line becomes its own paragraph. **The floor, deliberately** — no heuristics, no heading detection,
+no content edits. The ONE exception is structural rather than a heuristic: two source-adjacent pipe
+rows keep their single newline, because a markdown table's rows are separated by single newlines by
+grammar and blank-separating them would DELETE the table (35 AFM and 5 APM drills carry one).
+
+## 🟠 LOGGED 2026-09-06 (c) — THE CREDIT-DELETION CONTROL, WITH ITS CONFOUND STATED
+
+Recorded as an **OBSERVATION, not a rule.** Deleting the credit demand left the DRILL hint leg at
+10/10 opens-on-credit and moved fabrication 6 → 8; on the CASE legs it took teach 8 → 1 and hint
+stayed at 0.
+
+**Grant's reading — *"sufficient where nothing is creditable, irrelevant where something is"* —
+goes in as the LEADING HYPOTHESIS and nothing more.** The two surfaces differ in prompt assembly as
+well as in seed answer, so the arm cannot attribute the difference to either. ⚠️ And under
+**P-M6** the movements are n = 10: teach 8 → 1 is large enough to survive that, hint 6 → 8 is not.
+
+📐 **The 2026-09-06 spread control is the first evidence bearing on it, and it points the same
+way:** with a creditable answer the reveal's credit was accurate 10/10 and the failure moved to
+quotation (item (i)) rather than to fabricated credit.
+
+## 🔵 SCOPED, NOT BUILT — 2026-09-06 (d) — THE DRILL HINT LEG NEEDS THE SPAN MECHANISM
+
+Post-demo, and the **critical path for that leg**. Deletion did not move it: the drill hint leg
+stayed at 10/10 opens-on-credit with fabrication 6 → 8, so the demand was not what was driving the
+fabrication there. The next thing to try is the span mechanism (crediting only what a locatable
+span of the student's own text carries), not another wording arm.
+
+## 🟠 LOGGED 2026-09-06 (e) — THE CASE HINT LEG'S BOLD-LABEL DRIFT. Minor, list only.
+
+3/10 case hint replies emitted a bold section label standing as its own line — the shape
+`74f2ca5` was written against on the drill leg, appearing on the surface that edit did not touch.
+Minor: it is a register defect, not a content one. Not fixed, not scheduled.
+
 ## 🔴 OPEN 2026-09-06 (a) — THE TEACH LEG IS A THIRD UNFIXED CREDIT SITE, AND ITS ONE EXIT IS DEAD ON APM
 
 `call3_teach` (`lib/acca/teach-engine.ts:663`) carries the same unconditional-praise shape the hint

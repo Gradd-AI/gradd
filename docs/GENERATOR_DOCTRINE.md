@@ -668,6 +668,62 @@ edit right says nothing about whether the thing being demanded was the thing cau
 rubric — the bundle bought speed and cost the attribution. And measure the metric the behaviour
 actually lives in: a quotation count alone would have reported this bundle a success.
 
+## P-M6 — SET THE GATE WHERE THE INSTRUMENT CAN SEE IT, OR RAISE n (ruled 2026-09-06)
+
+**THE RULE.** A gate is set at a threshold the sample size can resolve, or the sample size goes up.
+An arm whose conclusion turns on a difference of two or three replies at n = 10 has not measured
+anything, and reporting it as a result is reporting noise with a number attached.
+
+**THE INSTANCE, and it is our own.** The case reveal's credit-fabrication endpoint was scored at
+**2/10 on Tuesday and 6/10 on Friday** — same code, same prompt, same seed answer, same drill,
+same rubric. Nothing between the two runs changed what the model sees. **Fisher's exact test on
+that pair gives p ≈ 0.17** (two-sided; hypergeometric, 21,390 / 125,970 — computed, not recalled),
+so n = 10 cannot distinguish those two results at any conventional level. They are one
+distribution sampled twice.
+
+📐 **THE CONSEQUENCE IS RETROSPECTIVE AND IT IS BROAD.** Every `≤ 2/10` gate set in this workstream
+has been **finer than the instrument reading it**, and any arm in it that turned on a movement of
+two or three replies was never a real distinction. That includes arms recorded as passing: a pass
+against an unresolvable threshold is as uninformative as a fail. Where an arm's claim rests on such
+a movement, the claim is **unsupported, not refuted** — the same disposition
+`AFM_SURFACED.md`'s tenth P-V4 instance carries — and it must not be cited as an instance of
+anything until it is re-run at a size that can see it.
+
+**WHAT SURVIVES n = 10.** Large, near-categorical movements: the divergence-#5 conditioning
+measured 7/60 → 36/60 at Fisher p = 4.0e-8, and a rate that moves from ~10% to ~60% does not need
+thirty. The rule is not "never n = 10"; it is that **the gate and the sample size are chosen
+together**, and a gate finer than the sample can resolve is a gate that reads noise.
+
+**HOW TO SET ONE.** Before the run, state the threshold AND the movement it is meant to detect,
+and check the pair is separable at the chosen n. If it is not, raise n rather than lower the
+threshold — lowering it makes the arm easier to pass without making it easier to believe.
+
+⚠️ **THE COST IS REAL AND IS NOT A REASON TO SKIP IT.** Thirty runs of a three-turn case chain is
+~90 model calls and ~30 minutes of wall clock against a local dev server. That is the price of a
+result that can be cited. The alternative already has a price, and it has been paid twice.
+
+## P-G3(b) — A FIXTURE THAT NEVER EXERCISED THE THING IT NAMED (instance, 2026-09-06)
+
+**The instance.** `test-case-reveal-routing`'s anti-truncation check compared the served reveal's
+tail against the stored answer using a literal `'\\n'` in a single-quoted string — **a backslash
+and the letter n, not a newline**. The fixture therefore ran on a one-line "answer" containing no
+line breaks at all, and would have passed on ANY line handling whatsoever, including one that
+dropped every line but the first. It was green for the whole life of the design-B port, and it was
+found only when the paragraph normaliser was written and the check had to be rebuilt on real
+newlines.
+
+**Why it generalises.** The check's NAME was accurate and its ASSERTION was correct; what was wrong
+was the fixture DATA, which did not contain the condition the check exists to detect. A green check
+over data that cannot fail it is indistinguishable from a green check over data that passed, and
+nothing in a test run reports the difference.
+
+**The habit this adds to P-G3.** When a fixture asserts something about a STRUCTURAL feature —
+newlines, tabs, CRLF, unicode, an empty collection, a boundary — construct the fixture input so
+that the WRONG implementation would fail it, and say in the fixture which wrong implementation
+that is. `test-case-reveal-routing` now pins the pre-fix pointer beat, the collapsed-`undefined`
+sections form and the shipped user prompt as MUST-FAIL cases for exactly this reason. A check with
+no wrong implementation named beside it has not been shown to be able to fail.
+
 ## P-M5 — BEFORE THREADING A FACT AT A DEFECT, CHECK THE FACT CONTAINS THE THING (ruled 2026-08-29)
 
 **The question.** Does passing `answer_schema` to `judgeTechnicalMarking` reduce the rate at which
