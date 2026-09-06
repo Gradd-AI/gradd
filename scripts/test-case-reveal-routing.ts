@@ -341,10 +341,27 @@ ok('AFM does NOT adopt the drill route design "B" (no verbatim-append instructio
   // build that asked for a wrapper and still served whatever the model wrote.
   // The wrapper is bound to a name (2026-09-06) so the pointer audit can read it; the assembly is
   // otherwise unchanged — still code-side, still the stored answer, still exactly once.
+  //
+  // THE CHAIN GREW TWO LINKS (2026-09-06) and the pin follows them rather than being loosened:
+  // raw → sanitizeAfmWrapper → enforceVerbatimQuotation → assembleAfmReveal. Each is named here
+  // in order, so a future edit cannot drop the quotation check or feed the assembly the raw output.
   ok('B: the case reveal assembles code-side, verbatim, exactly once',
     (engine.match(/assembleAfmReveal\(/g) || []).length === 1 &&
-    /const wrapper = finishClean\(res\);\s*\n\s*const served = assembleAfmReveal\(wrapper, modelAnswer\);/
-      .test(engine));
+    /const served = assembleAfmReveal\(wrapper, modelAnswer\);/.test(engine));
+  ok('B: the served wrapper is raw → sanitize → quotation check, in that order',
+    /const raw = finishClean\(res\);/.test(engine) &&
+    /const cut = sanitizeAfmWrapper\(raw\);/.test(engine) &&
+    /const quoteCheck = enforceVerbatimQuotation\(cut, attempt\);/.test(engine) &&
+    /const wrapper = quoteCheck\.text;/.test(engine) &&
+    engine.indexOf('const cut = sanitizeAfmWrapper(raw);')
+      < engine.indexOf('const quoteCheck = enforceVerbatimQuotation(cut, attempt);'));
+  ok('B: the quotation check is the SHARED module, never a local re-implementation',
+    /from '\.\/reveal-quotation'/.test(engine) &&
+    !/function enforceVerbatimQuotation/.test(engine));
+  ok('B: every unquoting is logged, so the rate stays visible after the fix',
+    /console\.warn\('\[reveal:quote-unquoted\]'/.test(engine));
+  ok('B: the sanitizer\'s own fire is logged — it deletes SERVED text and used to do it silently',
+    /console\.warn\('\[reveal:wrapper-cut\]'/.test(engine));
   ok('B: the wrapper runs under the SHARED wrapper system, paper- and path-routed',
     /system: revealWrapperSystemFor\(paper, reachedFrom, \{/.test(engine));
   ok('B: the wrapper user prompt is the SHARED builder, not a local literal',
@@ -407,6 +424,15 @@ ok('AFM does NOT adopt the drill route design "B" (no verbatim-append instructio
       // a warn, not a throw and not a return: the served body is built before the check and
       // returned after it, unchanged.
       /console\.warn\('\[reveal:pointer-off-list\]'/.test(engine));
+    // 🔴 P-G3, and it is the run-13 defect transcribed: the audit used to read the model's RAW
+    // output while the student read the SANITIZED one, so on the single run where the sanitizer
+    // ate the pointer the log said nothing was wrong. An audit of what was served must read what
+    // was served.
+    ok('pointer: MUST-FAIL — the audit reads the SERVED wrapper, never the raw model output',
+      !/wrapperNamesAListedSection\(raw,/.test(engine) &&
+      !/wrapperNamesAListedSection\(finishClean/.test(engine) &&
+      engine.indexOf('const wrapper = quoteCheck.text;')
+        < engine.indexOf('wrapperNamesAListedSection(wrapper, sections)'));
 
     const base = {
       contextLine: '', question: 'Q', attempt: 'A', diagnosis: 'D',

@@ -24,10 +24,12 @@ import {
   systemFor, caseRevealSystemFor,
   // DESIGN "B" ON THE CASE REVEAL (2026-09-06) — see call4_reveal.
   revealWrapperSystemFor, buildRevealWrapperUserPrompt, assembleAfmReveal, trimToLastSentence,
-  revealArtefactSections, wrapperNamesAListedSection,
+  revealArtefactSections, wrapperNamesAListedSection, sanitizeAfmWrapper,
   type RevealReachedFrom,
 } from './tutor-personas';
 import { auditRevealFigures } from './reveal-figure-audit';
+// THE VERBATIM QUOTATION CHECK (2026-09-06) — shared with the drill route, one definition.
+import { enforceVerbatimQuotation } from './reveal-quotation';
 // DIVERGENCE #2 (2026-08-24): the ENVELOPE. Imported, never transcribed — `GAP_VERDICT_FORMAT` is
 // the ONLY place the output shape is stated and `hintOpeningInstruction` the only place the
 // opening is, so the drill and case surfaces cannot drift about either. See `CASE_HINT_OPENING`.
@@ -1101,13 +1103,46 @@ async function call4_reveal(
       },
     ],
   });
-  const wrapper = finishClean(res);
+  const raw = finishClean(res);
+  // ── THE GUARD'S FIRE IS OBSERVABLE (2026-09-06) ────────────────────────────
+  // `sanitizeAfmWrapper` deleted the pointer beat on 1/30 of the creditable seed and NOTHING
+  // recorded it: the cut is silent, and the pointer audit below was reading the RAW wrapper, so
+  // the two disagreed and the disagreement was the only trace. A guard that removes served text
+  // must say so.
+  const cut = sanitizeAfmWrapper(raw);
+  if (cut.length !== raw.trimEnd().length) {
+    console.warn('[reveal:wrapper-cut]', JSON.stringify({
+      surface: 'case', paper, reached_from: reachedFrom,
+      kept: cut.length, removed: raw.trimEnd().length - cut.length,
+      removed_head: raw.trimEnd().slice(cut.length).trim().slice(0, 120),
+    }));
+  }
+
+  // ── THE VERBATIM QUOTATION CHECK — STRUCTURAL, NOT INSTRUCTED ──────────────
+  // A student-attributed citation that is not in the attempt loses its quotation marks and stays
+  // as prose. See `lib/acca/reveal-quotation.ts` for the discriminator, the two normalisations and
+  // the claim ceiling. Every removal is logged so the RATE stays visible after the fix ships —
+  // the model still writes them; the student no longer reads them as a citation.
+  const quoteCheck = enforceVerbatimQuotation(cut, attempt);
+  for (const r of quoteCheck.removed) {
+    console.warn('[reveal:quote-unquoted]', JSON.stringify({
+      surface: 'case', paper, reached_from: reachedFrom,
+      quoted: r.quoted.slice(0, 160), trigger: r.trigger,
+      checked: quoteCheck.checked, quoted_total: quoteCheck.quotedTotal,
+    }));
+  }
+  const wrapper = quoteCheck.text;
   const served = assembleAfmReveal(wrapper, modelAnswer);
 
   // ── POINTER AUDIT — FLAG FOR REVIEW, NEVER A BLOCKER ──────────────────────
   // The list is handed to the model precisely so the pointer can be a SELECTION rather than a
   // generation; this says whether it was. See `wrapperNamesAListedSection` for what a `false`
   // does and does not mean. Never blocks: an earned reveal must serve.
+  //
+  // ⚠️ READS THE SERVED WRAPPER, NOT THE RAW ONE (corrected 2026-09-06). It used to read the model's
+  // raw output, so on the one run where the sanitizer ate the pointer it logged nothing while the
+  // student read a reveal with no pointer in it. An audit of what was served must run on what was
+  // served.
   if (sections.length > 0 && !wrapperNamesAListedSection(wrapper, sections)) {
     console.warn('[reveal:pointer-off-list]', JSON.stringify({
       surface: 'case', paper, reached_from: reachedFrom, sections,

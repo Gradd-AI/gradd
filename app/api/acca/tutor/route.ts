@@ -8,6 +8,7 @@ import {
   buildRevealWrapperUserPrompt,
   revealWrapperSystemFor,
   assembleAfmReveal,
+  sanitizeAfmWrapper,
   revealDecision,
   trimToLastSentence,
   stripOpenerDivider,
@@ -20,6 +21,8 @@ import {
   CONFIRM_NUMBER_REFUSAL,
   type RevealReachedFrom,
 } from '@/lib/acca/tutor-personas';
+// THE VERBATIM QUOTATION CHECK (2026-09-06) — shared with the case engine, one definition.
+import { enforceVerbatimQuotation } from '@/lib/acca/reveal-quotation';
 import { notifyGrant } from '@/lib/notify';
 import { resolvePaper, servedPaper, SERVED_PAPERS, type AccaPaper } from '@/lib/acca/paper';
 import { paperHref } from '@/lib/acca/paper-url';
@@ -1115,7 +1118,34 @@ async function call4_reveal(
       },
     ],
   });
-  const served = assembleAfmReveal(finishClean(res), modelAnswer);
+  const raw = finishClean(res);
+  // ── THE GUARD'S FIRE IS OBSERVABLE (2026-09-06) ────────────────────────────
+  // `sanitizeAfmWrapper` used to cut on the PHRASE "worked answer", which the system prompt above
+  // instructs the model to say when it points the student into the artefact. On this route that
+  // cut is silent by construction — there is no pointer audit here — so it has been deleting the
+  // pointer and closing beats with nothing recording it since design B shipped. The cut condition
+  // is fixed (a heading SHAPE test); this log is how the residual rate stays visible.
+  const cut = sanitizeAfmWrapper(raw);
+  if (cut.length !== raw.trimEnd().length) {
+    console.warn('[reveal:wrapper-cut]', JSON.stringify({
+      surface: 'drill', paper, drill_id: drillId, reached_from: reachedFrom,
+      kept: cut.length, removed: raw.trimEnd().length - cut.length,
+      removed_head: raw.trimEnd().slice(cut.length).trim().slice(0, 120),
+    }));
+  }
+
+  // ── THE VERBATIM QUOTATION CHECK — STRUCTURAL, NOT INSTRUCTED ──────────────
+  // Same module, same rule, both surfaces: a student-attributed citation that is not in the
+  // attempt loses its quotation marks and stays as prose. See `lib/acca/reveal-quotation.ts`.
+  const quoteCheck = enforceVerbatimQuotation(cut, attempt);
+  for (const r of quoteCheck.removed) {
+    console.warn('[reveal:quote-unquoted]', JSON.stringify({
+      surface: 'drill', paper, drill_id: drillId, reached_from: reachedFrom,
+      quoted: r.quoted.slice(0, 160), trigger: r.trigger,
+      checked: quoteCheck.checked, quoted_total: quoteCheck.quotedTotal,
+    }));
+  }
+  const served = assembleAfmReveal(quoteCheck.text, modelAnswer);
 
   // ── POST-HOC FIGURE AUDIT — FLAG FOR REVIEW, NEVER A BLOCKER ───────────────
   // Deterministic backstop to the structural fix: every number in the served reveal must appear
