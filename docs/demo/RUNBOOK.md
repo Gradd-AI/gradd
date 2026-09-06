@@ -237,6 +237,70 @@ condition is a full paper, which is the product.
 
 ---
 
+# 🔴 BLOCKER 4 — THE SEED THAT PRODUCES LEG 1's DATA CANNOT SURVIVE ITS OWN RUNTIME
+
+**Found by running it. `scripts/seed-demo-sit.ts` had never been executed before tonight, and
+this is why leg 1 has never had data.**
+
+## What happened
+
+Started 19:19 UTC. R1–R4 submitted correctly at 19:53, 20:35, 20:56 and 21:09. At **21:33**,
+2h14m into a 2h47m run, R5 failed:
+
+```
+✖ FAILED: turn → 401 Unauthorised
+  State is in the DB — re-run the same command to resume from where it stopped.
+```
+
+## Why
+
+`mintCookie()` mints **one** session at startup and the script then sends that same static
+cookie string on every request for the next three hours. A Supabase access token lives one
+hour. After it expires the route's own `createServerClient` refreshes using the refresh token
+inside the cookie and **rotates it**, setting new cookies on the response — which the script
+discards, because it never reads `set-cookie` back into its jar.
+
+So from roughly the one-hour mark the script is replaying an already-consumed refresh token.
+GoTrue's reuse-interval tolerates that for a while, which is why R2 (76 minutes in), R3 and R4
+all succeeded. Then the grace ran out and the token was rejected.
+
+**Any run longer than about two hours will hit this.** The script's own header says the 2h47m
+duration is unavoidable — the pacing has to be performed — so the failure is on the path every
+single time.
+
+## The dangerous part is the recovery, not the failure
+
+The script resumes correctly: it reads which requirements already carry a `final_answer` and
+skips them without re-waiting. **But the pacing intervals are wall-clock gaps between HTTP
+requests, so every minute the run is down is added to the next requirement's interval.**
+
+R4 landed at 21:09:42. R5's budget is 23.4 minutes and `RATIO_FLAG_BAND` is ±25%, so R5 had to
+be submitted between **17.6 and 29.3 minutes** after R4 — a hard deadline of **21:39:00** —
+or its flag would flip from `on budget` to `over`.
+
+**R5 is one of the two requirements the narration walks.** The plan's whole point is that R5
+reads `on budget 1.03` and R7 reads `under 0.51` — the same candidate, holding pace and then
+losing it. An `over` at R5 destroys that contrast and there is no way to re-take it, because
+submissions are immutable.
+
+It was recovered with about four minutes to spare: R5 was submitted by hand at **21:34:59**,
+25.3 minutes after R4 → **ratio 1.08, `on_budget`**. The plan wanted 1.03. Inside the band,
+and pure luck that the failure was noticed in time.
+
+## What this means for anyone re-running it
+
+- **Do not start the seed unattended and walk away.** Watch it, or the first 401 silently
+  costs you the pacing profile that is the entire reason for the 2h47m.
+- **If it dies, the clock on the next requirement is already running.** Work out the deadline
+  before doing anything else: budget = `marks × 1.95` minutes, and you have ±25% of that from
+  the last successful submission.
+- **The real fix is small**: read `set-cookie` off each response back into the jar, or re-mint
+  the cookie before every submission (`mintCookie` is cheap — one `generateLink` plus one
+  `verifyOtp`). Re-minting per requirement is the simpler of the two and has no downside here.
+  **Not done — this rehearsal fixes nothing.**
+
+---
+
 # SETUP — before the room sits down
 
 ## The warm-up, measured
