@@ -1,6 +1,6 @@
 # KPMG demo — the hour, as the room will see it
 
-**Status: REHEARSAL IN PROGRESS, 2026-09-06.** Written as the document the presenter reads on
+**Status: REHEARSED 2026-09-06 on production. Four blockers, all recorded below. No screenshots — see the last section.** Written as the document the presenter reads on
 the day, not as a test result. Every wait is a real measured wait on production
 (`https://www.gradd.ai`), not an estimate. Where a leg could not be rehearsed, it says so in
 the leg's own section rather than in a footnote.
@@ -195,6 +195,33 @@ from `acca_case_marking`, same run:
 is ~150 s of work against a ~100 s ceiling; the paper is structurally over the limit, not
 marginally.
 
+## ⚠️ IT IS MUCH WORSE ON A REAL PAPER — THE BETTER THE ANSWERS, THE SLOWER THE MARKING
+
+Reproduced independently the same night on the **seeded** sitting, whose eight answers are
+full exam length (960–1,867 characters each) rather than the short paragraphs above:
+
+| | |
+|---|---|
+| Paper finished | 22:08:53 |
+| Case 1 marked | 22:10:34 — **101 s for one case** |
+| **Cloudflare returns 524** | **22:10:58** |
+| Case 2 marked | 22:11:23 |
+| Case 3 marked | **22:12:33** |
+
+**Total marking: 3 minutes 40 seconds — 220 seconds against a ~100 second ceiling.** The
+earlier 125 s figure came from a paper of short paragraphs and *understates* the problem.
+
+Two consequences worth being precise about:
+
+- **A good paper is the slow case.** Marking time scales with how much the candidate wrote, so
+  the demo condition — a properly answered paper — is the one furthest over the limit. You
+  cannot escape this by writing better answers; that makes it worse.
+- **The recovery is not the same every time.** On the short paper the function had finished all
+  three cases 57 s after the cut. On the full paper only case 1 was done at the cut, case 2
+  landed 25 s later and case 3 a further 70 s after that. **A retry pressed immediately after
+  the error can find one, two or three cases marked**, so the intermediate "Not yet marked."
+  state is not a fixed screen — it depends on when the button is pressed.
+
 ## What the presenter will see, in order
 
 `resultsOutcomeFor(status, code)` maps anything that is not 2xx/402/409 to `failed`, so a
@@ -357,76 +384,107 @@ Do it once at the start and leave it. Changing zoom mid-demo is visible and look
 
 # LEG 1 — THE MOCK DEBRIEF
 
-## 🔴 It has never been rehearsed because the data has never existed
+**✅ The data now exists.** It did not before tonight. `scripts/seed-demo-sit.ts` — written for
+exactly this and never previously run — performed a full AFM Mock Paper 1 sitting on
+production between **19:19 and 22:08 UTC** on `grant+demo4@live.ie`, and it is marked.
 
-Before tonight there was **no sat AFM paper on production to open.** The only AFM sitting on
-record (`47df6a20`, 9 August) is **eight blank answers submitted in 40 seconds** — every
-requirement reads *"No answer submitted."*, every band is `nothing`, the paper scores 5/100 and
-every pacing interval is 4–9 seconds. There is nothing in it to narrate.
+**Open it at `https://www.gradd.ai/acca/results` → the AFM Mock Paper 1 sitting.**
 
-The one rich, realistically-paced sitting anywhere in the database is `36d290de` — a **real
-paying student's APM paper** (7 requirements, 2h14m, 38/80 technical, banded across the range).
-It would demo beautifully and it is a real customer's answers. **Not used, and flagged rather
-than used**: that is your call to make, not a rehearsal's.
+## Why it took 2h47m, and why it could not be faked
 
-## What was started tonight
+`submitted_at` and `started_at` are both server-set. The pacing view reports the real
+wall-clock gaps between HTTP requests, so a pacing profile cannot be authored — it can only be
+performed. The seed writes **no timestamp of its own**; its only direct writes are account
+setup. That is also why a failure mid-run is expensive (Blocker 4).
 
-`scripts/seed-demo-sit.ts` — which exists precisely for this and **had never been run** — was
-started against production at **19:19 UTC on `grant+demo4@live.ie`**. It takes **2h47m**
-because it *performs* the pacing rather than writing timestamps: `submitted_at` and
-`started_at` are both server-set, so the intervals the pacing view reports are the real
-wall-clock gaps between HTTP requests, and the only way to author a pacing profile is to wait.
+## The plan against what actually happened — all eight flags match
 
-It writes **no timestamp of its own**. Its only direct writes are account setup
-(`auth.admin.createUser`, one comped entitlement row).
-
-**The plan it performs** — 167 minutes against the 195-minute clock, bled on case 1, recovered
-on case 2, rushed case 3:
-
-| | Requirement | Marks | Wait | Budget | Expected flag |
+| # | Requirement | Marks | Plan | Actual | Flag |
 |---|---|---|---|---|---|
-| R1 | Solenne (i) B3e | 10 | 34 min | 19.5 | `reading + Q1` (no ratio) |
-| R2 | Solenne (ii) B5b | 16 | 42 min | 31.2 | **over** 1.35 |
-| R3 | Solenne (iii) E2b | 8 | 21 min | 15.6 | **over** 1.35 |
-| R4 | Solenne (iv) E1a | 6 | 13 min | 11.7 | on budget 1.11 |
-| **R5** | **Brecon (i) B1a** | **12** | **24 min** | **23.4** | **on budget 1.03** |
-| R6 | Brecon (ii) B1b | 8 | 15 min | 15.6 | on budget 0.96 |
-| **R7** | **Aldebrino (i) E3a** | **12** | **12 min** | **23.4** | **under 0.51** |
-| R8 | Aldebrino (ii) E2a | 8 | 6 min | 15.6 | **under 0.38** |
+| 1 | Solenne (i) B3e | 10/10 | 34m, no ratio | 34m | `reading + Q1` |
+| 2 | Solenne (ii) B5b | 8/16 | 1.35 | 42m, **1.35** | over |
+| 3 | Solenne (iii) E2b | 4/8 | 1.35 | 21m, **1.35** | over |
+| 4 | Solenne (iv) E1a | 5/6 | 1.11 | 13m, 1.12 | on budget |
+| **5** | **Brecon (i) B1a** | **12/12** | 1.03 | 25m, **1.08** | **on budget** |
+| 6 | Brecon (ii) B1b | 6/8 | 0.96 | 15m, 1.01 | on budget |
+| **7** | **Aldebrino (i) E3a** | **3/12** | 0.51 | 12m, **0.52** | **under** |
+| 8 | Aldebrino (ii) E2a | 4/8 | 0.38 | 6m, 0.39 | under |
 
-**R5 and R7 are the pair the narration walks**, and the plan is built so they contrast: the
-same student, on budget at R5 and at half budget at R7. The collapse headline is engineered to
-fire on the R7+R8 suffix — `detectCollapse` takes the shortest suffix whose combined budget is
-≥20% of the paper's requirement budget (R7+R8 = 39.0 min = 25% of 156) and fires when the
-actual is under half of it. An earlier 16+8 schedule totalled 24 minutes and **missed the
-threshold**, producing two `under` flags and no headline; 12+6 = 18 clears it.
+**Paper: 52/80 technical, 10/20 professional skills — 62/100.**
 
-## ⚠️ What is owed before this leg can be presented
+R5's 1.08 against a planned 1.03 is the scar from Blocker 4's recovery; it is inside the ±25%
+band and the flag is the one the plan wanted. Everything else is within 0.05 of plan.
 
-1. **The seed must finish and be confirmed.** Last answer ~22:07 UTC, then marking.
-2. **Its marking step will hit Blocker 2.** The seed runs with `--mark`, which is the same
-   `sit/results` POST that Cloudflare cut at 125 s. **Do not read a failure there as a failed
-   seed** — re-poll the marking rows before concluding anything, exactly as the leg-3 section
-   describes.
-3. **The pacing panel has still never been looked at.** Nothing in this rehearsal put eyes on
-   it. What is known about it is read from the code, not from the screen:
-   - It is a **7-column table** — Requirement · Marks · Elapsed · Budget · Ratio · Flag ·
-     Awarded (`app/acca/results/[attemptId]/page.tsx`). Seven numeric columns inside an
-     **860 px** content column is the layout risk to check first, and the reason the window
-     advice in SETUP matters more on this screen than any other.
-   - The flag cell renders `p.flag.replace('_',' ')`, so it reads `on budget`, `over`,
-     `under`, `not reached`, and `no_ratio` is specially rendered as **`reading + Q1`**.
-   - The debrief headline sits **above** the pacing panel, in the totals panel, so
-     scrollability past it depends on how long the collapse statement runs. **Unverified.**
-4. **Requirements 5 and 7 have not been read on screen.** Each requirement renders the
-   technical marker's reasoning **verbatim** (`l.why`), with *"Marks:"*, *"Pacing:"* and
-   *"Next:"* lines, and three collapsed `<details>` — *What you were asked*, *What you wrote*,
-   and the reveal. Whether real marker prose reads well in that layout is the open question
-   `AFM_SURFACED.md` has been carrying since the debrief was built, and it is still open.
+**The headline fires as designed:**
 
-**Do not present leg 1 without walking it once first.** It is a third of the sold hour, it has
-the most surface area of any screen in the demo, and tonight is the first time the data has
-existed at all.
+> **End-of-paper collapse.** Between submitting Q2 (ii) and finishing, 18 minutes elapsed
+> across Q3 (i)–Q3 (ii), against a combined budget of 39 minutes.
+
+## Requirements 5 and 7 — this is the best material in the hour
+
+The pair was engineered to contrast and it delivers: **the same candidate, on budget and
+exemplary at R5, at half budget and weak at R7.**
+
+### R5 — Brecon (i), `exemplary`, **12/12**, 25 minutes against a 23-minute budget
+
+The marker's own words, verbatim on screen (`l.why` is never paraphrased):
+
+> Your discount factor arithmetic is correct throughout, producing scenario NPVs of +253.2m
+> (strong), +19.2m (base) and −208.6m (weak) […] Your ENPV of +43.9m and the probability of a
+> negative NPV of 20% are both correct. The advice goes well beyond the bare decision rule: you
+> correctly identify that the base case — the most probable single outcome — is only marginally
+> positive at 19m on a 500m commitment […] and that a one-shot project cannot rely on the law
+> of large numbers in the way an expected-value calculation implicitly assumes. […] There is
+> nothing missing or incorrect here.
+
+Next action: *"Nothing to change here — this is the approach to repeat."*
+
+**Say:** *"It's quoting her own figures back at her. It isn't saying 'good work' — it's saying
+which of her numbers it checked."*
+
+### R7 — Aldebrino (i), `weak`, **3/12**, 12 minutes against a 23-minute budget
+
+Three named errors, with the arithmetic:
+
+> **First, the number of contracts:** because the loan runs for six months but the futures
+> contract is a three-month instrument, you must scale up by 6/3. The correct number is
+> 48,000,000 ÷ 1,000,000 × 6/3 = 96 contracts, not 48. Using 48 contracts means you are only
+> half-hedged.
+>
+> **Second, the direction:** a borrower faces the risk of rising rates, so you need to SELL
+> futures now and buy them back later. […] You stated you would buy futures, which is the wrong
+> direction […]
+>
+> **Third, no basis calculation is performed.** […] Basis today = (100 − 4.00) − 95.55 = 0.45.
+> With 3 months of the contract's 9-month life remaining, unexpired basis = 0.45 × 3/9 = 0.15.
+
+and then the thing that ties it back to the pacing: *"Your correct computation of the
+money-market interest figures (EUR 1,320,000 and EUR 888,000) earns some credit, but the
+overall calculation is largely incorrect."*
+
+**Say:** *"Twelve minutes on a twenty-three-minute requirement, and it cost her nine marks —
+and the debrief can tell her which nine and why. That's the whole product in one row."*
+
+**This is the narration.** Walk R5 first — on budget, full marks, the marker quoting her own
+figures. Then R7 — half the time, three specific errors, nine marks gone. Then the pacing
+panel, where the same story is visible as two rows.
+
+## What is still owed on this leg
+
+**It has not been looked at.** Everything above was fetched through
+`GET /api/acca/sit/results` (which never marks and never spends), not read off the screen.
+What is known about the rendering comes from the code:
+
+- The pacing panel is a **7-column table** — Requirement · Marks · Elapsed · Budget · Ratio ·
+  Flag · Awarded. Seven numeric columns inside an **860 px** content column is the layout risk
+  to check first, and the reason the window advice in SETUP matters more here than anywhere.
+- The flag cell renders `p.flag.replace('_',' ')`, so it reads `on budget`, `over`, `under`,
+  and `no_ratio` is specially rendered as **`reading + Q1`**.
+- The headline sits **above** the pacing panel in the totals panel. Whether it is comfortably
+  scrollable past is **unverified** — R7's marker feedback alone is ~1,900 characters, and
+  there are eight requirements, each with three collapsed `<details>` beneath it.
+
+**Walk it once before presenting.** The content is now proven; the screen is not.
 
 ---
 
@@ -669,10 +727,35 @@ browser is signed in as `grant@live.ie`, which has no ACCA entitlement.
   live page. Everything else about how these screens *look* is inferred from the code.
 - **The eight `window.confirm` dialogs were not seen.** Their text is quoted from source and is
   certain; their appearance on a projector is not.
-- **Leg 1 was not walked at all.** See above.
+- **Leg 1's content is proven; its screen is not.** The sitting exists, is marked, and its
+  pacing matches the plan on all eight flags — all read through `GET /api/acca/sit/results`.
+  **Nobody has looked at the results page.** The 7-column pacing table in an 860 px column and
+  the scrollability of the headline are the two things to check first.
 - **Leg 2's screens were not seen** — the transcript is real and complete, but the rendering of
   the reveal, and in particular how invisible that separator actually is at projector scale,
   was not photographed. That was item 4c in the brief and it is **measured but not seen**.
 
 **What would close it:** three reachable addresses (Blocker 3), ten minutes of sign-in, and a
 second pass. Nothing else in this document depends on it.
+
+---
+
+# WHAT THE REHEARSAL PROVED WORKS
+
+Four blockers is the headline, so this needs saying separately: **the product itself performed,
+and the two moments the hour is sold on are both strong.**
+
+- **The hint on a partly-right answer** (leg 2, turn 1) credited the sceptical reasoning, named
+  the error class and the scenario, and gave away neither the figure nor the direction.
+- **The marking discriminates, and explains itself.** On the seeded paper: `exemplary` 12/12 on
+  the requirement done at pace, `weak` 3/12 on the rushed one — with three specific errors named
+  and the correct arithmetic shown. On the throwaway paper: `nothing` for a paragraph that
+  asserted the right direction with no figures, `competent` for the one answer that did the work.
+- **The pacing engine reproduced an engineered profile to within 0.05 on seven of eight
+  ratios**, and the collapse headline fired exactly where it was designed to.
+- **Nothing lied under failure.** Through a gateway timeout, a partially-marked paper and a
+  concurrent retry, the system reported `marked: false`, showed *"Not yet marked."* per
+  requirement, refused to re-mark a case another request held, and did not double-bill.
+
+The defects are in the seams — the front door, the sign-in, the seed's session, and two of the
+tutor's four turns. **None of them is in the teaching or the marking.**
