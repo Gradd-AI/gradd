@@ -91,32 +91,149 @@ It prints the signed-in email. Close DevTools afterwards.
 
 ---
 
-# SETUP — the accounts
+# 🔴 BLOCKER 3 — THERE IS NO DEMO ACCOUNT ANYONE CAN SIGN INTO YET
 
-Three accounts, all on **`grant@live.ie` sub-addressing**, so they land in an inbox that is
-definitely reachable.
+**This is unresolved and it gates the whole hour.** Sign-in is magic-link only
+(`app/acca/auth/page.tsx` calls `signInWithOtp`, and Blocker 1 above rules out every other
+route), so **a demo account is only usable if someone can open the mailbox it emails.** Two
+address schemes were tried during the rehearsal and neither is usable:
 
-⚠️ **`demo-rehearsal-*@gradd.ai` was tried first and abandoned.** `gradd.ai`'s MX points at
-Zoho (`mx.zoho.eu`), so mail to that domain is only deliverable to mailboxes or aliases that
-actually exist there — a made-up local part bounces unless catch-all is switched on, which
-could not be confirmed. Those three accounts were minted, found unusable, and torn down (users
-and entitlement rows deleted). **Do not put a demo account on an address nobody can open.**
+| Tried | Why it fails |
+|---|---|
+| `demo-rehearsal-*@gradd.ai` | `gradd.ai`'s MX points at Zoho (`mx.zoho.eu`). Mail is only deliverable to mailboxes or aliases that actually exist there; a made-up local part bounces unless catch-all is on, which could not be confirmed. **Minted, found unusable, torn down.** |
+| `grant+demo1..3@live.ie` | Assumed Outlook sub-addressing would land in `grant@live.ie`. **Grant reports he does not have these addresses.** Not verified before the accounts were minted — that was the error. |
 
-| # | Address | Role on the day | User id |
+## What to do instead
+
+**Create real mailboxes or aliases on `gradd.ai` in Zoho** — you administer that domain, so
+`demo1@gradd.ai`, `demo2@gradd.ai`, `demo3@gradd.ai` as aliases onto an inbox you already open
+is a two-minute job and it is the clean answer: the address is on the product's own domain,
+it is reachable, and it does not put a personal address on screen if a URL or a header is ever
+visible during the demo.
+
+Then mint the accounts against those addresses and grant the entitlements. The mechanism is
+proven and takes seconds:
+
+```
+npx tsx --env-file=.env.local scripts/_demo_rehearsal_setup.ts mint demo1@gradd.ai demo2@gradd.ai demo3@gradd.ai
+```
+
+(That script is a throwaway under `scripts/_*`, so it is gitignored — recreate it or grant the
+two `acca_entitlements` rows by hand. It does exactly two writes per account:
+`auth.admin.createUser` and one comped `pass` row per paper, which is what
+`scripts/seed-demo-sit.ts` already documents as the only legitimate account-setup writes.)
+
+**Verify each one signs in before the day**, using Check A in Blocker 1 — the case cards must
+read `Start case →`, not `🔒 Subscribe to unlock`.
+
+## How many accounts, and why
+
+**Three, and the third is not optional.**
+
+A sit is **one per account, permanently.** Submissions are immutable server-side —
+`app/api/acca/case/turn` refuses to overwrite a recorded answer and returns 409
+`already_submitted` — so a second sit on the same account fails on every requirement. If leg 3
+goes wrong mid-run **you cannot retry on the same account**; you switch to the spare.
+
+| # | Role on the day |
+|---|---|
+| 1 | Leg 2 — the practice case |
+| 2 | Leg 3 — the marked sit |
+| 3 | Spare for leg 3 |
+
+Leg 1 needs a **fourth**, separate account: the one carrying the seeded sit (below). Do not
+put the seeded paper on an account you also intend to sit live, for the same immutability
+reason.
+
+⚠️ **Never rehearse leg 3 on `grant@live.ie`.** It would spend your own account's AFM mock for
+good, and that account is also the one currently signed into the presenting browser with **no
+ACCA entitlement** and the amber *"All 3 free teach-throughs used"* banner showing.
+
+## Accounts created during this rehearsal
+
+Left in place so the seeded sit survives; delete when you no longer want them.
+
+| Account | State |
+|---|---|
+| `grant+demo4@live.ie` | **Carries the seeded AFM sit.** Do not delete until leg 1 has been walked. |
+| `grant+demo1@live.ie` | Clean apart from a warm-up turn on Kestrel Foods (i). |
+| `grant+demo3@live.ie` | Halvard Marine (i) spent by the leg-2 probe. |
+| `grant+demo2@live.ie`, `grant+demo5@live.ie`, `grant+demo6@live.ie` | **AFM Mock 1 spent** — deleted at the end of the rehearsal. |
+
+---
+
+# 🔴 BLOCKER 2 — LEG 3 ENDS IN AN ERROR MESSAGE, AND THE MARKING ACTUALLY WORKED
+
+**This is the most serious thing found in the rehearsal. It is on the path of leg 3, every
+time, and it is not intermittent.**
+
+## What happens
+
+At the end of a sat AFM paper the client POSTs `/api/acca/sit/results` to mark it. Measured on
+production, 2026-09-06, on a real 8-requirement sitting with real answers:
+
+```
+POST /api/acca/sit/results   →  HTTP 524, empty body, after 125 seconds
+```
+
+**524 is Cloudflare's origin-timeout.** `www.gradd.ai` runs Cloudflare in front of Vercel
+(`Server: cloudflare` + `x-vercel-id` on the same response), and Cloudflare cuts a connection
+when the origin has been silent for ~100 s. It is not configurable below Enterprise.
+
+**The Vercel function does not stop when Cloudflare hangs up.** It keeps marking. Timestamps
+from `acca_case_marking`, same run:
+
+| | |
+|---|---|
+| Paper finished | 20:21:43 |
+| Case 1 marked | 20:23:10 |
+| Case 2 marked | 20:23:57 |
+| **Cloudflare returns 524** | **~20:23:49** |
+| Case 3 marked | **20:24:46** — *57 seconds after the browser was told it failed* |
+
+**So marking succeeds and the student is told it failed.** Three cases at roughly 45–50 s each
+is ~150 s of work against a ~100 s ceiling; the paper is structurally over the limit, not
+marginally.
+
+## What the presenter will see, in order
+
+`resultsOutcomeFor(status, code)` maps anything that is not 2xx/402/409 to `failed`, so a
+524 with an empty body lands on the error arm.
+
+| # | On screen | Wait | Reality |
 |---|---|---|---|
-| 1 | `grant+demo1@live.ie` | Legs 1 and 2 — the debrief and the practice case | `806469db` |
-| 2 | `grant+demo2@live.ie` | Leg 3 — the marked sit | `0ba6e8b3` |
-| 3 | `grant+demo3@live.ie` | Spare for leg 3 | `e56bb01b` |
+| 1 | *"Marking your paper…"* | **125 s** | Working correctly |
+| 2 | **"Marking did not complete… try again"** + a **Try marking again** button | — | It is completing |
+| 3 | Press retry → the debrief loads in **3 s**, but **Q3 (i) and Q3 (ii) read "Not yet marked."** and the case total reads **`—/20`** | 3 s | The third case is still being marked by the first request |
+| 4 | Press retry again a minute later → **the complete, correct debrief** | 2 s | Everything was marked at 20:24:46 |
 
-All three carry **comped AFM and APM `pass` entitlements** valid for three days
-(`acca_entitlements`, `source: 'comp'`, noted as rehearsal accounts).
+**Roughly three minutes from the last answer to a correct band, two of them spent looking at an
+error message, with a partially-marked paper in between.** That is the moment the hour exists
+to reach.
 
-**Why two accounts for one leg.** A sit is **one per account, permanently**. Submissions are
-immutable server-side — `app/api/acca/case/turn` refuses to overwrite a recorded answer and
-returns 409 `already_submitted` — so a second sit on the same account fails on every
-requirement. If leg 3 goes wrong mid-run, **you cannot retry on the same account**; you switch
-to the spare. That is also why leg 3 must not be rehearsed on `grant@live.ie`: it would spend
-your own account's AFM mock for good.
+## Three things that are working, and should not be confused with the fault
+
+- **The system never lies.** `claimCase` writes the claim row with `technical_marks_available`
+  NULL, so a claim can never read as a result; the intermediate debrief says **"Not yet
+  marked."** per requirement and returns `marked: false`, `skipped_concurrent: 1`. It reports a
+  partial paper as partial.
+- **Nothing is lost and nothing is double-billed.** The retry at step 3 marked *nothing*
+  (`marked_now: 0`) — it correctly refused to re-mark a case another request was working on.
+- **The claim self-heals.** `CLAIM_STALE_MS` is 5 minutes, so a genuinely crashed run is taken
+  over by the next request rather than blocking the case forever.
+
+The defect is entirely that **the front door gives up before the kitchen does**, and the UI has
+no way to know the difference.
+
+## On the day
+
+**Do not sit the paper live.** Sit it before the room arrives, get the debrief to a correct
+state, and open it from `/acca/results`. If leg 3 must be live, say into the wait: *"marking a
+full paper is three cases and six model passes — it takes a couple of minutes"*, and **expect
+to press retry twice.** Do not let the first retry's `—/20` be the screen anyone reads.
+
+**Do not "fix" this by shortening the answers.** A shorter paper marks faster and hides it. The
+condition is a full paper, which is the product.
 
 ---
 
@@ -171,6 +288,81 @@ you present, and check it on the actual projector:
   copy to something legible from the back of the room.
 
 Do it once at the start and leave it. Changing zoom mid-demo is visible and looks like fumbling.
+
+---
+
+# LEG 1 — THE MOCK DEBRIEF
+
+## 🔴 It has never been rehearsed because the data has never existed
+
+Before tonight there was **no sat AFM paper on production to open.** The only AFM sitting on
+record (`47df6a20`, 9 August) is **eight blank answers submitted in 40 seconds** — every
+requirement reads *"No answer submitted."*, every band is `nothing`, the paper scores 5/100 and
+every pacing interval is 4–9 seconds. There is nothing in it to narrate.
+
+The one rich, realistically-paced sitting anywhere in the database is `36d290de` — a **real
+paying student's APM paper** (7 requirements, 2h14m, 38/80 technical, banded across the range).
+It would demo beautifully and it is a real customer's answers. **Not used, and flagged rather
+than used**: that is your call to make, not a rehearsal's.
+
+## What was started tonight
+
+`scripts/seed-demo-sit.ts` — which exists precisely for this and **had never been run** — was
+started against production at **19:19 UTC on `grant+demo4@live.ie`**. It takes **2h47m**
+because it *performs* the pacing rather than writing timestamps: `submitted_at` and
+`started_at` are both server-set, so the intervals the pacing view reports are the real
+wall-clock gaps between HTTP requests, and the only way to author a pacing profile is to wait.
+
+It writes **no timestamp of its own**. Its only direct writes are account setup
+(`auth.admin.createUser`, one comped entitlement row).
+
+**The plan it performs** — 167 minutes against the 195-minute clock, bled on case 1, recovered
+on case 2, rushed case 3:
+
+| | Requirement | Marks | Wait | Budget | Expected flag |
+|---|---|---|---|---|---|
+| R1 | Solenne (i) B3e | 10 | 34 min | 19.5 | `reading + Q1` (no ratio) |
+| R2 | Solenne (ii) B5b | 16 | 42 min | 31.2 | **over** 1.35 |
+| R3 | Solenne (iii) E2b | 8 | 21 min | 15.6 | **over** 1.35 |
+| R4 | Solenne (iv) E1a | 6 | 13 min | 11.7 | on budget 1.11 |
+| **R5** | **Brecon (i) B1a** | **12** | **24 min** | **23.4** | **on budget 1.03** |
+| R6 | Brecon (ii) B1b | 8 | 15 min | 15.6 | on budget 0.96 |
+| **R7** | **Aldebrino (i) E3a** | **12** | **12 min** | **23.4** | **under 0.51** |
+| R8 | Aldebrino (ii) E2a | 8 | 6 min | 15.6 | **under 0.38** |
+
+**R5 and R7 are the pair the narration walks**, and the plan is built so they contrast: the
+same student, on budget at R5 and at half budget at R7. The collapse headline is engineered to
+fire on the R7+R8 suffix — `detectCollapse` takes the shortest suffix whose combined budget is
+≥20% of the paper's requirement budget (R7+R8 = 39.0 min = 25% of 156) and fires when the
+actual is under half of it. An earlier 16+8 schedule totalled 24 minutes and **missed the
+threshold**, producing two `under` flags and no headline; 12+6 = 18 clears it.
+
+## ⚠️ What is owed before this leg can be presented
+
+1. **The seed must finish and be confirmed.** Last answer ~22:07 UTC, then marking.
+2. **Its marking step will hit Blocker 2.** The seed runs with `--mark`, which is the same
+   `sit/results` POST that Cloudflare cut at 125 s. **Do not read a failure there as a failed
+   seed** — re-poll the marking rows before concluding anything, exactly as the leg-3 section
+   describes.
+3. **The pacing panel has still never been looked at.** Nothing in this rehearsal put eyes on
+   it. What is known about it is read from the code, not from the screen:
+   - It is a **7-column table** — Requirement · Marks · Elapsed · Budget · Ratio · Flag ·
+     Awarded (`app/acca/results/[attemptId]/page.tsx`). Seven numeric columns inside an
+     **860 px** content column is the layout risk to check first, and the reason the window
+     advice in SETUP matters more on this screen than any other.
+   - The flag cell renders `p.flag.replace('_',' ')`, so it reads `on budget`, `over`,
+     `under`, `not reached`, and `no_ratio` is specially rendered as **`reading + Q1`**.
+   - The debrief headline sits **above** the pacing panel, in the totals panel, so
+     scrollability past it depends on how long the collapse statement runs. **Unverified.**
+4. **Requirements 5 and 7 have not been read on screen.** Each requirement renders the
+   technical marker's reasoning **verbatim** (`l.why`), with *"Marks:"*, *"Pacing:"* and
+   *"Next:"* lines, and three collapsed `<details>` — *What you were asked*, *What you wrote*,
+   and the reveal. Whether real marker prose reads well in that layout is the open question
+   `AFM_SURFACED.md` has been carrying since the debrief was built, and it is still open.
+
+**Do not present leg 1 without walking it once first.** It is a third of the sold hour, it has
+the most surface area of any screen in the demo, and tonight is the first time the data has
+existed at all.
 
 ---
 
@@ -316,81 +508,6 @@ less visible than telling a good candidate they wrote nothing.
 
 ---
 
-# 🔴 BLOCKER 2 — LEG 3 ENDS IN AN ERROR MESSAGE, AND THE MARKING ACTUALLY WORKED
-
-**This is the most serious thing found in the rehearsal. It is on the path of leg 3, every
-time, and it is not intermittent.**
-
-## What happens
-
-At the end of a sat AFM paper the client POSTs `/api/acca/sit/results` to mark it. Measured on
-production, 2026-09-06, on a real 8-requirement sitting with real answers:
-
-```
-POST /api/acca/sit/results   →  HTTP 524, empty body, after 125 seconds
-```
-
-**524 is Cloudflare's origin-timeout.** `www.gradd.ai` runs Cloudflare in front of Vercel
-(`Server: cloudflare` + `x-vercel-id` on the same response), and Cloudflare cuts a connection
-when the origin has been silent for ~100 s. It is not configurable below Enterprise.
-
-**The Vercel function does not stop when Cloudflare hangs up.** It keeps marking. Timestamps
-from `acca_case_marking`, same run:
-
-| | |
-|---|---|
-| Paper finished | 20:21:43 |
-| Case 1 marked | 20:23:10 |
-| Case 2 marked | 20:23:57 |
-| **Cloudflare returns 524** | **~20:23:49** |
-| Case 3 marked | **20:24:46** — *57 seconds after the browser was told it failed* |
-
-**So marking succeeds and the student is told it failed.** Three cases at roughly 45–50 s each
-is ~150 s of work against a ~100 s ceiling; the paper is structurally over the limit, not
-marginally.
-
-## What the presenter will see, in order
-
-`resultsOutcomeFor(status, code)` maps anything that is not 2xx/402/409 to `failed`, so a
-524 with an empty body lands on the error arm.
-
-| # | On screen | Wait | Reality |
-|---|---|---|---|
-| 1 | *"Marking your paper…"* | **125 s** | Working correctly |
-| 2 | **"Marking did not complete… try again"** + a **Try marking again** button | — | It is completing |
-| 3 | Press retry → the debrief loads in **3 s**, but **Q3 (i) and Q3 (ii) read "Not yet marked."** and the case total reads **`—/20`** | 3 s | The third case is still being marked by the first request |
-| 4 | Press retry again a minute later → **the complete, correct debrief** | 2 s | Everything was marked at 20:24:46 |
-
-**Roughly three minutes from the last answer to a correct band, two of them spent looking at an
-error message, with a partially-marked paper in between.** That is the moment the hour exists
-to reach.
-
-## Three things that are working, and should not be confused with the fault
-
-- **The system never lies.** `claimCase` writes the claim row with `technical_marks_available`
-  NULL, so a claim can never read as a result; the intermediate debrief says **"Not yet
-  marked."** per requirement and returns `marked: false`, `skipped_concurrent: 1`. It reports a
-  partial paper as partial.
-- **Nothing is lost and nothing is double-billed.** The retry at step 3 marked *nothing*
-  (`marked_now: 0`) — it correctly refused to re-mark a case another request was working on.
-- **The claim self-heals.** `CLAIM_STALE_MS` is 5 minutes, so a genuinely crashed run is taken
-  over by the next request rather than blocking the case forever.
-
-The defect is entirely that **the front door gives up before the kitchen does**, and the UI has
-no way to know the difference.
-
-## On the day
-
-**Do not sit the paper live.** Sit it before the room arrives, get the debrief to a correct
-state, and open it from `/acca/results`. If leg 3 must be live, say into the wait: *"marking a
-full paper is three cases and six model passes — it takes a couple of minutes"*, and **expect
-to press retry twice.** Do not let the first retry's `—/20` be the screen anyone reads.
-
-**Do not "fix" this by shortening the answers.** A shorter paper marks faster and hides it. The
-condition is a full paper, which is the product.
-
----
-
 # LEG 3 — THE KEYBOARD, MARKED
 
 **`https://www.gradd.ai/acca/afm/mock` → Start.** AFM Mock Paper 1: three cases, eight
@@ -469,3 +586,29 @@ debrief will accuse the candidate of collapsing at the end regardless of how the
 A blank paper produces the same headline naming **all eight** requirements as the "final"
 ones, which reads oddly: a paper nobody started is reported as a paper that collapsed at
 the end.
+
+---
+
+# WHAT THIS REHEARSAL DID NOT COVER
+
+Said plainly, because a runbook that hides its gaps is worse than no runbook.
+
+**No screenshots were taken.** Every screen in this document is measured through the production
+routes — real requests, real model calls, real timings, real marks — and **none of it was
+photographed.** Sign-in to a demo account was not possible (Blocker 3), and the presenting
+browser is signed in as `grant@live.ie`, which has no ACCA entitlement.
+
+**Consequences, specifically:**
+
+- **Everything visual is unverified except what could be measured from the DOM.** The 860 px /
+  34%-of-screen geometry and the 1.32:1 separator contrast are real measurements taken on the
+  live page. Everything else about how these screens *look* is inferred from the code.
+- **The eight `window.confirm` dialogs were not seen.** Their text is quoted from source and is
+  certain; their appearance on a projector is not.
+- **Leg 1 was not walked at all.** See above.
+- **Leg 2's screens were not seen** — the transcript is real and complete, but the rendering of
+  the reveal, and in particular how invisible that separator actually is at projector scale,
+  was not photographed. That was item 4c in the brief and it is **measured but not seen**.
+
+**What would close it:** three reachable addresses (Blocker 3), ten minutes of sign-in, and a
+second pass. Nothing else in this document depends on it.
