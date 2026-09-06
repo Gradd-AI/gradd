@@ -471,6 +471,39 @@ when the session ends on a branch.
   (pre-existing, 6/10 pre-change) — the CASE `call4_reveal` takes NO `GroundingPack`, so
   `renderResolvableTopics` (the drill route's INVENTED-INVENTORY fix) never reaches it. Fixtures
   `npm run test:case-reveal-routing` (159).
+- **THE SERVED WRAPPER'S TWO GUARDS — `lib/acca/reveal-quotation.ts` + the sanitizer's SHAPE cut
+  (2026-09-06, branch `fix/reveal-quotation-and-sanitizer-cut`, NOT MERGED — one gate axis fails).**
+  Both surfaces, one definition each; the chain is `finishClean` → `sanitizeAfmWrapper` →
+  `enforceVerbatimQuotation` → `assembleAfmReveal`, pinned in that ORDER by
+  `test-case-reveal-routing.ts`.
+  **(1) THE VERBATIM QUOTATION CHECK.** A quoted span classified STUDENT-ATTRIBUTED that does not
+  appear in the attempt **loses its quotation marks and stays as prose** — never deleted, never
+  rewritten, never substituted (the claim was true in all five sightings; only the citation was
+  false). `attempt` is `lastRealAttempt ?? studentMessage` at BOTH call sites — the same bytes the
+  model was shown as "Their last attempt", which is the check's whole basis; never pass the
+  model_answer or the scenario. **Normalisation is whitespace + ONE trailing `,.;:` inside the
+  closing mark, and nothing else** (case, apostrophe shape and added markdown emphasis are real
+  differences). Discriminator = **TRIGGER** (second-person attribution verb) + **GOVERNOR** (no
+  clause break between it and the mark — this is the part that does the work: 34 of 57 measured
+  spans open `You've treated …` and then hand the quote to a different subject) + **NOT AN
+  ATTRIBUTIVE NAME** (determiner + span + head noun). All scans run on `maskQuotedContent`, and the
+  check runs **to a fixed point**. Logged `[reveal:quote-unquoted]`. Fixtures
+  `npm run test:reveal-quotation` (95), gate 82 → **83**.
+  ⚠️ **CLAIM CEILING, verbatim: it measures CITATIONS, NOT HONESTY.** Green means no span it
+  CLASSIFIED as student-attributed survives in marks without appearing in the attempt — never that
+  the reply contains no fabricated attribution. ⚠️ **The verb list is a phrase table and is the
+  standing residual** — it shipped a survivor because `endorsed` was missing; its three deliberate
+  ABSENCES (`rate`, `confuse`/`conflate`, perception/instruction verbs) are stated in-file.
+  🔴 **The MODEL's rate is unchanged (8 removals across 7/30 replies vs a 4/30 pre-change hand read,
+  Fisher p = 0.51) — never report this as reducing fabrication.**
+  **(2) `sanitizeAfmWrapper` CUTS ON HEADING SHAPE, NOT A PHRASE** (`isBuildHeadingLine`). The old
+  `\n[^\n]*worked answer` cut deleted the POINTER BEAT the system prompt instructs the model to
+  write, and — measured — stopped only **8 of 38** build restatements once the model's `---` was
+  removed, where the shape test stops 38/38. A bold line ending in sentence punctuation is PROSE,
+  deliberately: under-cutting leaves a stray line, over-cutting deletes a beat. 🔴 **`[reveal:
+  wrapper-cut]` shows the guard is LOAD-BEARING, not belt-and-braces: the wrapper restates the
+  worked answer on 29/30 case and 10/10 drill reveals (~1,000 chars each) against a prompt that
+  forbids it.** The pointer audit now reads the **SERVED** wrapper, not the raw model output.
 - **THE TEACHING-REVEAL CATALOGUE — three sites, all unpinned but one (2026-08-20).** The
   `full_reveal` misconception list is stated in `EZRA_TEACHING_PERSONA_<PAPER>` (system block),
   `buildRevealPrompt<Paper>` (user prompt) and **`SUBMIT_REVEAL_TOOL`, which is SHARED BY BOTH
