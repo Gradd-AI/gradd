@@ -777,15 +777,62 @@ export function sanitizeAfmWrapper(raw: string): string {
   return w.trimEnd();
 }
 
+// ── THE APPENDED ARTEFACT'S PARAGRAPH NORMALISER ─────────────────────────────
+// `MessageRenderer` follows GFM: consecutive non-blank lines are JOINED with a space into one
+// paragraph. A stored answer that separates its sections with a SINGLE newline therefore renders
+// as a run-on paragraph — the section label swallowed into the sentence that follows it. That is
+// live on 43 of 91 published APM drills (no markdown at all) and on all 18 APM case
+// `model_answer`s (CRLF, section labels on bare lines), and design B serves those bytes VERBATIM,
+// so the defect is now visible wherever the reveal is.
+//
+// The fix is the FLOOR, deliberately: every content line becomes its own paragraph. No heuristics,
+// no heading detection, no content edits — a line's characters are never touched, never reordered,
+// never dropped. Blank lines (which carry no content) are collapsed into the separator.
+//
+// ⚠️ THE ONE EXCEPTION IS STRUCTURAL, NOT A HEURISTIC. A markdown table's rows are separated by
+// SINGLE newlines by grammar; `MessageRenderer` ends a table on the first blank line and drops a
+// one-row table entirely (`renderTable` returns null below two rows). Blank-separating a table's
+// rows would therefore DELETE the table. 35 AFM and 5 APM published drills carry pipe tables, so
+// this is not hypothetical. Two source-ADJACENT pipe rows keep their single newline; everything
+// else is blank-separated. A blank line already present between two pipe rows is preserved as a
+// break, so this can never MERGE two tables the author separated.
+//
+// 🔗 COUPLED TO `components/chat/MessageRenderer.tsx`'s `isTableRow` — same test, deliberately
+// (a leading `|` after trimming). If that renderer's table detection changes, this must follow.
+function isArtefactTableRow(line: string): boolean {
+  return line.trim().startsWith('|');
+}
+
+export function normaliseRevealArtefact(artefact: string): string {
+  const src = artefact.split(/\r\n|\n/);
+  const out: string[] = [];
+  for (let i = 0; i < src.length; i++) {
+    const line = src[i];
+    if (line.trim() === '') continue;             // blank lines carry no content
+    if (out.length > 0) {
+      // Contiguous in the SOURCE (no blank line between them) and both pipe rows → one table.
+      const contiguousTableRows =
+        i > 0 && src[i - 1].trim() !== '' &&
+        isArtefactTableRow(src[i - 1]) && isArtefactTableRow(line);
+      out.push(contiguousTableRows ? '\n' : '\n\n');
+    }
+    out.push(line);
+  }
+  return out.join('');
+}
+
 // Pure assembly (no model call): the served AFM reveal body is the (sanitized) wrapper followed
-// by the authored model_answer VERBATIM. Invariant (fixture-enforced): the returned body ENDS
-// WITH modelAnswer byte-for-byte, so a refactor cannot quietly reintroduce model-emitted
-// (drift-prone, truncation-prone) tables. The wrapper is sanitized here, so callers just pass
-// the raw model output.
+// by the authored model_answer, normalised for paragraph rendering and otherwise VERBATIM.
+//
+// ⚠️ THE ANTI-TRUNCATION INVARIANT CHANGED SHAPE HERE, AND IT IS NOT WEAKER. It was
+// `served.endsWith(modelAnswer)` byte-for-byte; a normaliser that inserts blank lines cannot
+// satisfy that. What is fixture-enforced now: the served body's CONTENT LINES end with the
+// model_answer's content lines, byte-for-byte, in order, none altered and none dropped. That is
+// the property the byte check existed to defend — the figures reach the student whole and
+// untruncated, and a refactor still cannot quietly reintroduce model-emitted tables.
 export function assembleAfmReveal(wrapper: string, modelAnswer: string): string {
-  // Footer sits in the wrapper (above the separator), so the model_answer stays the exact
-  // verbatim tail — the byte-equality anti-truncation invariant is unaffected.
-  return `${sanitizeAfmWrapper(wrapper)}${REVEAL_FOOTER}${AFM_REVEAL_SEPARATOR}${modelAnswer}`;
+  // Footer sits in the wrapper (above the separator), so the artefact stays the exact tail.
+  return `${sanitizeAfmWrapper(wrapper)}${REVEAL_FOOTER}${AFM_REVEAL_SEPARATOR}${normaliseRevealArtefact(modelAnswer)}`;
 }
 
 // ── Earned-reveal GATE (pure) ─────────────────────────────────────────────────

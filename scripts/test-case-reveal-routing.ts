@@ -355,9 +355,22 @@ ok('AFM does NOT adopt the drill route design "B" (no verbatim-append instructio
   ok('B: the figure audit is wired, and it can never block an EARNED reveal',
     /auditRevealFigures\(served, \{ context, modelAnswer, attempt \}\)/.test(engine) &&
     /catch \{ \/\* an audit must never break a reveal \*\/ \}/.test(engine));
-  ok('B: FUNCTIONAL — the served body ends with the stored answer, byte-for-byte',
-    assembleAfmReveal('A framing wrapper.', '**1. Tax**\\n| a | b |\\n| 1 | 2 |')
-      .endsWith('**1. Tax**\\n| a | b |\\n| 1 | 2 |'));
+  // ⚠️ The pre-normaliser form of this check compared a literal `\\n` (a backslash and an `n`, not
+  // a newline), so it never exercised a real multi-line answer and would have passed on ANY
+  // line handling. Rebuilt on real newlines, against the invariant the normaliser leaves standing:
+  // the served body's CONTENT LINES end with the stored answer's, byte-for-byte, in order.
+  {
+    const STORED = '**1. Tax**\n| a | b |\n| 1 | 2 |\nThe rate is 26.5%.';
+    const body = assembleAfmReveal('A framing wrapper.', STORED);
+    const lines = (s: string) => s.split(/\r\n|\n/).filter(l => l.trim() !== '');
+    const stored = lines(STORED), got = lines(body);
+    ok('B: FUNCTIONAL — the served body ends with the stored answer\'s lines, byte-for-byte',
+      got.slice(got.length - stored.length).every((l, i) => l === stored[i]));
+    ok('B: FUNCTIONAL — the table survives (contiguous pipe rows keep their single newline)',
+      body.includes('| a | b |\n| 1 | 2 |'));
+    ok('B: FUNCTIONAL — a bare line after the table is its OWN paragraph, not a run-on',
+      body.includes('| 1 | 2 |\n\nThe rate is 26.5%.'));
+  }
 
   // ── THE POSITIVE CONTROL'S FINDING, PINNED (2026-08-28) ─────────────────────
   // The first build was LAST-WRITE and the 120-turn arm could not see the defect: every one of
