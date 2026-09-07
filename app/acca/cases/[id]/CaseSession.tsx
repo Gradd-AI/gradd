@@ -44,6 +44,11 @@ interface Marking {
 }
 
 // message_kind → badge, same map the drill UI uses (quiet kinds render no badge)
+// Ceiling for the auto-sizing composer, in px. Past this it scrolls internally rather than
+// carrying on eating the transcript. ~9 rows at 14px/1.6 — enough to see a paragraph of a
+// pasted answer while typing, and the full text is always still in the box.
+const COMPOSER_MAX_PX = 240;
+
 const KIND_LABEL: Record<string, string> = {
   teaching: 'Teaching', hint: 'Hint', correct: 'Correct',
   reveal: 'Model answer', answer: 'Answer', coaching: 'Coaching',
@@ -168,6 +173,7 @@ export default function CaseSession({
   const [markingIncomplete, setMarkingIncomplete] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   // Which case id this mount has already reported opening. Keyed on the id, not a boolean,
   // for the same reason CaseList keys on the paper: the effect re-runs when `caseId` changes.
   const openReported = useRef<string | null>(null);
@@ -287,6 +293,23 @@ export default function CaseSession({
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, sending]);
+
+  // Auto-size the composer. The transcript is `flex: 1` in a 100vh shell, so every pixel
+  // the composer holds is a pixel the transcript does not get — and it used to hold five
+  // rows whether or not anything was typed. Two rows empty, growing with the content to
+  // COMPOSER_MAX_PX, after which it scrolls internally.
+  //
+  // Done in JS rather than with `field-sizing: content` because that is Chromium-only and
+  // this is the one screen the product is demonstrated on; a Safari or Firefox viewer must
+  // not get the old fixed box back. `resize` is `none` in the CSS for the same reason — a
+  // hand-dragged height and a programmatic one fight, and the drag wins until the next
+  // keystroke, which reads as the box jumping.
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(el.scrollHeight, COMPOSER_MAX_PX)}px`;
+  }, [input, activeReqId]);
 
   // Case-complete handling. Embedded (mock) mode notifies the parent and does NOT
   // run inline marking — the mock marks all cases together on its results screen.
@@ -567,7 +590,7 @@ export default function CaseSession({
 
             <div className="ec-messages">
               {messages.map((msg, i) => (
-                <div key={i} className={`ec-msg ec-msg--${msg.role}`}>
+                <div key={i} className={`ec-msg ec-msg--${msg.role}${msg.kind ? ` ec-msg--kind-${msg.kind}` : ''}`}>
                   {msg.role === 'ezra' && <div className="ec-msg-avatar" aria-hidden="true">E</div>}
                   <div className="ec-msg-body">
                     <div className="ec-msg-sender">
@@ -676,6 +699,7 @@ export default function CaseSession({
               <div className="ec-input-area">
                 <div className="ec-input-wrap">
                   <textarea
+                    ref={textareaRef}
                     className="ec-textarea"
                     placeholder={
                       activePassed
@@ -687,7 +711,7 @@ export default function CaseSession({
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    rows={5}
+                    rows={2}
                     disabled={sending}
                     aria-label="Your message to Ezra"
                   />
@@ -732,6 +756,11 @@ const CSS = `
   --rust-ink: #fff8f4;
   --chat-text: var(--text);
   --chat-border: var(--border);
+  /* The <hr> only. Separate from --chat-border, which also draws table cells, card outlines
+     and button strokes where the light value is right. #8a8172 measures 3.84:1 on the white
+     message bubble and 3.47:1 on the #f7f3ec page ground — both over the 3:1 WCAG asks of a
+     non-text UI element. Locked by npm run test:chat-rule-contrast. */
+  --chat-rule: #8a8172;
   --chat-accent: var(--brand);
   --chat-muted: var(--text-muted);
   --chat-surface-2: var(--surface-2);
@@ -817,7 +846,7 @@ const CSS = `
 
 .ec-sidebar {
   border-right: 1px solid var(--border-light);
-  overflow-y: auto; min-height: 0; padding: 24px 24px 24px 0;
+  overflow-y: auto; overscroll-behavior: contain; min-height: 0; padding: 24px 24px 24px 0;
 }
 .ec-sidebar-inner { display: flex; flex-direction: column; gap: 16px; }
 
@@ -899,9 +928,29 @@ const CSS = `
   font-weight: 700; line-height: 1.35; color: var(--text); letter-spacing: -0.2px; margin: 0;
 }
 
-.ec-messages { flex: 1; min-height: 0; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+/* overscroll-behavior: contain on BOTH scrollers. The panel and the sidebar are independent
+   scroll regions inside a 100vh shell; without it, a wheel gesture that reaches the end of
+   one chains to the other and the wrong column moves — in front of a room, that reads as the
+   page jumping. (No backticks in this block: it is a JS template literal.) */
+.ec-messages {
+  flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+  padding: 24px; display: flex; flex-direction: column; gap: 20px;
+}
 
 .ec-msg { display: flex; align-items: flex-start; gap: 12px; max-width: 680px; }
+
+/* A worked answer is a document, not a chat bubble, so the conversational 680px measure is
+   the wrong rule for it. Applies to the earned reveal only; every other kind keeps 680px.
+
+   ⚠️ MEASURED, because the first version of this comment claimed a ~25% height saving and
+   that was wrong: on the live reveal it is 26px of width and 28px of height (1,523 -> 1,495).
+   THE BINDING CONSTRAINT IS NOT THIS RULE. .ec-layout is capped at max-width 1200px with a
+   400px sidebar, so the chat pane is ~706px however wide the screen is — the message was
+   already within 26px of the pane. Raising that cap is the lever that would actually shorten
+   the reveal (~946px of measure, ~1,150px tall), and it is a reading-measure decision for
+   prose as well as tables, so it is NOT taken here. Kept because the cap is wrong for a
+   document, not because it recovers height. */
+.ec-msg--kind-reveal { max-width: 100%; }
 .ec-msg--student { flex-direction: row-reverse; align-self: flex-end; }
 .ec-msg-avatar {
   width: 32px; height: 32px; border-radius: 50%; background: var(--brand);
@@ -969,7 +1018,11 @@ const CSS = `
 .ec-textarea {
   width: 100%; padding: 14px 16px; font-family: var(--font-body); font-size: 14px; line-height: 1.6;
   color: var(--text); background: var(--surface); border: 1.5px solid var(--border);
-  border-radius: 12px; resize: vertical; outline: none; transition: border-color 0.15s;
+  border-radius: 12px; outline: none; transition: border-color 0.15s;
+  /* Height is owned by the auto-size effect (COMPOSER_MAX_PX). resize is none because a
+     hand-dragged height and a programmatic one fight, and the drag wins until the next
+     keystroke — which reads as the box jumping. Overflow appears only past the ceiling. */
+  resize: none; overflow-y: auto; max-height: 240px;
 }
 .ec-textarea:focus { border-color: var(--brand); }
 .ec-textarea::placeholder { color: var(--text-light, var(--text-muted)); opacity: 0.7; }
@@ -1000,6 +1053,21 @@ const CSS = `
 .ec-footer-links { display: flex; gap: 18px; }
 .ec-footer-links a { font-size: 11px; color: var(--text-muted); text-decoration: none; transition: color 0.15s; }
 .ec-footer-links a:hover { color: var(--text); }
+
+/* ── Short viewports ──
+   The shell is 100vh and every fixed band above and below the transcript is taken out of
+   it, so on a laptop the transcript is what is left rather than what it needs. Measured on
+   the presenting machine (a 755px viewport): 57 header + 47 footer + 145 requirement
+   header + 227 composer left 279px of transcript against 3,544px of conversation.
+   This reclaims the padding that a tall screen can afford and a short one cannot. It
+   changes nothing above 900px. */
+@media (max-height: 900px) {
+  .ec-req-header { padding: 14px 24px 12px; }
+  .ec-req-header-top { margin-bottom: 6px; }
+  .ec-messages { padding: 18px 24px; gap: 16px; }
+  .ec-input-area { padding: 12px 24px 14px; }
+  .ec-footer { padding: 8px 0; }
+}
 
 /* ── Mobile ── */
 .ec-mobile-bar { display: none; }

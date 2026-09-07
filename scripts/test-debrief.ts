@@ -328,6 +328,54 @@ console.log('\n-- length: strong bands collapse the justification, losses stay o
     all.every((r) => r.why !== null || r.why_display === 'expanded'));
 }
 
+// ── NO "NOTHING TO CHANGE" ON A ROW THAT LOST MARKS ──────────────────────────
+// Seen on screen 2026-09-07: AFM Mock 1 Q2 (ii), band `strong`, 6 of 8, marker text naming
+// three gaps and closing "that distinction needed to be made explicitly" — with "Nothing to
+// change here — the gaps the marker noted are immaterial." rendered directly beneath it.
+// Both visible at once, because `why_display` collapses the justification ONLY when no marks
+// were lost, so the contradiction shows on exactly the rows where it exists.
+console.log('\n-- a row that lost marks is never told nothing needs changing --');
+{
+  const w1 = W1();
+
+  // W1 requirement 3 is the shipped shape: band `strong`, 6 of 8, two marks lost.
+  const r3 = line(w1, 3);
+  ok('W1 r3 is the shape that produced the defect (strong, marks lost)',
+    r3.marks_lost === 2, `band-derived line, lost=${r3.marks_lost}`);
+  ok('it is NOT told the gaps are immaterial',
+    !/immaterial|Nothing to change/i.test(r3.next_action), r3.next_action);
+  ok('it is told the gaps cost marks and what to do',
+    /cost marks/i.test(r3.next_action) && /named above/i.test(r3.next_action), r3.next_action);
+  ok('and it is STILL band-derived, not a reading of the answer',
+    r3.next_action_source === 'band_definition');
+
+  // The conditional is on MARKS LOST, not on the band. A band that kept every mark keeps the
+  // short no-change line — otherwise the fix would just be a reworded `strong`.
+  const clean = build({
+    cumulative: [20, 51, 67, 79, 102, 118, 141, 157],
+    bands: Array(8).fill('strong'), awarded: [...MARKS],
+    feedback: Array(8).fill(FB.exemplary), completedAt: 165,
+  });
+  ok('a STRONG row that lost NOTHING keeps the short no-change action',
+    clean.requirements.every((r) => r.marks_lost === 0 && /Nothing to change here/.test(r.next_action)),
+    clean.requirements[0].next_action);
+
+  // P-G3: the shipped-wrong behaviour, pinned as MUST-FAIL. Asserted across every walk rather
+  // than one row, because the defect is a class — any band whose action claims nothing needs
+  // changing while marks were dropped is the same false statement on screen.
+  const NO_CHANGE = /Nothing to change here|immaterial/i;
+  const walks = [W1(), W2(), W3()];
+  const offenders = walks.flatMap((d) => d.requirements)
+    .filter((r) => (r.marks_lost ?? 0) > 0 && NO_CHANGE.test(r.next_action))
+    .map((r) => `${r.display_name}: ${r.marks_lost} lost — "${r.next_action}"`);
+  ok('NO requirement in any walk claims nothing to change while marks were lost',
+    offenders.length === 0, offenders.join(' | '));
+
+  // And the reverse, so the pin above cannot pass by the string having been deleted entirely.
+  ok('the no-change action still exists for rows that lost nothing',
+    walks.flatMap((d) => d.requirements).some((r) => r.marks_lost === 0 && NO_CHANGE.test(r.next_action)));
+}
+
 // ── NO FORWARD REFERENCE ─────────────────────────────────────────────────────
 console.log('\n-- no forward reference in any action --');
 {

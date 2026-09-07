@@ -181,6 +181,9 @@ const CSS = `
   --rust-ink: oklch(98% 0.01 70);
   --chat-text: var(--text);
   --chat-border: var(--border);
+  /* See the note beside the same token in CaseSession.tsx. Same light ACCA ground, so the
+     same value; locked by npm run test:chat-rule-contrast. */
+  --chat-rule: #8a8172;
   --chat-accent: var(--rust);
   --chat-muted: var(--text-muted);
   --chat-surface-2: var(--surface-2);

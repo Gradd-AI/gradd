@@ -469,6 +469,23 @@ actual projector before the room arrives; do not assume a resize landed.
 
 ## 🔴 The tutor transcript is read through a 279-pixel letterbox
 
+⚠️ **A FIX IS WRITTEN AND NOT YET MERGED — branch `fix/demo-legibility-and-strong-action`.**
+Everything in this section describes **production as it stands today**. If that branch has
+merged and deployed by the time you present, the transcript is **384 px** at this window
+instead of 279 (and the composer 148 px instead of 227) — check which state you are in before
+rehearsing the scroll, because the two need different handling. Measured before/after at three
+viewport heights:
+
+| Viewport height | Transcript today | With the fix | |
+|---|---|---|---|
+| **755 px** (the presenting machine) | 279 px | **384 px** | +38% |
+| 800 px | 324 px | **429 px** | +32% |
+| 1080 px | 604 px | **673 px** | +11% |
+
+The relative gain is largest where it hurts most, because most of it comes from the composer no
+longer holding five rows when it is empty — a fixed cost that a short viewport cannot afford and
+a tall one barely notices.
+
 **Measured on the live case surface, 2026-09-07.** The transcript pane (`.ec-messages`) is
 **279 px tall** and held **3,544 px** of conversation by the end of leg 2 — a ratio of about
 **12.7 : 1**. Meanwhile the empty composer box beneath it takes ~150 px.
@@ -627,6 +644,13 @@ overall calculation is largely incorrect."*
 **Say:** *"Twelve minutes on a twenty-three-minute requirement, and it cost her nine marks —
 and the debrief can tell her which nine and why. That's the whole product in one row."*
 
+📌 **Leg 1's quotes are safe to preview; leg 2's are not, and the difference is worth knowing.**
+Everything quoted in this leg is a STORED string — the marking ran on 2026-09-06 and
+`acca_case_progress.technical_feedback` holds those exact words, which the debrief carries
+verbatim and never paraphrases. So you can read them out in advance and they will be on the
+screen. **Leg 2 is a live model call and its register is bimodal** — see *Do not preview the
+hint's register* in that leg.
+
 **This is the narration.** Walk R5 first — on budget, full marks, the marker quoting her own
 figures. Then R7 — half the time, three specific errors, nine marks gone. Then the pacing
 panel, where the same story is visible as two rows.
@@ -654,9 +678,10 @@ table in SETUP.)*
 
 **Total page height 7,301 px.** That is about ten screens. Scroll deliberately; do not hunt.
 
-### 🔴 One real defect, and it is inside leg 1's best case
+### 🔴 One real defect, on TWO of the eight requirements, and one of them is inside leg 1's best case
 
-**Q2 (ii), banded `STRONG` 6/8, contradicts itself on screen.** The marker's prose says:
+**Q2 (ii), banded `STRONG` 6/8, contradicts itself on screen** — and so does **Q1 (iv),
+`STRONG` 5/6**, which the first read missed. The marker's prose on Q2 (ii) says:
 
 > *"Where the answer loses ground is in the advisory conclusions… you stop at labelling it
 > 'high-risk' without quantifying the coefficient of variation explicitly… the stronger
@@ -668,14 +693,31 @@ and the next action directly beneath it says:
 > **NEXT:** *"Nothing to change here — the gaps the marker noted are immaterial."*
 
 **Two marks were lost and three specific gaps were named.** The cause is
-`ACTION_BY_BAND.strong` in `lib/acca/debrief.ts:186` — the next action is derived from the
-**band**, deliberately, so that it is traceable to `band_definition` rather than being an
-opinion about the work. That design is right; the string is wrong for a `strong` row that lost
-marks. On `exemplary` (Q1 (i), Q2 (i), both full marks) it reads correctly.
+`ACTION_BY_BAND.strong` in `lib/acca/debrief.ts` — the next action is derived from the **band**,
+deliberately, so that it is traceable to `band_definition` rather than being an opinion about
+the work. That design is right; the string is wrong for a `strong` row that lost marks. On the
+two full-marks rows (Q1 (i) 10/10 and Q2 (i) 12/12) it reads correctly.
 
-**On the day: do not walk Q2 (ii).** Walk **Q2 (i)** — `EXEMPLARY`, 12/12, where the same
-"nothing to change" line is true — then go straight to **Q3 (i)**. That is the contrast the leg
-exists for and it steps over this row cleanly.
+📐 **Re-run against the real attempt after the fix (`buildSitReport` on `c3804dcb`, not a
+fixture): 8 of 8 requirements, zero contradictions, both full-marks rows unchanged.** That run
+is also how Q1 (iv) was found — reading the screen caught one of the two, running the real
+assembly caught both.
+
+✅ **FIXED ON THE UNMERGED BRANCH `fix/demo-legibility-and-strong-action`.** The action stays
+band-derived and still reports `next_action_source: 'band_definition'` — it is not allowed to
+read the prose — but a `strong` row **that lost marks** now gets its own line: *"The descriptor
+is met well and the gaps are minor — but they cost marks. Close the points named above to turn
+this into full marks."* "Minor" is quoted from the band's own published definition, and the
+sentence adds only the arithmetic the `MARKS:` line already states. `strong` is the only entry
+in that table and that is a fact about the multipliers, not an omission: `exemplary` pays 1, so
+it can never lose marks, and `competent`/`weak`/`nothing` already say a point was missed.
+`npm run test:debrief` pins the old string as MUST-FAIL on any row with marks lost, and pins
+that a `strong` row losing nothing still gets the short no-change line.
+
+**On the day, IF THE BRANCH HAS NOT MERGED: do not walk Q2 (ii).** Walk **Q2 (i)** —
+`EXEMPLARY`, 12/12, where the same "nothing to change" line is true — then go straight to
+**Q3 (i)**. That is the contrast the leg exists for and it steps over this row cleanly. If the
+branch HAS merged, Q2 (ii) is safe and reads correctly.
 
 ### Merely ugly, in order of how much it will show
 
@@ -804,13 +846,40 @@ What came back, in full (466 characters):
 > figure, tell me in one sentence whether it changes whether you'd recommend this order to the
 > board.
 
-**This is the moment the hour is selling.** It credits the head the candidate got right, names
-the error *class* and the *scenario* — and gives away neither the figure nor the direction. It
-also refuses to let them stop at the arithmetic: the follow-up question is about the
-recommendation, not the number.
+**This is the moment the hour is selling.** It names the error *class* and the *scenario*, gives
+away neither the figure nor the direction, and refuses to let the candidate stop at the
+arithmetic: the follow-up question is about the recommendation, not the number.
 
 **Say:** *"It hasn't told them the answer. It's told them which of their three numbers to go
 back to, and then asked the question a reviewer would ask."*
+
+## 🔇 DO NOT PREVIEW THE HINT'S REGISTER. IT IS BIMODAL.
+
+**This is a narration rule, not a caveat.** Across two runs on the identical answer the hint has
+opened two completely different ways:
+
+| | Opening |
+|---|---|
+| 2026-09-06 | *"Right — you've caught the key weakness in the commercial director's case…"* — opens on credit |
+| 2026-09-07 | *"Your central-case NPV is **massively wrong**…"* — opens on the error, credits nothing |
+
+**Both are good hints.** Both withhold the figure and the direction, both name the scenario, both
+close on the advisory question. What is not stable is the *tone*, and the tone is the one thing a
+presenter is tempted to promise in advance.
+
+**Every line in this runbook that promised the room a tone has been struck.** In particular:
+**do not say *"notice it starts by telling her what she got right"***. That fired **once in two
+runs**. If you say it and the hint opens on *"massively wrong"*, you have contradicted yourself
+in front of the room on the single screen the hour is sold on — and a reviewer who catches that
+will discount everything after it.
+
+**The line that is true of both runs, and the one to use:** *"It hasn't told them the answer —
+it's told them which of their three numbers to go back to, and then asked the question a reviewer
+would ask."* Say that, then let the room read the screen.
+
+**The same rule applies to the reveal**, which is bimodal in the same way and worse — see *The
+ruling for the day* at the end of this leg. Narrate what is *structurally* guaranteed (the figure
+is withheld; the worked answer underneath is code-owned) and never what the prose will sound like.
 
 #### ⚠️ The second run's hint was just as good and read completely differently — plan the line, not the quote
 
@@ -882,6 +951,21 @@ It came back with:
 > there**. An expected NPV is a probability-weighted sum — you need to compute the NPV in each
 > of the three scenarios, weight each one by its stated probability, and add them together.
 
+📐 **NOW MEASURED AT n = 40, AND IT IS WORSE THAN n = 2 SUGGESTED.** Frozen seed, frozen neutral
+follow-up, three case seeds × 10 plus a matched drill arm × 10 (`AFM_SURFACED.md` item (o);
+data in `docs/rollbacks/false_absence_merged_20260907.graded.json`):
+
+| | rate |
+|---|---|
+| Case turn 2 **flatly denies** something the answer contains | **11/30 = 37%** |
+| Case turn 2 **re-asks** for something already on the page | **20/30 = 67%** |
+| Drill turn 2, same shape | **0/10** |
+
+**It tracks the LENGTH of the answer** (strip the prose, keep the same arithmetic: 9/10 → 2/10,
+p = 0.005) **and not the position of the working** (move it to the end: 9/10 → 9/10, p = 1.000).
+**Two-thirds of the time, a long answer's second turn asks the candidate for something they have
+already written.** That is the number to hold in your head when deciding whether to walk turn 2.
+
 **The answer on screen, four inches above, reads:**
 
 > - Strong build-out: NPV NOK 331m (p = 0.30)
@@ -950,17 +1034,29 @@ consistently-poor reveal, because you cannot rehearse which one you will get.
 
 ### Cosmetic faults, re-measured on the served page 2026-09-07
 
-1. 🟠 **The separator between the wrapper and the worked answer is very nearly invisible —
-   confirmed, and the number in the 2026-09-06 runbook was slightly wrong.** Measured on the
-   live DOM: `1px solid rgb(221, 213, 197)` (`#ddd5c5`) on a **`rgb(255,255,255)`** ground —
-   the case-surface message bubble is **white**, not the page's `#f7f3ec` — giving a contrast
-   ratio of **1.46 : 1**, not 1.32 : 1. **WCAG asks 3:1 for a non-text UI element, so it fails
-   by more than half either way.** It is the boundary between *the tutor talking to you* and
-   *the model answer*, and at projector gamma it will not be there at all. The two halves read
-   as one continuous block of prose.
+1. 🟠 **The separator between the wrapper and the worked answer is very nearly invisible.**
+   Measured on the live DOM: `1px solid rgb(221, 213, 197)` (`#ddd5c5`) on a
+   **`rgb(255,255,255)`** ground — the case-surface message bubble is **white**, not the page's
+   `#f7f3ec`. That is **1.46 : 1**. **WCAG asks 3:1 for a non-text UI element.** It is the
+   boundary between *the tutor talking to you* and *the model answer*, and at projector gamma
+   it will not be there at all; the two halves read as one continuous block of prose.
+   📌 **The 1.32 : 1 in the 2026-09-06 runbook was NOT wrong** — it is the same colour against
+   the *page* ground `#f7f3ec`, and both figures are reproduced by the fixture. Which one
+   applies depends on which surface the rule is drawn on. The 2026-09-07 read said that figure
+   was "slightly wrong"; it was not, and this corrects that.
    ⚠️ **There are TWO of these rules in the transcript.** The other sits *inside the hint* —
    the model writes `---` in ordinary replies too — so the same invisible line appears outside
    the reveal, where it separates nothing in particular.
+   ✅ **FIXED ON THE SAME UNMERGED BRANCH.** `MessageRenderer` draws every `---` from one code
+   path, so **one change covers both rules**. It now takes its colour from a new `--chat-rule`
+   token — separate from `--chat-border`, which also draws table cells and card outlines where
+   the light value is right — set to **`#8a8172`: 3.84 : 1 on the white bubble and 3.47 : 1 on
+   the page ground**, both over the 3:1 floor. Locked by `npm run test:chat-rule-contrast`,
+   which reads the two grounds out of the palette rather than transcribing them and pins the old
+   value as MUST-FAIL against both. The LC/IB dark chat theme deliberately declares no
+   `--chat-rule` and falls back unchanged.
+   ⚠️ **Claim ceiling: that is a measurement of the declared token, not of visibility.** A
+   projector still has to be checked.
 2. 🟠 **A copyright footer lands in the middle of the message — reproduced exactly, n = 2.**
    `REVEAL_FOOTER` (`lib/acca/tutor-personas.ts:1046`) is appended to the wrapper *before*
    `assembleAfmReveal` appends the worked answer. On the served page the sequence is literally:

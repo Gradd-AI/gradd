@@ -2,6 +2,95 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
+## 🔴 OPEN 2026-09-07 (o) — THE FALSE ABSENCE: THE TUTOR DENIES WORKING THE STUDENT SHOWED. n = 40, MEASURED, NO FIX.
+
+**This is a NEW class and it is not the attribution family already on the board.** That family
+INVENTS something the student did not say. This one **DENIES something the student did say.**
+Seen live twice on the case surface, on two different second-turn messages, against an answer
+whose opening lines were three labelled scenario NPVs with their probabilities and the weighted
+sum written out:
+
+> *"…the 'which one are you saying is wrong' tells me you haven't written down the numbers yet."* (09-06)
+> *"You've calculated one scenario (central case) … but you haven't shown me the calculation that gets there."* (09-07)
+
+**MEASURED, n = 40**, frozen rubric, frozen neutral turn-2 message, three case seeds × 10 plus a
+scenario-matched drill arm × 10. Data: `docs/rollbacks/false_absence_merged_20260907.graded.json`.
+Every turn-2 reply came back `message_kind: teaching` — 40 of 40, both surfaces.
+
+| cell | n | **strict** (a denial) | **loose** (incl. redundant re-asks) | credit inversion |
+|---|---|---|---|---|
+| case · long, working first | 10 | **5/10** | **9/10** | 1/10 |
+| case · long, working last | 10 | **4/10** | **9/10** | 0/10 |
+| case · short, working first | 10 | **2/10** | **2/10** | 1/10 |
+| **drill · long, working first** | 10 | **0/10** | **0/10** | 3/10 |
+| **CASE POOLED** | 30 | **11/30 = 37%** | **20/30 = 67%** | 2/30 |
+
+⚠️ **STRICT vs LOOSE is the measurement's soft edge and both are reported for that reason.**
+*Strict* = the tutor's words assert the thing is **not there** (*"I need to see the calculation
+itself before we move forward"*, *"I can't see whether you've set up the discount correctly"*,
+*"you haven't yet said what those numbers mean"*). *Loose* also counts a redundant **re-ask** for
+something already on the page (*"Now tell me what that expected NPV figure actually means"*). A
+redundant request is not a lie; it is still the model failing to read. **Never quote 67% as a
+denial rate, and never quote 37% as the rate at which it fails to read the answer.**
+⚠️ **The pooled case figure is a MIXTURE of three seeds whose cells differ.** Quote the cells.
+
+### It tracks LENGTH. It does not track POSITION. And it is a CASE-SURFACE effect.
+
+- **LENGTH — yes.** Same arithmetic, same figures, prose stripped: **loose 9/10 → 2/10, Fisher
+  p = 0.005.** Strict 5/10 → 2/10, p = 0.35 — directional, and n = 10 per cell cannot resolve it.
+  **The safe statement is that length drives the redundant re-ask; that it drives the flat denial
+  is unresolved.**
+- **POSITION — no, and this is a clean null.** The same bytes reordered so the working sits at
+  the END: strict 5/10 vs 4/10, loose 9/10 vs 9/10, **Fisher p = 1.000 on both**. It is not
+  "the model stopped reading before it got there".
+- **SURFACE — the drill route did not do it once.** Same structure, same seed shape, the drill's
+  own scenario and figures: **0/10 strict AND 0/10 loose**, against the case's 5/10 and 9/10
+  (p = 0.033 and p < 0.001). Whatever causes this is in the case turn, not in the shared engine.
+
+### Independent of the credit inversion — and the two live on different surfaces
+
+Observed P(FA ∧ CI) = **0.025** against **0.034** predicted by independence; Fisher **p = 1.000**.
+📐 **The by-surface pattern is the sharper statement:** the drill arm has the **highest** credit
+inversion (3/10) and **zero** false absence; the case arm is the reverse (2/30 CI, 11/30 FA).
+**They are two different failure modes, not one mode with two faces.**
+
+### The floor, and what it cannot see
+
+The deterministic phrase table fired on **4/30** of the case arm — about a third of the strict
+count and a fifth of the loose. **It is a floor, never a detector**, and it never disagreed with
+the grader in the other direction (0 rows where the floor fired and the grader said no).
+
+⚠️ **CLAIM CEILING, verbatim.** Every seed here CONTAINS the working by construction, so there is
+**no arm in which the working is absent** — this measures nothing about how often the model
+correctly reports a genuine absence, and yields **no false-positive rate and no precision**.
+Never report it as "the tutor denies working X% of the time" without that qualifier.
+
+### ⛔ NO FIX, AND NO PROHIBITION — P-M4(a)
+
+Nothing was changed. **Do not write "never tell the student they have not shown their working"**
+into any prompt: P-M4 measured that an instruction ADDED to a rule set that names the referent
+raises the rate by priming it, and that the thing that works is changing what the instruction
+ASKS FOR, not adding a ban. The length result points at the shape of a real fix — the case turn
+appears to degrade as the answer it must read gets longer — and that is a call for the next
+block, not this one.
+
+### 📐 TWO METHOD ERRORS, RECORDED BECAUSE THEY BOTH BIT
+
+1. **The first grading pass lost 12 of 40 rows silently.** Asked for bare JSON, the grader
+   mis-typed a key, wrote *"Wait, I need to return valid JSON. Let me redo:"* and emitted a second
+   object; a greedy brace match caught both and `JSON.parse` threw. All 12 then scored NO under
+   `=== true`, **biasing the rate DOWNWARD with no error surfaced**. Re-graded through a tool
+   schema, which makes the shape the API's problem. The reporter now refuses to print a rate when
+   any row is unscored.
+2. **The first drill arm was VOID and looked like a result.** It sent the Halvard seed — a NOK
+   vessel charter — to a drill about a THB wiring-harness line. On 4 of 10 runs the tutor said
+   *"you've answered a completely different investment entirely"*, which is **TRUE**, and the
+   grader scored it as a credit inversion. That arm reported drill CI at 5/10 and drill FA at
+   2/10; the matched re-run reports 3/10 and **0/10**. **A cross-scenario seed does not measure a
+   surface, it measures the mismatch** — and it produced a plausible-looking table either way.
+
+---
+
 ## 🔴 OPEN 2026-09-07 (m) — MARKING A SAT PAPER IS SYNCHRONOUS BEHIND A 100-SECOND GATEWAY, AND IT IS LIVE FOR STUDENTS TODAY
 
 **⚠️ THIS IS NOT A DEMO PROBLEM.** It was found while rehearsing the KPMG hour, and cutting leg 3
@@ -69,7 +158,28 @@ re-crossed by a better paper.
 
 ---
 
-## 🟠 OPEN 2026-09-07 (n) — THE DEBRIEF'S NEXT ACTION CONTRADICTS ITS OWN FEEDBACK ON A `strong` ROW THAT LOST MARKS
+## ✅ CLOSED 2026-09-07 (n) — THE DEBRIEF'S NEXT ACTION CONTRADICTED ITS OWN FEEDBACK ON A `strong` ROW THAT LOST MARKS
+
+**Fixed on branch `fix/demo-legibility-and-strong-action` (unmerged at the time of writing).**
+`ACTION_BY_BAND_MARKS_LOST` — a second table, consulted only when `lost > 0`, currently holding
+one entry. The action stays band-derived and still reports `next_action_source:
+'band_definition'`; it is not permitted to read the prose, which was the property worth keeping.
+`strong` is the only entry and that is a fact about `BAND_MULTIPLIER`, not an omission —
+`exemplary` pays 1 so it can never reach the table, and `competent`/`weak`/`nothing` already say
+a point was missed. "Minor" is quoted from the band's own published definition.
+📐 **VERIFIED ON THE REAL ROW, NOT A FIXTURE** — `buildSitReport` re-run against attempt
+`c3804dcb`: 8/8 requirements, **zero contradictions**, both full-marks rows byte-unchanged.
+📐 **AND THE HAND READ HAD MISSED HALF OF IT: TWO of the eight rows were affected, not one.**
+Q2 (ii) (`strong` 6/8) was seen on screen; **Q1 (iv) (`strong` 5/6) was not**, and only surfaced
+when the real assembly was run over every row. A screen read finds the instance you are looking
+at; running the producer over the whole set finds the class.
+`npm run test:debrief` pins the old string as MUST-FAIL on **any** row with marks lost, across
+every walk, and pins that a `strong` row losing nothing still gets the short no-change line — so
+the fix cannot pass by the string having been deleted.
+
+<details><summary>The original finding, kept for the record</summary>
+
+
 
 **Seen on screen, not inferred.** `/acca/results/c3804dcb…`, requirement Q2 (ii), banded `strong`,
 **6 of 8 marks**. The marker's prose names three specific gaps and closes *"that distinction needed
@@ -93,6 +203,8 @@ someone who lost marks. Either way it stays band-derived — do not make it read
 
 ⚠️ **Demo impact recorded in `docs/demo/RUNBOOK.md`:** it sits inside leg 1's best case (Q2 —
 Brecon, 18/20). The runbook routes the narration around it via Q2 (i) → Q3 (i).
+
+</details>
 
 ---
 

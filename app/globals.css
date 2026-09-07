@@ -17,6 +17,11 @@
   --error: #c0392b;
   --success: #1e7e44;
 
+  /* The LC/IB chat theme is DARK. `--chat-rule` (MessageRenderer's <hr>) is deliberately
+     NOT set here: it falls back to --chat-border, so this surface keeps exactly the
+     behaviour it has today. The ACCA surfaces set it because their rule was measured at
+     1.46:1 on a light ground and had to move; this one has not been measured, and a value
+     chosen for a light ground would be wrong against #0d1f15 in the other direction. */
   --chat-bg: #0d1f15;
   --chat-surface: #162a1e;
   --chat-surface-2: #1f3829;

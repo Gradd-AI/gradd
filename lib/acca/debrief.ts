@@ -189,6 +189,30 @@ const ACTION_BY_BAND: Record<string, string> = {
   nothing:   'Re-work this requirement from the method up — the marker recorded nothing that could earn credit.',
 };
 
+// Same table, for a row that LOST MARKS. Still derived from the band's published definition
+// and nothing else — `next_action_source` stays `band_definition` — but it stops asserting
+// there is nothing to change on a row where marks were dropped.
+//
+// ⚠️ SEEN ON SCREEN 2026-09-07, which is why this exists. AFM Mock 1 Q2 (ii) bands `strong`
+// at 6 of 8; the marker's own text names three gaps and closes "that distinction needed to
+// be made explicitly", and the line rendered directly beneath it read "Nothing to change
+// here — the gaps the marker noted are immaterial." Both were on screen at once, because
+// `why_display` collapses the justification ONLY when no marks were lost — so the
+// contradiction is visible on exactly the rows where it exists.
+//
+// `strong` is the only entry, and that is a fact about the multipliers rather than an
+// omission. `BAND_MULTIPLIER` (case-marking.ts) pays exemplary 1 — full marks, so it can
+// never reach this table — while competent 0.5, weak 0.25 and nothing 0 already say a point
+// was missed, which is true whenever they lose marks. `strong` at 0.75 is the one band that
+// both drops marks and claims they do not matter.
+//
+// The wording keeps the band definition's own word. The technical prompt defines strong as
+// "meets the descriptor well, with only minor and immaterial gaps" — "minor" is quoted from
+// it, and the sentence adds only the arithmetic the `what` line has already stated.
+const ACTION_BY_BAND_MARKS_LOST: Record<string, string> = {
+  strong: 'The descriptor is met well and the gaps are minor — but they cost marks. Close the points named above to turn this into full marks.',
+};
+
 const round1 = (n: number): number => Math.round(n * 10) / 10;
 
 /** The bands that earn a practise action. Same two that open a weakness-ledger row
@@ -328,6 +352,9 @@ export function buildDebrief(
       const budget = p ? p.budget_minutes : round1(r.marks_available * 1.95);
       action = `Reach this requirement next time: it carries ${r.marks_available} marks and ${fmtMinuteBudget(budget)} budget.`;
       actionSource = 'computed_interval';
+    } else if (r.band && lost !== null && lost > 0 && ACTION_BY_BAND_MARKS_LOST[r.band]) {
+      action = ACTION_BY_BAND_MARKS_LOST[r.band];
+      actionSource = 'band_definition';
     } else if (r.band && ACTION_BY_BAND[r.band]) {
       action = ACTION_BY_BAND[r.band];
       actionSource = 'band_definition';
