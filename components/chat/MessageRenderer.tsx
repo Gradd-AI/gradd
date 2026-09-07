@@ -309,13 +309,26 @@ export default function MessageRenderer({ content, breaks = false }: Props) {
     }
 
     // Horizontal rule ---
+    //
+    // `--chat-rule`, NOT `--chat-border`. This is the only <hr> path in the renderer, so it
+    // draws BOTH rules a reader sees: the one the model writes inside an ordinary reply, and
+    // the one that separates the tutor's wrapper from the worked answer in an earned reveal
+    // (`assembleAfmReveal`). The second of those is the boundary between *the tutor talking
+    // to you* and *the model answer*, which is the whole reason it has to be visible.
+    //
+    // Measured on the served case surface 2026-09-07: `--chat-border` resolved to #ddd5c5 on
+    // a white bubble — 1.46:1, where WCAG asks 3:1 of a non-text UI element. It was not
+    // enough to darken `--chat-border`, because that same token draws table cell borders,
+    // card outlines and button strokes, where the light value is correct. Hence a separate
+    // token, set per surface beside `--chat-border`, falling back to it so a surface that
+    // has not been measured keeps exactly the behaviour it has today.
     if (/^---+$/.test(line.trim())) {
       flushParagraph();
       elements.push(
         <hr key={`hr-${i++}`} style={{
           border: 'none',
-          borderTop: '1px solid var(--chat-border)',
-          margin: '16px 0',
+          borderTop: '1px solid var(--chat-rule, var(--chat-border))',
+          margin: '20px 0',
         }} />
       );
       continue;

@@ -756,6 +756,11 @@ const CSS = `
   --rust-ink: #fff8f4;
   --chat-text: var(--text);
   --chat-border: var(--border);
+  /* The <hr> only. Separate from --chat-border, which also draws table cells, card outlines
+     and button strokes where the light value is right. #8a8172 measures 3.84:1 on the white
+     message bubble and 3.47:1 on the #f7f3ec page ground — both over the 3:1 WCAG asks of a
+     non-text UI element. Locked by npm run test:chat-rule-contrast. */
+  --chat-rule: #8a8172;
   --chat-accent: var(--brand);
   --chat-muted: var(--text-muted);
   --chat-surface-2: var(--surface-2);
