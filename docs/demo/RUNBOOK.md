@@ -14,6 +14,17 @@ diverging step named."*
 legs 1 and 2 have been on a real screen rather than measured through the API, and leg 2 has
 been run a second time so the two tutor faults are now n = 2 rather than n = 1.
 
+**What changed LATER on 2026-09-07, and it changes how leg 2 is narrated:**
+
+- ✅ **Turn 2's false absence is fixed and merged** (`20005b0`) — the tutor no longer tells the
+  candidate they have not shown working they have shown. 11/30 → **0/40**, p < 0.001. It was
+  *"the worst thing in the hour"*; it is not any more. ⚠️ Measured on the API, **not yet re-walked
+  in a browser.**
+- ✅ **The worked answer opens as a full-width page on one click** (`7d49832`, deployed
+  `dpl_7DsxNN3WV1AWBK6Cb1C8cKu3CdQA`). **The leg-2 narration is no longer *"scroll past the
+  wrapper"* — it is *"click expand."*** See *The click path, exactly* in LEG 2, and read the note
+  on `Escape` / `Close` **before** you try it in front of people.
+
 ---
 
 # WHAT THE PRODUCT DOES WELL — READ THIS BEFORE THE BLOCKER LIST
@@ -492,9 +503,14 @@ a tall one barely notices.
 
 **Consequences for leg 2, which is now the keyboard moment of the hour:**
 
-- The hint is ~15 lines. **About six are visible at a time.**
-- On the reveal, the room sees roughly a sixth of the message before the presenter has to
-  scroll inside a scrollbox that has its own scrollbar, separate from the page's.
+- The hint is ~15 lines. **About six are visible at a time.** This is unchanged and it is still
+  the beat the room reads through the letterbox.
+- ✅ **The REVEAL no longer has to be read this way (2026-09-07).** It used to be the worst case —
+  the room saw roughly a sixth of the message before the presenter had to scroll inside a
+  scrollbox with its own scrollbar, separate from the page's. The worked answer now opens as a
+  full-width document on one click; see *The click path, exactly* in LEG 2. **The letterbox still
+  governs everything else in the transcript**, including the hint above and the wrapper the
+  expand control sits under.
 - Scrolling with the cursor over the left-hand scenario pane scrolls the *page*, not the
   transcript. **Put the cursor over the transcript before you scroll**, or the wrong thing
   moves in front of the room.
@@ -967,15 +983,18 @@ leg then said it to a student whose answer was on the screen above. The drill ro
 on 2026-07-23; the case engine did not. **`call2_diagnose`'s own turn-2 output asserted the
 absence on 30 of 30 runs before and 0 of 40 after.**
 
-⚠️ **NOT MERGED AT THE TIME OF WRITING — branch `fix/case-engine-prior-attempt`.** If it has not
-landed by the day, everything in the section below still applies and **turn 2 is still the worst
-thing in the hour**. If it has landed, turn 2 is repaired and the ruling at the end of this leg
-relaxes accordingly — but **walk it once yourself before trusting it in front of the room.**
+✅ **MERGED AND DEPLOYED — `20005b0`** (was branch `fix/case-engine-prior-attempt`; this line said
+NOT MERGED when the section was written). Turn 2 is repaired and the ruling at the end of this leg
+has been relaxed accordingly. ⚠️ **The measurement is on the API. Nobody has re-walked turn 2 in a
+browser since the fix landed — walk it once yourself before trusting it in front of the room**,
+and until you have, treat the section below as the description of what you might still see.
 
 ⚠️ **The drill control moved 0/10 → 2/10 and that is reported, not explained away.** Not
 significant (p = 0.474) and the drill route's prompt bytes are provably unchanged, but one of the
-two is a genuine false absence. It is most likely sampling; it is not proof the drill route is
-clean.
+two is a genuine false absence. **And the baseline was never a zero either:** `0/10` carries a 95%
+upper bound of **26%**, so *"the drill route does not do this"* was never established in the first
+place (`AFM_SURFACED.md` (r)). It is most likely sampling. It is not proof the drill route is
+clean, and **do not quote the drill route as a zero in the room.**
 
 **The answer on screen, four inches above, reads:**
 
@@ -1079,9 +1098,67 @@ consistently-poor reveal, because you cannot rehearse which one you will get.
    no grounding pack on the case surface, so the fix that grounded the drill route never
    reached this one.
 
-### ✅ And the worked answer underneath is the best thing in the leg
+### ✅ And the worked answer underneath is the best thing in the leg — AND IT NOW OPENS AS A PAGE
 
-It renders as a real HTML table, not broken markdown (checked in the DOM):
+**CHANGED 2026-09-07.** The narration used to be *"scroll past the wrapper to the table."* It is
+now **"click expand, and the worked answer opens as a page."** The scroll movement is gone from
+this runbook: it was the right instruction when the artefact could only be read through the
+transcript, and the transcript is a **279-pixel letterbox** (see SETUP). It is not the right
+instruction any more.
+
+Merged at `7d49832`, deployed `dpl_7DsxNN3WV1AWBK6Cb1C8cKu3CdQA`. **On production now.**
+
+## THE CLICK PATH, EXACTLY
+
+1. Reach the reveal as before — **turn 1** (paste the answer, Submit attempt), **turn 2**
+   (*"I've had another go at the central case but I'm not getting a different answer. Can you
+   just show me the model answer?"*). The reveal fires on the second miss.
+2. In the reveal message, below the wrapper and the copyright line, there is a rule carrying
+   **`WORKED ANSWER`** on the left and a pill button **`Open full width ↗`** on the right.
+   **Click the pill.**
+3. The worked answer opens **over** the case as a document sheet. The conversation stays behind
+   it, dimmed.
+4. **To come back: press `Escape`, or click `Close` (top right), or use browser Back.** All three
+   do the same thing.
+
+![The expand control in the transcript](screens/leg2_expand_bar_in_chat.jpg)
+
+*Halvard Marine (i) on the case surface. The bar the presenter clicks is `WORKED ANSWER` /
+`Open full width ↗`. Note the scenario table beginning underneath it and running out of the
+bottom of the pane — that is the condition this control exists for.*
+
+## ⚠️ ESCAPE AND CLOSE BOTH RETURN TO THE CONVERSATION, WITH THE TRANSCRIPT INTACT. VERIFIED.
+
+**Know this before you try it in front of people.** The instinct in a room is that a full-screen
+document is a *navigation* and that coming back will cost you the conversation. It does not.
+
+Walked end to end 2026-09-07: overlay opened, scrolled to the foot of the document, dismissed —
+**URL back on `/acca/cases/<id>`, overlay gone, all three messages still in the transcript, the
+expand bar still there, page scroll released.** The overlay is an *intercepted route*: the case
+is never unmounted, so there is nothing to restore.
+
+- **`Escape`** — closes it. Verified.
+- **`Close`** (top right) — closes it. The button is **`position: fixed`**, so it stays on screen
+  after you have scrolled to the bottom of a 2,000-pixel document; it is always where you left it.
+- **Browser Back** — closes it, because opening it was a navigation. **Forward re-opens it.**
+- **Clicking the dim backdrop** — closes it. A click that *starts* inside the sheet does not, so
+  you cannot dismiss it by accident while selecting text.
+
+🔴 **THE ONE THING THAT DOES LOSE THE CONVERSATION: `F5` / a browser reload.** That is not new and
+it is not the expand's doing — the transcript has never survived a refresh, on any surface
+(`AFM_SURFACED.md` (p): the served reveal is persisted nowhere). **Do not reload during leg 2.**
+If you want the worked answer on its own, without the case behind it, that is what the URL is for
+— but open it in a *new tab*, not by reloading this one.
+
+## WHAT THE DOCUMENT LOOKS LIKE
+
+![The expanded worked answer](screens/leg2_expanded_top.jpg)
+
+A 900-pixel sheet, centred, on the dimmed case. Prose is held to a **78-character reading
+measure (631px)**; tables get the **full 800px of the sheet**. Measured at 1920×1080 and again at
+1280×800 — no horizontal scrolling at either.
+
+**The whole scenario table is on screen at once, and this is the beat:**
 
 | Scenario | Probability | NPV |
 |---|---|---|
@@ -1089,24 +1166,68 @@ It renders as a real HTML table, not broken markdown (checked in the DOM):
 | Central case | 0.45 | **NOK −2.7m** |
 | Delayed build-out | 0.25 | NOK −320.0m |
 
-…then `ENPV = Σ(pᵢ × NPVᵢ) = NOK 18.1m`, `P(NPV<0) = 70%`, four numbered steps, and a closing
-`Reconciliation: Σ(p×NPV) = NOK 18.1m; P(NPV<0) = 70% ✓`.
+**Say, pointing at the central-case row:** *"She had that at plus six. It's minus two point seven,
+and that's the whole difference between her answer and the model's."*
 
-**Say, pointing at the table:** *"Every figure in that is computed by code, not written by the
-model — and the last line is the code checking itself."*
+Then `ENPV = Σ(pᵢ × NPVᵢ) = NOK 18.1m`, `P(NPV<0) = 70%`, four numbered steps, and the closing
+line.
+
+![The foot of the document](screens/leg2_expanded_foot.jpg)
+
+**Say, pointing at the last line:** *"Every figure in that is computed by code, not written by the
+model — and `Reconciliation: Σ(p×NPV) = NOK 18.1m; P(NPV<0) = 70% ✓` is the code checking
+itself."*
+
+✅ **The copyright line lands where it belongs on this view.** Cosmetic fault 2 above — the
+`© Gradd` footer appearing *in the middle of the message* — is a property of the transcript, where
+it sits between the wrapper and the worked answer. On the document it is rendered as a page
+footer, at the foot. **The fault is unchanged in the chat; the view you are presenting from does
+not have it.**
+
+⚠️ **Three things the expand does NOT do, so you do not oversell it:**
+
+- **It does not fix the wrapper.** The bimodal, sometimes-fabricating framing paragraph is still
+  above the bar, in the transcript, exactly as before. What the expand does is let you *leave it
+  behind* in one click instead of scrolling past it.
+- **It does not re-generate anything.** The document is the stored `model_answer`, reproduced from
+  the row. It is byte-identical to what is in the transcript — that equality is fixture-locked
+  (`npm run test:reveal-split`, 168 checks). Nothing new is written when you click.
+- **It is the CASE surface only.** There is no expand on drills (`AFM_SURFACED.md` (t)). If you
+  show a drill reveal, it reads in the transcript as it always did.
+
+📌 **The URL is shareable and it is gated.** The document lives at
+`/acca/cases/<case>/answer/<requirement>`. Opening it in a new tab works. Sending it to somebody
+who has not earned that reveal does **not** — the gate is re-checked server-side from the progress
+row and every refusal is a plain 404. Confirmed live against that exact URL: **unearned → 404**,
+**lapsed subscription → 404**, **reserved mock content → 404**, and 200 only for a student who has
+earned it and is paying. **If a reviewer asks whether the answers are just sitting at a URL: no,
+and you can say that flatly.**
+
+## 🔵 WALK IT ONCE ON THE DAY
+
+This was walked on **Halvard Marine (i) — the leg-2 case — through the real routes, and the
+screenshots above are that walk.** But it was walked on **localhost against the production
+database**, on a synthetic account that has since been deleted, not on production and not on
+`grant+demo1@gradd.ai`. **The deploy is confirmed green; the click has not been made on
+`www.gradd.ai`.** Make it once, on the spare, before the room.
 
 ### The ruling for the day
 
-**Walk turn 1. Then scroll straight down to the worked answer and skip the wrapper.**
+**Walk turn 1. Reach the reveal. Then CLICK EXPAND and narrate from the document.**
 
 - **Turn 1 is the product** — excellent on both runs, self-contained, and it is the claim the
   hour makes.
-- **Turn 2 is the worst thing in the hour** and it is now reproduced. Do not walk it. If you
-  must show a second turn, send a message that adds new *content* rather than asking the tutor
-  to justify itself.
-- **The reveal's worked answer is strong; the wrapper above it is a coin-flip.** Reach the
-  reveal, then scroll past the wrapper to the table and narrate from there. That is a natural
-  movement — *"and here's the answer it was withholding"* — not an evasion.
+- **Turn 2's false absence is FIXED and merged** (`20005b0`) — 11/30 → 0/40 on the flat denial,
+  p < 0.001. It is no longer the worst thing in the hour. ⚠️ **It has not been re-walked in a
+  browser since the fix.** Walk it yourself before you decide to show it; the measurement is on
+  the API, and the ruling below is unchanged until you have.
+- **The reveal's wrapper is still a coin-flip.** Reach the reveal, click expand, and narrate from
+  the document. That is now a *click*, not a scroll — **the cleanest movement in the hour**, and
+  it reads as a feature rather than as looking away: *"and here's the answer it was withholding —
+  full width."*
+- **Narrate what is structurally guaranteed, never the prose.** The figure is withheld until it is
+  earned; the worked answer is code-owned; the document is the stored row reproduced, not
+  regenerated. All three are true on every run. The wrapper's tone is not.
 - If the room reads the wrapper anyway and it has fabricated something, **say so plainly**:
   *"That paragraph has invented a mistake she didn't make. It's a known failure and it's the
   one we're working on — the marking underneath it is the part that's verified."* A reviewer
