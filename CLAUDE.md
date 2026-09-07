@@ -471,6 +471,58 @@ when the session ends on a branch.
   (pre-existing, 6/10 pre-change) — the CASE `call4_reveal` takes NO `GroundingPack`, so
   `renderResolvableTopics` (the drill route's INVENTED-INVENTORY fix) never reaches it. Fixtures
   `npm run test:case-reveal-routing` (159).
+- **THE EXPANDED REVEAL — `lib/acca/reveal-split.ts` + an intercepting route over a parallel slot
+  (2026-09-07).** In the chat the worked answer is boxed into a **~706px pane** (`.ec-layout` caps
+  at 1200px with a 400px sidebar, so `.ec-msg--kind-reveal { max-width: 100% }` recovers 26px and
+  nothing more — measured, and stated in CaseSession's own comment). A worked answer with pipe
+  tables and eight build steps is a DOCUMENT, and that pane is the wrong container. The control
+  gives it a URL.
+  **TWO DOORS, ONE COMPONENT.** `answer/[reqId]/page.tsx` (hard load: deep link, refresh, new tab)
+  and `@answer/(.)answer/[reqId]/page.tsx` (soft navigation: an overlay with the transcript still
+  mounted behind it) both render **`RevealDocument`**, so neither door can be the one that forgot
+  the gate. `[id]/layout.tsx` exists ONLY to receive the slot; `@answer/default.tsx` returning null
+  is REQUIRED — an unmatched slot after a hard navigation is a 404, not nothing, so without it
+  every plain load of `/acca/cases/<id>` would 404. **The matcher is `(.)`, not `(..)`**: `@answer`
+  is a slot and slots are not route segments, so this file sits one SEGMENT level below `[id]`
+  despite being two file-system levels up.
+  **TWO PURE QUESTIONS, ONE MODULE.** `splitServedReveal` — where the model's wrapper ends and the
+  authored artefact begins, matched on the exact bytes `assembleAfmReveal` writes
+  (`REVEAL_FOOTER + AFM_REVEAL_SEPARATOR`), **never the separator alone**: `---` is ordinary
+  markdown and a worked answer may carry a horizontal rule. **FIRST occurrence, deliberately** —
+  splitting last would TRUNCATE the artefact, the exact failure the anti-truncation invariant
+  exists to prevent; fail toward showing too much. `null` = nothing to expand (a teaching turn, a
+  hint, or a BURN, which serves no artefact by design) and the caller renders no control.
+  ⚠️ **Separator-alone is NOT wrong today and the fixture says so** — `sanitizeAfmWrapper` cuts the
+  wrapper at its first horizontal rule, so the first separator in an ASSEMBLED reveal is always the
+  real boundary. What is wrong with it is the DEPENDENCY on another module's behaviour, and that is
+  what the MUST-FAIL pin exercises.
+  **`expandedRevealDecision`** — the gate, re-asked. The earned-reveal moat is enforced inside the
+  turn route because that was the only door; this adds a SECOND, and a deep link that trusted the
+  client would be the hole in it. Composes `revealDecision` from `acca_case_progress`, refuses
+  anything not `'reveal'`, refuses `mock_only` **before** the gate (reserved content is not
+  unlockable by any amount of earning), and derives the paper from the case's OWN row via
+  **`servedPaper`, which REFUSES an unrecognised code** rather than defaulting to APM the way
+  `paperForCaseRow` does — a default here would check the wrong paper's entitlement. Pure, so the
+  route is a thin adapter and the gate is FIXTURE-TESTABLE; a `notFound()` inside a server
+  component is not.
+  **Every refusal is ONE uniform 404**, with the reason logged (`[reveal:expand-refused]`) and
+  returned to the caller of the pure function — a bare boolean cannot let a fixture assert WHICH
+  rule fired, and a gate that refuses everything passes a test that only checks "refused".
+  **FAILS CLOSED on an empty `model_answer`** (AFM_SURFACED (q)): 404, never a fresh generation.
+  📐 **All three ship-condition refusals confirmed LIVE**, each 404 with its own reason, against
+  the same URL that served 200 when earned and paid: `reserved` (on `resolved:true, miss_count:5`)
+  · `unearned` · `burn`. Fixtures `npm run test:reveal-split` (168), gate 85 → **86**.
+  ⚠️ **THE BYTE-IDENTITY PROPERTY IS WHAT THE CONTROL RESTS ON:**
+  `splitServedReveal(assembleAfmReveal(w, m)).artefact === normaliseRevealArtefact(m)`. The
+  in-session path splits the served bytes; the deep link reproduces the artefact from the row. If
+  those diverge, one student reads two different worked answers depending on which door they used
+  and nothing would say so.
+  **The wrapper is deliberately NOT reproduced** on the URL: it is per-turn coaching about the
+  attempt that earned the reveal, it is already in the transcript, and nothing persists it
+  (AFM_SURFACED (p)), so a regenerated one would be a different document each time.
+  🔴 **THE DRILL ROUTE HAS NO EXPAND** — `expandedRevealDecision` is surface-agnostic but nothing
+  reads `acca_tutor_progress`; a drill student still reads the worked answer through the
+  transcript. See `AFM_SURFACED.md` (t).
 - **THE SERVED WRAPPER'S TWO GUARDS — `lib/acca/reveal-quotation.ts` + the sanitizer's SHAPE cut
   (2026-09-06, MERGED at `ab194fe`, deployed `dpl_GERD7QsromUQ37g5FCoabQZAqDgb`).**
   Both surfaces, one definition each; the chain is `finishClean` → `sanitizeAfmWrapper` →
