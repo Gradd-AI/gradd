@@ -183,6 +183,90 @@ the thing the fix removed.
 
 ---
 
+## 🔵 OPEN 2026-09-07 (t) — THE DRILL ROUTE HAS NO EXPAND. A DRILL STUDENT STILL READS THE WORKED ANSWER THROUGH THE TRANSCRIPT.
+
+**Scope decision, taken deliberately and recorded rather than discovered later.** The expand
+control (merged 2026-09-07) is built on the CASE surface only. The approved design — an
+intercepting route over a parallel slot on `[id]/layout.tsx` — is case-shaped, and `mock_only`
+is a case concept, so the drill surface was left out rather than half-built on both.
+
+**What is already surface-agnostic:** `expandedRevealDecision` (`lib/acca/reveal-split.ts`)
+composes `revealDecision` and takes a progress row as data. It does not know or care which table
+that row came from. `splitServedReveal` is likewise a pure function of served bytes, and the
+drill route assembles its reveal through the SAME `assembleAfmReveal` — design B has been one
+design for both surfaces since 2026-09-04 — so the boundary it looks for is already present in
+every served drill reveal.
+
+**What is missing:** a second route pair (the standalone page + the intercepted overlay over the
+tutor surface), a link in the drill transcript, and a loader that reads **`acca_tutor_progress`**
+instead of `acca_case_progress`. The three ship-condition refusals would need re-proving against
+that table; the `mock_only` arm has no drill analogue and would drop out.
+
+📐 **The consequence today is legibility, not access.** A drill student who earns the reveal
+still gets every byte of the worked answer — it renders inline in the transcript exactly as it
+did before this change. What they do not get is the document view: on the drill surface the
+reveal is read at the tutor pane's measure, which is the same complaint that produced this
+control on the case surface.
+
+⚠️ **Not urgent, and it is not a gap in the moat.** No drill URL exists to be deep-linked, so
+there is nothing unguarded. This is a feature that is absent, not a guard that is missing.
+
+---
+
+## 🟢 OPEN 2026-09-07 (u) — A TWO-COLUMN TABLE STRETCHES THE FULL SHEET ON THE EXPANDED REVEAL. ATTEMPTED, REVERTED, COSMETIC.
+
+`MessageRenderer` sets **`minWidth: '100%'`** as an INLINE style on every table
+(`components/chat/MessageRenderer.tsx:82`), with a stated reason: it makes a 4–6-column working
+table fill its scroll container on a phone. On the expanded reveal's 900px sheet that same rule
+stretches a two-column rate table across the full width, so `Year 1` and `24.5854` sit ~700px
+apart with nothing between them.
+
+**Attempted and reverted, in that order:**
+
+1. `.rd-body table { width: auto }` — **no effect.** `minWidth: 100%` is an inline style and
+   wins; the CSS never engaged.
+2. `.rd-body table { min-width: 0 !important; width: auto !important }` — **worked on the table
+   and broke the frame.** Measured: the 2-column table fell to 233px, the 7-column to 759px, the
+   4-column to 665px. But the table's WRAPPER carries the border and background and is a plain
+   block, so it stayed at the full 800px — a small table floating inside a large empty outlined
+   box, which is worse than the stretch it fixed. Containing the wrapper too would need
+   `:has(> table)` on top of the two `!important`s.
+
+**Reverted. Three overrides fighting a shared component's deliberate inline style, to change a
+behaviour whose reasoning is written down in that component, is not a change to make on the way
+past.** The honest fix is a `MessageRenderer` prop (the mobile reasoning genuinely does not apply
+to a document sheet) — an API change to a component both chat surfaces render, and it wants its
+own commit and its own look at the chat surface too.
+
+⚠️ **Cosmetic, and it is the stored answer's own table shape that makes it visible.** A worked
+answer whose tables all carry 4+ columns shows nothing at all.
+
+---
+
+## 🟢 OPEN 2026-09-07 (v) — `CaseSession` RENDERS `req.label` RAW WHILE THE EXPANDED REVEAL STRIPS IT. ON A LABEL CARRYING A CODE, THE TWO DIFFER.
+
+`app/acca/cases/[id]/answer/[reqId]/RevealDocument.tsx` runs the requirement label through
+`strippedLabel(..., { sweepCodeShape: true })` — the serve-boundary choice, and the one
+`lib/acca/requirement-label.ts` documents for a candidate-facing screen: *a leaked syllabus code
+on a candidate's screen is the worse failure; over-deleting costs a UI chip.* `CaseSession`
+renders `activeReq.label` **raw**, in the requirement heading and in `openingFor`.
+
+**So on a requirement whose stored label carries a code, the chat heading and the document title
+disagree — two inches apart on the same screen.**
+
+⚠️ **PRE-EXISTING, AND NOT MEASURED HERE.** The raw render predates this work by months; the
+expand did not introduce it, it made it visible by putting a correctly-stripped title next to it.
+A 2026-08-13 count over all 38 published case requirements found **8 labels carrying a code
+shape**, but that count did not separate practice from `mock_only` rows, and `mock_only` cases
+cannot reach this surface at all — so **the number of PRACTICE labels affected is unknown**. It
+may well be zero. Count before fixing, and do not quote the 8.
+
+**The fix is one line in the right place:** route CaseSession's heading and `openingFor` through
+the same `strippedLabel` call. That is a change to the chat surface — the one the demo walks —
+and it belongs in its own commit with its own look, not folded into a reveal change.
+
+---
+
 ## ✅ CLOSED 2026-09-07 (o) — THE FALSE ABSENCE WAS A MISSING ARGUMENT, NOT A MODEL DEFECT
 
 **Fixed on `fix/case-engine-prior-attempt` (unmerged at the time of writing). The measurement
