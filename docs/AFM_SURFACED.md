@@ -2,6 +2,100 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
+## 🔴 OPEN 2026-09-07 (m) — MARKING A SAT PAPER IS SYNCHRONOUS BEHIND A 100-SECOND GATEWAY, AND IT IS LIVE FOR STUDENTS TODAY
+
+**⚠️ THIS IS NOT A DEMO PROBLEM.** It was found while rehearsing the KPMG hour, and cutting leg 3
+from that hour (`docs/demo/RUNBOOK.md`) removes it from the demo and **changes nothing for a
+student**. Every AFM or APM candidate who finishes a full paper hits it.
+
+**The mechanism.** At the end of a sat paper the client POSTs `/api/acca/sit/results`, which marks
+every case in that one request and returns the debrief. `www.gradd.ai` runs Cloudflare in front of
+Vercel, and Cloudflare cuts an idle origin connection at **~100 s** — not configurable below
+Enterprise. **The Vercel function does not stop when Cloudflare hangs up; it keeps marking.** So
+the paper is marked and the student is told it failed. `resultsOutcomeFor(status, code)` maps a
+524 with an empty body to `failed`, which is correct given what it is handed.
+
+📐 **MEASURED, THREE TIMES, AND THE BETTER THE PAPER THE WORSE IT IS.**
+
+| Paper | Answer length | Marking time from finish | vs ~100 s ceiling |
+|---|---|---|---|
+| Throwaway, short paragraphs (2026-09-06) | a few hundred chars | 3 cases, last at **+183 s** | over |
+| Seeded AFM sit, full exam length (2026-09-06) | 960–1,867 chars | case 1 alone **+101 s**, last at **+220 s** | over on the FIRST case |
+| **A real student's APM sit (2026-09-01)** | 392–3,758 chars | **+122 s, +201 s, +204 s** | over |
+
+**Marking time scales with how much the candidate wrote**, so a properly answered paper — the
+product's own success condition — is the case furthest over the limit. Shortening answers hides it.
+
+🔴 **A REAL STUDENT HAS ALREADY HIT THIS.** Attempt `36d290de` (`maphosaan@gmail.com`,
+`dd786100`), APM Mock Paper 1, finished 2026-09-02 02:07:40 UTC; `acca_case_marking.marked_at`
+reads 02:09:42 / 02:11:01 / 02:11:04. **The function's own timestamps prove it ran past the cut.**
+What she saw is an inference, not an observation — state it that way. Two reasons nothing recorded
+it: the error recorder did not ship until 2026-09-05, **and it would not have caught this anyway**,
+because a Cloudflare 524 never reaches the function, so no catch block runs and no row is written.
+**The recorder's claim ceiling covers exactly this case and should be read as covering it.**
+
+### 🔵 SCOPED 2026-09-07 — ASYNCHRONOUS MARKING WITH A POLL. RULED: RECORD IT, DO NOT BUILD IT IN THIS BLOCK.
+
+**The shape.** Make the POST *start* the marking and return immediately; make the client poll for
+completion. **A timeout then becomes a wait rather than a dead end.**
+
+1. **`POST /api/acca/sit/results` returns as soon as the work is claimed** — 202 with the attempt
+   id and a per-case status list, well inside 100 s. It must not block on any model call.
+2. **The marking runs past the response.** `claimCase` already exists and already does the hard
+   half: it writes the claim row with `technical_marks_available` NULL, so **a claim can never read
+   as a result**, and `CLAIM_STALE_MS` (5 min) already lets a crashed run be taken over. The
+   concurrency model needed here is built and proven.
+3. **`GET /api/acca/sit/results` becomes the poll.** It already never marks and already reports a
+   partial paper honestly (`marked: false`, *"Not yet marked."* per requirement). **It is already
+   the right endpoint; it only needs to be called on a timer.**
+4. **The client shows a progress state, not an error state** — *"Marking your paper — case 2 of
+   3"* — because the information to render that is already in the GET's response.
+
+⚠️ **The retry button must not be deleted.** It is the only recovery if the background work dies
+for a reason the claim's staleness window does not cover, and the "I've subscribed — mark my
+paper" arm (`resultsOutcomeFor`, the 402 path) is a *different* refusal that must keep its own copy.
+
+⚠️ **Nothing sweeps for a paper this has already stranded.** Marking has exactly one trigger — the
+client POSTing from the `done` phase — with no queue, no cron and no server-side sweep;
+`npm run audit:unmarked-sits` is the read-only observation that exists instead. **The sweep and the
+retry were logged and not built on 2026-09-06 on the grounds that a cron before the
+`sitLoadDecision` fall-through was fixed treats the symptom. That fall-through IS fixed. The
+argument for deferring the sweep has therefore expired** — re-decide it alongside this item rather
+than inheriting it.
+
+⚠️ **Do not "fix" this by raising a timeout.** 100 s is Cloudflare's and is not ours to move below
+Enterprise; and even if it were, marking time scales with answer length, so the ceiling would be
+re-crossed by a better paper.
+
+---
+
+## 🟠 OPEN 2026-09-07 (n) — THE DEBRIEF'S NEXT ACTION CONTRADICTS ITS OWN FEEDBACK ON A `strong` ROW THAT LOST MARKS
+
+**Seen on screen, not inferred.** `/acca/results/c3804dcb…`, requirement Q2 (ii), banded `strong`,
+**6 of 8 marks**. The marker's prose names three specific gaps and closes *"that distinction needed
+to be made explicitly."* The next action rendered directly beneath it reads **"Nothing to change
+here — the gaps the marker noted are immaterial."**
+
+**Cause:** `ACTION_BY_BAND.strong` (`lib/acca/debrief.ts:186`). The next action is derived from the
+**band** and nothing else — deliberately, so that it is traceable to `band_definition` rather than
+being an opinion about the answer (the file says so, and that reasoning is sound). The string is
+simply false for a `strong` row that dropped marks.
+
+📐 **It is `strong`-only and marks-lost-only.** `exemplary` carries its own line (*"this is the
+approach to repeat"*) and by definition loses nothing, so it never contradicts. `why_display`
+collapses the justification behind an expand **only when the band is strong/exemplary AND no marks
+were lost** — so on exactly the rows where the contradiction exists, both halves are expanded and
+visible together. **The presentation rule and the action rule disagree about what `strong` means.**
+
+**Not fixed.** The narrow repair is a second `strong` string selected on `marks_lost > 0`; the
+question worth asking first is whether "nothing to change" is ever the right thing to say to
+someone who lost marks. Either way it stays band-derived — do not make it read the prose.
+
+⚠️ **Demo impact recorded in `docs/demo/RUNBOOK.md`:** it sits inside leg 1's best case (Q2 —
+Brecon, 18/20). The runbook routes the narration around it via Q2 (i) → Q3 (i).
+
+---
+
 ## 🔴 OPEN 2026-09-06 (h2) — THE AFM ONWARD-TOPIC LIST IS A FIXED B1–B5 AND 16 OF 63 PUBLISHED AFM DRILLS SIT OUTSIDE IT
 
 **Split out of (h) as its own item on Grant's ruling: this half is LIVE on the drill route today,
