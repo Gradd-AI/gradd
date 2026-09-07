@@ -51,6 +51,10 @@ next-env.d.ts
 # Underscore-prefixed one-off / scratch scripts (diagnostics, patches, harnesses) — local only
 scripts/_*
 
+# Local dev-server capture. The n=30 probes attribute server log lines by byte offset, so this
+# is written at the repo root by `npm run dev … | Tee-Object dev.log` and is never committed.
+dev.log
+
 # scripts/screenshot-viewports.ts output — the harness is committed, its PNGs are not.
 # They are a per-machine render of the built page (the home machine's shots do not travel),
 # regenerable in one command, and heavy. Default --shot target.

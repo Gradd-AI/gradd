@@ -69,7 +69,28 @@ re-crossed by a better paper.
 
 ---
 
-## 🟠 OPEN 2026-09-07 (n) — THE DEBRIEF'S NEXT ACTION CONTRADICTS ITS OWN FEEDBACK ON A `strong` ROW THAT LOST MARKS
+## ✅ CLOSED 2026-09-07 (n) — THE DEBRIEF'S NEXT ACTION CONTRADICTED ITS OWN FEEDBACK ON A `strong` ROW THAT LOST MARKS
+
+**Fixed on branch `fix/demo-legibility-and-strong-action` (unmerged at the time of writing).**
+`ACTION_BY_BAND_MARKS_LOST` — a second table, consulted only when `lost > 0`, currently holding
+one entry. The action stays band-derived and still reports `next_action_source:
+'band_definition'`; it is not permitted to read the prose, which was the property worth keeping.
+`strong` is the only entry and that is a fact about `BAND_MULTIPLIER`, not an omission —
+`exemplary` pays 1 so it can never reach the table, and `competent`/`weak`/`nothing` already say
+a point was missed. "Minor" is quoted from the band's own published definition.
+📐 **VERIFIED ON THE REAL ROW, NOT A FIXTURE** — `buildSitReport` re-run against attempt
+`c3804dcb`: 8/8 requirements, **zero contradictions**, both full-marks rows byte-unchanged.
+📐 **AND THE HAND READ HAD MISSED HALF OF IT: TWO of the eight rows were affected, not one.**
+Q2 (ii) (`strong` 6/8) was seen on screen; **Q1 (iv) (`strong` 5/6) was not**, and only surfaced
+when the real assembly was run over every row. A screen read finds the instance you are looking
+at; running the producer over the whole set finds the class.
+`npm run test:debrief` pins the old string as MUST-FAIL on **any** row with marks lost, across
+every walk, and pins that a `strong` row losing nothing still gets the short no-change line — so
+the fix cannot pass by the string having been deleted.
+
+<details><summary>The original finding, kept for the record</summary>
+
+
 
 **Seen on screen, not inferred.** `/acca/results/c3804dcb…`, requirement Q2 (ii), banded `strong`,
 **6 of 8 marks**. The marker's prose names three specific gaps and closes *"that distinction needed
@@ -93,6 +114,8 @@ someone who lost marks. Either way it stays band-derived — do not make it read
 
 ⚠️ **Demo impact recorded in `docs/demo/RUNBOOK.md`:** it sits inside leg 1's best case (Q2 —
 Brecon, 18/20). The runbook routes the narration around it via Q2 (i) → Q3 (i).
+
+</details>
 
 ---
 
