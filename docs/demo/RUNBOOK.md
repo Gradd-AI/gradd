@@ -951,20 +951,31 @@ It came back with:
 > there**. An expected NPV is a probability-weighted sum — you need to compute the NPV in each
 > of the three scenarios, weight each one by its stated probability, and add them together.
 
-📐 **NOW MEASURED AT n = 40, AND IT IS WORSE THAN n = 2 SUGGESTED.** Frozen seed, frozen neutral
-follow-up, three case seeds × 10 plus a matched drill arm × 10 (`AFM_SURFACED.md` item (o);
-data in `docs/rollbacks/false_absence_merged_20260907.graded.json`):
+📐 **MEASURED AT n = 40, AND THEN FIXED.** Frozen seed, frozen neutral follow-up, three case
+seeds × 10 plus a matched drill arm × 10 (`AFM_SURFACED.md` item (o)):
 
-| | rate |
-|---|---|
-| Case turn 2 **flatly denies** something the answer contains | **11/30 = 37%** |
-| Case turn 2 **re-asks** for something already on the page | **20/30 = 67%** |
-| Drill turn 2, same shape | **0/10** |
+| | before | **after the fix** |
+|---|---|---|
+| Case turn 2 **flatly denies** something the answer contains | 11/30 = 37% | **0/40** |
+| Case turn 2 **re-asks** for something already on the page | 20/30 = 67% | **4/40 = 10%** |
+| Drill turn 2, same shape | 0/10 | 2/10 — see below |
 
-**It tracks the LENGTH of the answer** (strip the prose, keep the same arithmetic: 9/10 → 2/10,
-p = 0.005) **and not the position of the working** (move it to the end: 9/10 → 9/10, p = 1.000).
-**Two-thirds of the time, a long answer's second turn asks the candidate for something they have
-already written.** That is the number to hold in your head when deciding whether to walk turn 2.
+✅ **THE CAUSE WAS A MISSING ARGUMENT, NOT THE MODEL.** The case engine's diagnose and teach legs
+were passed only the student's *latest message* — on turn 2, a two-line follow-up — so the
+diagnosis correctly said *"no calculation"* about a message that contained none, and the teaching
+leg then said it to a student whose answer was on the screen above. The drill route got this fix
+on 2026-07-23; the case engine did not. **`call2_diagnose`'s own turn-2 output asserted the
+absence on 30 of 30 runs before and 0 of 40 after.**
+
+⚠️ **NOT MERGED AT THE TIME OF WRITING — branch `fix/case-engine-prior-attempt`.** If it has not
+landed by the day, everything in the section below still applies and **turn 2 is still the worst
+thing in the hour**. If it has landed, turn 2 is repaired and the ruling at the end of this leg
+relaxes accordingly — but **walk it once yourself before trusting it in front of the room.**
+
+⚠️ **The drill control moved 0/10 → 2/10 and that is reported, not explained away.** Not
+significant (p = 0.474) and the drill route's prompt bytes are provably unchanged, but one of the
+two is a genuine false absence. It is most likely sampling; it is not proof the drill route is
+clean.
 
 **The answer on screen, four inches above, reads:**
 

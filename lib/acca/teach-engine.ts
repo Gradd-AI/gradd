@@ -30,6 +30,7 @@ import {
 import { auditRevealFigures } from './reveal-figure-audit';
 // THE VERBATIM QUOTATION CHECK (2026-09-06) — shared with the drill route, one definition.
 import { enforceVerbatimQuotation } from './reveal-quotation';
+import { buildStudentAnswerBlock } from './student-answer-block';
 // DIVERGENCE #2 (2026-08-24): the ENVELOPE. Imported, never transcribed — `GAP_VERDICT_FORMAT` is
 // the ONLY place the output shape is stated and `hintOpeningInstruction` the only place the
 // opening is, so the drill and case surfaces cannot drift about either. See `CASE_HINT_OPENING`.
@@ -415,6 +416,11 @@ async function call2_diagnose(
   question: string,
   context: string,
   attempt: string,
+  // The student's most recent FULL attempt, or null on the first attempt-classified turn. Added
+  // 2026-09-07, mirroring the drill route's parameter ORDER as well as its shape — this leg read
+  // `attempt` alone from 2026-07-01 to 2026-09-07 and diagnosed a two-line follow-up as though
+  // nothing had ever been submitted. See lib/acca/student-answer-block.ts for the measurement.
+  priorAttempt: string | null,
   modelAnswer: string,
   markScheme: string,
   // CODE-OWNED FINDINGS, threaded separately from the mark scheme ON PURPOSE. The mark-scheme
@@ -456,7 +462,7 @@ async function call2_diagnose(
         role: 'user',
         content:
           `${contextLine}Question: ${question}\n\n` +
-          `Student answer: ${attempt}\n\n` +
+          buildStudentAnswerBlock(attempt, priorAttempt) +
           // FIRST, and before the mark scheme. Where code has already established that the answer
           // sits on the wrong side of a settled choice, that IS the gap — a contract count is
           // worthless on the wrong side of the trade, and burying it under the component list is
@@ -682,6 +688,10 @@ async function call3_teach(
   question: string,
   context: string,
   attempt: string,
+  // As call2_diagnose. Same pair of legs the drill route gives it to, for the same reason: this
+  // is the second-miss branch, so a prior attempt exists by construction and reading only the
+  // latest message means teaching against a follow-up rather than against the answer.
+  priorAttempt: string | null,
   diagnosis: string,
   verbLevel: string,
   offerReveal: boolean,
@@ -709,7 +719,7 @@ async function call3_teach(
         role: 'user',
         content:
           `${contextLine}Question: ${question}\n\n` +
-          `Student answer: ${attempt}\n\n` +
+          buildStudentAnswerBlock(attempt, priorAttempt) +
           `Gap diagnosis: ${diagnosis}\n\n` +
           gfLine +
           vlLine +
@@ -1321,7 +1331,12 @@ export async function runTeachTurn(input: TeachTurnInput): Promise<TeachTurnResu
     messageKind = 'teaching';
     const contextAttempt = lastRealAttempt ?? studentMessage;
     const diagnosis      = lastDiagnosis ?? 'student requested answer without re-attempting';
-    ezraResponse = await call3_teach(question, context, contextAttempt, diagnosis, verbLevel, REVEAL_ENABLED && missCount >= 2, groundedFacts, nextMove, paper);
+    // `null`, and byte-identical to before this parameter existed. This is the fast-teach path,
+    // which already resolved the attempt by SUBSTITUTION (`contextAttempt` above) rather than by
+    // showing both blocks — the same shape the drill route uses on its two substitution paths
+    // (tutor/route.ts:1667, :1699, both passing null). The 2026-07-23 fix did not touch these on
+    // either surface and neither does this one.
+    ezraResponse = await call3_teach(question, context, contextAttempt, null, diagnosis, verbLevel, REVEAL_ENABLED && missCount >= 2, groundedFacts, nextMove, paper);
     teachThroughDelivered = true;
   } else {
     const classified: Intent = INTENT_LAYER_ENABLED
@@ -1339,8 +1354,12 @@ export async function runTeachTurn(input: TeachTurnInput): Promise<TeachTurnResu
       // every downstream consumer sees and is byte-equivalent to the old return value whenever the
       // envelope parses; when it does not, `safeLabel` recovers the label or yields '' rather than
       // letting a raw JSON blob reach `call3_hint` or the stored transcript.
+      // `lastRealAttempt`, NOT `newLastRealAttempt` — the latter is set to studentMessage further
+      // down this same branch, and passing it would make prior === attempt so the block would
+      // collapse to the single-block form and the fix would be inert. The value wanted here is
+      // what the student had submitted BEFORE this message.
       const { label: diagnosis, verdict: gapVerdict } = await call2_diagnose(
-        question, context, studentMessage, modelAnswer, markScheme, groundedFacts);
+        question, context, studentMessage, lastRealAttempt, modelAnswer, markScheme, groundedFacts);
       // Absent ⇒ false ⇒ shipped opening ⇒ today's behaviour. Never inferred from `derived`, which
       // is parsed but deliberately NOT wired on this surface — see call3_hint's parameter doc.
       const gapNothingCreditable = nothingCreditable(gapVerdict);
@@ -1387,7 +1406,8 @@ export async function runTeachTurn(input: TeachTurnInput): Promise<TeachTurnResu
             completenessGap ? false : gapNothingCreditable);
           messageKind = 'hint';
         } else {
-          ezraResponse = await call3_teach(question, context, studentMessage, gap, verbLevel, REVEAL_ENABLED && newMissCount >= 2, groundedFacts, nextMove, paper);
+          // Same reason as the diagnose call above: `lastRealAttempt` is the pre-turn value.
+          ezraResponse = await call3_teach(question, context, studentMessage, lastRealAttempt, gap, verbLevel, REVEAL_ENABLED && newMissCount >= 2, groundedFacts, nextMove, paper);
           teachThroughDelivered = true;
           messageKind = 'teaching';
         }

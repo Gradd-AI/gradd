@@ -2,7 +2,165 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
-## 🔴 OPEN 2026-09-07 (o) — THE FALSE ABSENCE: THE TUTOR DENIES WORKING THE STUDENT SHOWED. n = 40, MEASURED, NO FIX.
+## 🔴 OPEN 2026-09-07 (p) — THE SERVED REVEAL IS PERSISTED NOWHERE. A REFRESH LOSES THE WORKED ANSWER **AND** THE CONVERSATION.
+
+**Found while designing the expand control; it is the constraint that shaped that design and it
+is a bigger problem than the expand.**
+
+`ezra_response` appears in exactly two places in the codebase — `app/api/acca/case/turn/route.ts`
+and `app/api/acca/tutor/route.ts` — and **both are `NextResponse.json`**. Nothing writes the
+served text to any table. `acca_case_progress` stores `last_diagnosis`, `last_real_attempt`,
+`miss_count`, bands and marks; it stores no message. `CaseSession` says so at the top of its own
+resume path: *"Derived purely from progress; no chat history is restored."*
+
+**So the reveal a student EARNED — two genuine misses, a paid entitlement, a model call — exists
+only in the HTTP response and in React state, and a refresh destroys it permanently.** The
+student can re-earn nothing: `resolved` is now true, so asking again re-serves *a* reveal, but it
+is a fresh model call with a different wrapper, and the transcript that led to it is gone.
+
+📐 **This is the everyday case, not an edge.** The worked answer is what a student returns to
+when revising. Today there is nothing to return to.
+
+### 🔵 SCOPED, NOT NOW
+
+**The honest fix is to persist the served reveal**, not to reconstruct it:
+
+1. **A migration** — a column on `acca_case_progress` / `acca_tutor_progress` (or a small
+   `acca_served_reveals` table keyed the same way) holding the exact `assembleAfmReveal` output,
+   its `served_at`, and the paper/row it came from.
+2. **A write path** at both serve sites, immediately after `const served = assembleAfmReveal(...)`
+   — `teach-engine.ts:1135` and `tutor/route.ts:1148`. **Error-checked**, per the 2026-09-05
+   lesson: supabase-js resolves with `{data, error}` and does not throw, so an unchecked write
+   here would silently store nothing and the failure would look exactly like success.
+3. **A read path** for the expanded view and for a returning student.
+
+⚠️ **It must not block the serve.** A reveal the student earned must never fail to reach them
+because a persistence write failed — best-effort, recorded through the error recorder, never
+awaited into the response's success condition.
+⚠️ **It is a disclosure decision as well as a storage one.** Storing the served artefact makes
+the worked answer durably retrievable per student; the `mock_only` reserved-content rule and the
+`revealDecision` gate both have to hold on the read path, not just the write.
+
+**Why not now:** the expand control (approved 2026-09-07) does not need it — the intercepting
+route reproduces the artefact from the row deterministically and the in-session path passes the
+served bytes untouched. This item is the *separate* problem that a refresh loses everything, and
+it wants its own block.
+
+---
+
+## 🟠 OPEN 2026-09-07 (q) — `call1_generate` GENERATES A MODEL ANSWER AT TURN TIME. DEAD FOR ALL 192 PUBLISHED ITEMS, REACHABLE, AND IT MUST FAIL CLOSED.
+
+Both engines branch on whether the row carries a stored answer:
+
+```
+if (storedModelAnswer) { modelAnswer = storedModelAnswer; }
+else { modelAnswer = await call1_generate(question, fullContext); }
+```
+
+`app/api/acca/case/turn/route.ts:459` and `app/api/acca/tutor/route.ts:1445`.
+
+📐 **MEASURED 2026-09-07: 0 of 38 `acca_case_requirements` and 0 of 154 published `acca_drills`
+have an empty `model_answer`. The branch is dead for every live item — all 192.**
+
+**But it is reachable**, and everything downstream of the reveal assumes the artefact is a pure
+function of the row:
+
+- The **expand control** (approved, unbuilt) reproduces the artefact server-side as
+  `normaliseRevealArtefact(row.model_answer)`. On a generated answer there is nothing to
+  reproduce — the text existed only in that turn's `session_state`, which is client state.
+- The **figure moat** rests on the stored answer being code-verified. A generated one has been
+  through no gate, no `answer_schema`, no numeric verifier.
+
+⚠️ **THE RULE: fail closed, never fall back.** An empty `model_answer` must produce **no expand
+control** and a **404** on the answer route — never a silently different artefact, and never a
+fresh generation to fill the gap. A reader who cannot tell the two apart is the failure mode.
+
+**Not fixed here.** Two follow-ups worth deciding together: whether the generate branch should
+exist at all now that every served row has an authored answer, and whether an unstored row should
+be refused at the serve boundary rather than papered over at turn time.
+
+---
+
+## ✅ CLOSED 2026-09-07 (o) — THE FALSE ABSENCE WAS A MISSING ARGUMENT, NOT A MODEL DEFECT
+
+**Fixed on `fix/case-engine-prior-attempt` (unmerged at the time of writing). The measurement
+below is the before; the measurement here is the after.**
+
+`lib/acca/teach-engine.ts`'s `call2_diagnose` and `call3_teach` were passed `studentMessage` and
+nothing else. After the first turn that is a two-line follow-up, so the diagnose leg was
+correctly reporting *"no calculation"* **about a message that contained none** — and the
+teaching leg then said it to a student whose answer was four inches up the page.
+`lastRealAttempt` was threaded into `runTeachTurn` and used on the reveal and fast-teach paths,
+and never on the standard one.
+
+🔴 **THE SAME FIX EXISTS ON THE DRILL ROUTE AND IS DATED 2026-07-23.** Commit `4f1ee2c` describes
+the failure in the same words — *"diagnosed and taught as if the student had submitted NOTHING"*
+— and **changed exactly one file**. The case engine was created 2026-07-01, already carried its
+own `call2_diagnose`, and was not touched. The commit body says *"the standard withholding
+pipeline"* as though there were one; there were two.
+
+### 📐 MEASURED, before and after. Same probe, same frozen turn-2 message, same rubric.
+
+| | pre-fix | post-fix | |
+|---|---|---|---|
+| **`call2_diagnose` turn-2 asserting absence** | **30/30** | **0/40** | the fix's own target |
+| `call2_diagnose` turn-2 `creditable: 0` | 30/30 | **0/40** | |
+| `call2_diagnose` turn-1 asserting absence | 0/30 | 0/40 | unchanged — turn 1 *is* the attempt |
+| case **strict** (the tutor denies it) | 11/30 | **0/30** shared cells · **0/40** all four | Fisher **p < 0.001** |
+| case **loose** (a redundant re-ask) | 20/30 | **3/30** shared cells · **4/40** all four | Fisher **p < 0.001** |
+
+The diagnosis now names the real error on every run — *"Arithmetic error in central-case NPV
+reversed its sign"* — where it used to say *"Student performed no calculation and drew no
+conclusion whatsoever"*.
+
+### The length effect was downstream of the wrong diagnosis, and it is gone
+
+Predicted before the run and confirmed. Pre-fix, loose tracked answer length hard: 9/10 long vs
+2/10 short, **p = 0.005**. Post-fix, with the 2×2 closed (`short_last` added):
+
+| | strict | loose |
+|---|---|---|
+| LENGTH, long vs short (both positions) | 0/20 vs 0/20, p = 1.000 | 1/20 vs 3/20, **p = 0.605** |
+| POSITION, first vs last (both lengths) | 0/20 vs 0/20, p = 1.000 | 2/20 vs 2/20, p = 1.000 |
+
+**Length was acting on how `call3_teach` wrote around a wrong diagnosis, not on the reading.**
+Position was a null before and is a null now.
+
+### ⚠️ THE DRILL CONTROL MOVED, 0/10 → 2/10, AND IT IS REPORTED RATHER THAN EXPLAINED AWAY
+
+Not significant (Fisher **p = 0.474**) and the drill route's prompt bytes are *provably*
+unchanged — `buildStudentAnswerBlock` moved to a shared module and `npm run
+test:student-answer-block` pins all three branches byte-for-byte against the pre-move strings.
+Hand-read, the two are not equal:
+
+- `drill#1` — *"you haven't shown me the discounting arithmetic"* against an answer opening
+  *"Discounting each state's own post-tax cash flows at 12% against the THB 480m outlay at t0"*
+  with three NPVs and the weighted sum. **A genuine false absence.**
+- `drill#6` — *"you haven't walked through the Base-state discounting in your working"*. The seed
+  states `Base: NPV THB 6m` and does **not** show the per-year discounting. **Defensible, and
+  probably a grader over-call.**
+
+**So the honest statement is 1–2 in 10 on a surface that measured 0 in 10, at n = 10, with the
+bytes unchanged.** It is most likely sampling. It is not proof the drill route is clean, and the
+next run of this probe should re-check it rather than assume.
+
+### ⚠️ Two axes that did NOT move, and one of them is soft
+
+**Credit inversion: 5/40 pre-fix → 6/50 post-fix. Independent of the false absence throughout**
+(observed P(both) 0.00 vs 0.00 predicted, Fisher p = 1.000).
+⚠️ **The CI figure is an upper bound and at least one post-fix hit is a clear false positive**:
+`long_first#8` was scored for *"you've already identified that expected value is a repeat-game
+figure, that the probabilities are subjective and unvalidated"* — **all three of which the seed
+answer says**. Post-fix the tutor correctly credits what the student wrote, and the grader
+sometimes scores a TRUE attribution as an invention. Do not read the CI axis as precise.
+
+**The phrase-table floor fell 4/30 → 1/40**, and its one hit disagreed with the grader: the reply
+offered to *"walk the arithmetic with you"*, which is not a denial. **The floor false-positived;
+the grader was right.** It remains a floor and never the headline.
+
+<details><summary>The original measurement, kept for the record</summary>
+
+## (o, as first written) THE FALSE ABSENCE: THE TUTOR DENIES WORKING THE STUDENT SHOWED. n = 40, MEASURED, NO FIX.
 
 **This is a NEW class and it is not the attribution family already on the board.** That family
 INVENTS something the student did not say. This one **DENIES something the student did say.**
@@ -88,6 +246,19 @@ block, not this one.
    grader scored it as a credit inversion. That arm reported drill CI at 5/10 and drill FA at
    2/10; the matched re-run reports 3/10 and **0/10**. **A cross-scenario seed does not measure a
    surface, it measures the mismatch** — and it produced a plausible-looking table either way.
+
+</details>
+
+📐 **A THIRD METHOD ERROR, from the post-fix run.** The probe was changed to capture the
+diagnosis inline by byte offset, so it would be part of the row rather than aligned afterwards.
+It read **empty on every turn**: the dev server's log reaches disk through `Tee-Object`, which
+buffers, so the line is not there when the probe reads immediately after the POST. Reverted to
+post-hoc alignment, and **the attribution rule had to change with it** — the log now also holds
+the two Vesla regression runs, which emit two verdicts per three POSTs, so "one verdict per case
+POST" is no longer true of the file. The aligner takes the **last** 2 × N verdicts instead,
+because the drill arm runs after the case arm and emits none. The inline capture is left in
+place returning `null` rather than a stale value: **a null reads as "not captured"; a stale
+offset would read as a diagnosis.**
 
 ---
 

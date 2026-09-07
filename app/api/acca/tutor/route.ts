@@ -23,6 +23,7 @@ import {
 } from '@/lib/acca/tutor-personas';
 // THE VERBATIM QUOTATION CHECK (2026-09-06) — shared with the case engine, one definition.
 import { enforceVerbatimQuotation } from '@/lib/acca/reveal-quotation';
+import { buildStudentAnswerBlock } from '@/lib/acca/student-answer-block';
 import { notifyGrant } from '@/lib/notify';
 import { resolvePaper, servedPaper, SERVED_PAPERS, type AccaPaper } from '@/lib/acca/paper';
 import { paperHref } from '@/lib/acca/paper-url';
@@ -342,26 +343,16 @@ async function call1_generate(question: string, context: string): Promise<string
   return extractText(res);
 }
 
-// Presents the student's most recent FULL attempt (if any, and distinct from the current
-// message) alongside their latest message. FIX (2026-07-23, investigation confirmed live):
-// the standard withholding-pipeline turn (call2_diagnose + call3_teach's second-miss branch)
-// previously read ONLY `student_message` — no prior-attempt context at all — unlike the
-// reveal/burn/fast-teach paths (:1132/:1141/:1148/:1159 as of this fix), which already fell
-// back to `lastRealAttempt`. A short, natural follow-up ("so which one should I recommend?")
-// was diagnosed and taught as if the student had submitted NOTHING, because from the model's
-// point of view they genuinely had submitted nothing else. Collapses to the plain single-block
-// form when there is nothing new to show (turn 1, or an unchanged re-send) — no duplicate
-// block, no empty label. This block is always per-turn VARIABLE — callers must place it in the
-// UNCACHED remainder of a `cachePrefix` split, never inside the cached stable prefix.
-function buildStudentAnswerBlock(attempt: string, priorAttempt: string | null): string {
-  if (!priorAttempt || priorAttempt === attempt) {
-    return `Student answer: ${attempt}\n\n`;
-  }
-  return (
-    `Student's most recent full attempt: ${priorAttempt}\n\n` +
-    `Student's latest message: ${attempt}\n\n`
-  );
-}
+// MOVED to lib/acca/student-answer-block.ts (2026-09-07), imported at the top of this file.
+// The body is unchanged — `npm run test:student-answer-block` pins all three branches
+// byte-for-byte against the strings this route produced before the move, so the drill surface's
+// prompt bytes are provably identical.
+//
+// It moved because the 2026-07-23 fix landed here and NOT on the case engine, which held the
+// same defect and was measured at 30/30 on 2026-09-07. Two copies of the function whose entire
+// purpose is that the two teaching surfaces agree about what the student wrote is the drift trap
+// this file already names elsewhere ("deleting one and not the other would leave the two
+// teaching surfaces disagreeing about the one thing the deletion is for").
 
 // ── CALL 2: Diagnose → content-neutral gap label ──────────────────────────────
 

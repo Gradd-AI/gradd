@@ -1,0 +1,1140 @@
+{
+  "account": {
+    "uid": "ba46646e-3821-4a51-9068-5c30ca62f0eb",
+    "email": "case-n30-1788786097156@gradd.ai"
+  },
+  "base": "http://localhost:3112",
+  "case_id": "a2000000-0000-4000-8000-0000000000d1",
+  "requirement_id": "83c9e788-d79a-45b7-b7bc-725288f00802",
+  "seed": "b",
+  "sections": [
+    "The accuracy claim",
+    "The app-usage recommendation",
+    "Training-data limitations",
+    "Insights that can be acted on",
+    "The \"model is complete\" claim",
+    "Conclusion"
+  ],
+  "answer": "The churn model is useful but the board should not rely on it yet.\n\nThe 94% accuracy figure should not be taken at face value. Only about 6% of Vesla's customers churn in a year, so a model that simply predicted nobody would churn would score about 94% while catching no churners at all. Accuracy is the wrong measure for an outcome this imbalanced. The board should ask what proportion of real churners the model actually catches, what proportion of the flagged list would genuinely have churned, and what the false positives cost against the margin a retained customer earns. The output is also a bare flagged/not-flagged list with no probability attached, so marketing cannot rank who is most at risk.\n\nOn app usage, the analyst has read a correlation as a cause. It is at least as likely that Vesla's most engaged customers are the ones who choose to install the app in the first place, in which case forcing less engaged customers to download it at checkout would not make them loyal and might well cost conversions. The association is worth having; the causal claim needs a controlled trial before any checkout mandate.\n\nThe training data is a genuine strength of this model and I would not change it. Including the sitewide discounting year is an advantage, because it exposes the model to a much wider range of purchasing behaviour than two normal years would have done, and a model trained on a wider range generalises better. Excluding customers who joined in the last twelve months is also sound, because it keeps the training set clean of incomplete histories that would otherwise add noise. Between them, those two choices are why the model performs as well as it does.\n\nThe customer-services finding is worth acting on, and the flagged list can go to marketing as a pilot. On the analyst's final point I agree the model can be treated as complete: the data choices above are sound, so retraining would add cost without adding much.",
+  "reveal_ask": "show me the answer",
+  "runs": [
+    {
+      "run": 1,
+      "progress_rows_before_post": 0,
+      "legs": [
+        {
+          "leg": "miss1_hint",
+          "status": 200,
+          "message_kind": "hint",
+          "intent": "attempt",
+          "reply": "The sharpest miss: you've endorsed the sitewide-discounting-year as a *strength* when the scenario flags it as a genuine risk that you needed to interrogate.\n\nHere's the concrete problem — the analyst's summary tells you explicitly that the model was trained on \"the year in which Vesla ran its largest-ever sitewide discounting campaign to clear excess stock.\" That year is not a wider range of normal behaviour; it's a distortion. Customers who bought heavily during a clearance year may look like high-engagement customers in the training data, but their actual churn risk in a normal year is a different question — you don't know whether the model has learned \"engaged customers\" or \"customers who were price-sensitive during a specific anomaly.\" \n\nGo back to your answer and ask yourself: what reason do you have to believe the model's churn predictions will transfer to customers who *haven't* experienced a major sitewide discount? That's the test that changes whether including that year was sound or reckless.",
+          "latency_ms": 6646,
+          "gap": [
+            {
+              "at": "case_gap_verdict",
+              "parsed": true,
+              "creditable": 1,
+              "derived": 1,
+              "correct": false,
+              "label": "Student incorrectly endorsed training-data choices that the model flags as limitations"
+            }
+          ],
+          "reveal": [],
+          "offList": [],
+          "unsourced": [],
+          "unquoted": [],
+          "wrapperCut": []
+        },
+        {
+          "leg": "miss2_teach",
+          "status": 200,
+          "message_kind": "teaching",
+          "intent": "attempt",
+          "reply": "You've caught the statistical reality of the 94% accuracy trap — that's the core diagnostic move — but you've then stepped on your own insight by endorsing the training-data choices as \"genuine strength\", when the scenario actually hands you two separate problems hiding inside them.\n\nThe sitewide discounting campaign year isn't a wider range that generalises better — it's **bias baked into the churn labels themselves**. Customers who bought heavily during that clearance year were there *because of the discount*; the model learns that customers with that purchase signature are churners, when what actually happened is those customers were price-driven to begin with and left once the campaign ended. You're training a model to predict behaviour it cannot predict: you've mislabelled the training outcome. That's not a strength.\n\nThe second issue is backwards from what you said: excluding new customers from *training* is sound, but the model is now blind to how new-customer cohorts actually behave. When it flags an established customer for intervention, you don't know whether that signal means anything for a customer who hasn't yet settled into repeat-purchase patterns.\n\nThe ONE thing to add: name that the analyst's recommendation to require app download at checkout creates a testable commercial risk — that forcing the app mandate will **suppress conversion** among website-only customers who represent real value, which the current model cannot tell you because it learned correlation from an already self-selected group. Then you're set to move forward.",
+          "latency_ms": 8509,
+          "gap": [
+            {
+              "at": "case_gap_verdict",
+              "parsed": true,
+              "creditable": 1,
+              "derived": 1,
+              "correct": false,
+              "label": "Student endorsed training-data flaws as strengths, missing both limitations entirely"
+            }
+          ],
+          "reveal": [],
+          "offList": [],
+          "unsourced": [],
+          "unquoted": [],
+          "wrapperCut": []
+        },
+        {
+          "leg": "reveal",
+          "status": 200,
+          "message_kind": "reveal",
+          "intent": "reveal",
+          "reply": "You're right that the model needs more scrutiny before the board acts on it wholesale, and you've caught the critical flaw that 94% accuracy is nearly meaningless when only 6% of the customer base churns at all. Where your analysis stalls is on the training data: you've treated the inclusion of the promotion-distorted year and the exclusion of new-customer histories as methodological strengths, when in fact they're genuine limitations that narrow what the model can tell us. The misconception here is **treating data-cleaning choices as automatically sound because they reduce noise**, when you should always ask *what population or behaviour the model is now blind to* — and what that costs when the board needs to act on the full customer base. Start with **Training-data limitations** in the worked answer below to see how those two choices actually constrain the model's usefulness and where it will miss real churn risk. Then apply that same lens to a fresh scenario: if a model for customer acquisition is trained only on \"successful\" new accounts, excluding those who signed up but never made a purchase, what segment becomes invisible to the scoring engine?\n\n*© Gradd — for your personal exam preparation.*\n\n---\n\n## The accuracy claim\n\nThe headline 94% accuracy should not be accepted at face value. Around 6% of Vesla's customers churn in a typical year, so a model that simply predicted \"no customer will churn\" would be about 94% accurate while identifying no churners at all. Accuracy is the wrong measure for such an imbalanced outcome; the board should ask how many actual churners the model correctly identifies (recall), what proportion of flagged customers would actually have churned (precision), and the number and cost of false positives, ideally weighted by the cost of a voucher against the margin retained, since those figures determine whether the retention budget is being aimed at the right people. The output is also a bare flagged/not-flagged list with no probability score, so marketing cannot rank or prioritise the customers most at risk. Until they are reported, the output cannot be relied upon.\n\n## The app-usage recommendation\n\nThe finding that app users churn less is a correlation in the training data; the analyst's recommendation to force app downloads treats it as a cause. It is at least as plausible that Vesla's most engaged, loyal customers are the ones who choose to install the app — in which case compelling less engaged customers to download it would not make them loyal, and adding friction at checkout could itself increase abandonment. The insight worth acting on is the association; the causal claim needs testing (for example, a controlled trial of app prompts) before any checkout mandate.\n\n## Training-data limitations\n\nTwo features of the training data limit what the output can say about next year. First, one of the two training years contained Vesla's largest-ever sitewide discounting campaign, so purchasing behaviour in that year is unlikely to represent a normal year — patterns the model learned may partly reflect the promotion rather than durable customer behaviour. Second, customers who joined within the last twelve months were excluded, so the model has not learned from new-customer behaviour and any predictions for that segment may be unreliable; if the scoring process also excludes them, the flagged list will systematically miss a group the board needs to understand, since it needs to know whether recent acquisition is converting into repeat purchasing.\n\n## Insights that can be acted on\n\nThe customer-services signal — more than two contacts in a year associating with churn — is plausible, actionable and cheap to act on: it suggests a service-friction signal worth investigating as a possible churn driver, regardless of the model. Feeding flagged customers to marketing is reasonable as a pilot, provided the flag quality is first verified (above) and the results of the vouchers are measured against a control group, so Vesla learns whether the intervention works rather than assuming it.\n\n## The \"model is complete\" claim\n\nThe recommendation to treat the model as complete should be rejected. Customer behaviour shifts, the training window is already unrepresentative, and the model has never been validated in live use. The board should require periodic retraining and ongoing monitoring of the model's live hit rate; the cost of retraining should be weighed against the cost of a growing retention budget aimed by a decaying model.\n\n## Conclusion\n\nThe model is a promising start but not yet a safe basis for decisions. Before reliance: report churner-level performance rather than headline accuracy, test the app-usage claim rather than mandating downloads, extend the data to cover new customers and normal trading years, pilot the voucher list against a control group, and schedule retraining.",
+          "latency_ms": 8080,
+          "gap": [],
+          "reveal": [
+            {
+              "design": "B",
+              "paper": "APM",
+              "reached_from": "struggle",
+              "nothingCreditable": false,
+              "conditioned": false,
+              "sections": 6,
+              "reframe": true
+            }
+          ],
+          "offList": [],
+          "unsourced": [],
+          "unquoted": [],
+          "wrapperCut": []
+        }
+      ],
+      "score": {
+        "verdict": "in_list",
+        "sections_named": [
+          "Training-data limitations"
+        ],
+        "section_index": [
+          3
+        ],
+        "wrapper": "You're right that the model needs more scrutiny before the board acts on it wholesale, and you've caught the critical flaw that 94% accuracy is nearly meaningless when only 6% of the customer base churns at all. Where your analysis stalls is on the training data: you've treated the inclusion of the promotion-distorted year and the exclusion of new-customer histories as methodological strengths, when in fact they're genuine limitations that narrow what the model can tell us. The misconception here is **treating data-cleaning choices as automatically sound because they reduce noise**, when you should always ask *what population or behaviour the model is now blind to* — and what that costs when the board needs to act on the full customer base. Start with **Training-data limitations** in the worked answer below to see how those two choices actually constrain the model's usefulness and where it will miss real churn risk. Then apply that same lens to a fresh scenario: if a model for customer acquisition is trained only on \"successful\" new accounts, excluding those who signed up but never made a purchase, what segment becomes invisible to the scoring engine?\n\n*© Gradd — for your personal exam preparation.*",
+        "wrapper_chars": 1218,
+        "wrapper_has_heading": false,
+        "wrapper_has_rule": false,
+        "wrapper_ends_mid_sentence": false,
+        "separator_present": true,
+        "artefact_chars": 3660,
+        "tail_intact": true,
+        "quotation": {
+          "spans": [
+            {
+              "quoted": "successful",
+              "student_attributed": false,
+              "trigger": null,
+              "verbatim": null
+            }
+          ],
+          "total": 1,
+          "student_attributed": 0,
+          "fabricated_surviving": 0
+        }
+      },
+      "reveal_log": {
+        "design": "B",
+        "paper": "APM",
+        "reached_from": "struggle",
+        "nothingCreditable": false,
+        "conditioned": false,
+        "sections": 6,
+        "reframe": true
+      }
+    },
+    {
+      "run": 2,
+      "progress_rows_before_post": 0,
+      "legs": [
+        {
+          "leg": "miss1_hint",
+          "status": 200,
+          "message_kind": "hint",
+          "intent": "attempt",
+          "reply": "You've nailed the accuracy trap and the causation problem — both show real scrutiny — but you've read the training data backwards: including the massive discounting year is actually a *liability*, not a strength, because the model is now trained to spot patterns in customer behaviour that were shaped by an abnormal promotional environment, and when marketing deploys it on customers facing normal pricing, those patterns won't predict churn the same way.\n\nHere's the edit: after your sentence on app usage, add one sentence that names what risk the discounting year creates — that the model learned associations between churn and behaviours that may have been *caused* by the promotional context, not by customer preference or loyalty at all.",
+          "latency_ms": 5189,
+          "gap": [
+            {
+              "at": "case_gap_verdict",
+              "parsed": true,
+              "creditable": 1,
+              "derived": 1,
+              "correct": false,
+              "label": "Student incorrectly defended training-data flaws as strengths rather than limitations"
+            }
+          ],
+          "reveal": [],
+          "offList": [],
+          "unsourced": [],
+          "unquoted": [],
+          "wrapperCut": []
+        },
+        {
+          "leg": "miss2_teach",
+          "status": 200,
+          "message_kind": "teaching",
+          "intent": "attempt",
+          "reply": "You've made a strong diagnostic start on accuracy, and your app-usage pushback is exactly the kind of scepticism the requirement asks for. But you've then doubled back on the training data in a way that doesn't hold up against the scenario's own facts.\n\nThe key constraint you've missed: customers who joined in the last twelve months were *excluded* from the training data because they lack a full year of history. That's a clean design choice. But the sitewide discounting campaign happened *in the earlier of the two training years* — which means the model learned churning patterns during a year when Vesla's purchasing behaviour was artificially distorted by clearance pricing. When you apply the model to *normal* trading conditions going forward, it's been trained on data that doesn't look like the future it's meant to predict. That's not an advantage; it's a structural mismatch between training and deployment that the board needs to know about.\n\nThe move: add a sentence identifying what the model has *actually* learned from that discounting year—what distortion it carries forward—and why that matters when deciding whether to act on the flagged list. Don't solve it, just name it.",
+          "latency_ms": 6798,
+          "gap": [
+            {
+              "at": "case_gap_verdict",
+              "parsed": true,
+              "creditable": 1,
+              "derived": 1,
+              "correct": false,
+              "label": "Student incorrectly praised training-data choices that model flags as genuine limitations"
+            }
+          ],
+          "reveal": [],
+          "offList": [],
+          "unsourced": [],
+          "unquoted": [],
+          "wrapperCut": []
+        },
+        {
+          "leg": "reveal",
+          "status": 200,
+          "message_kind": "reveal",
+          "intent": "reveal",
+          "reply": "You've nailed the base-rate critique and spotted the correlation-versus-causation trap with the app usage—those are the two hardest calls on this question and you got them exactly right. Where you've walked into a real pitfall is treating the training-data choices as a strength when they're actually material limitations that weaken the model's usefulness to the board. The misconception here is accepting the analyst's framing that a wider range of behaviour (including the sitewide discount year) automatically makes a model more robust—but when that training data is distorted by an anomalous campaign, the model learns patterns that won't repeat, and excluding new customers means the board can't score a segment it actually needs to understand and can't act on them if they appear in the flagged list. Start by reading **Training-data limitations** in the worked answer below to see exactly why those choices are problems, not strengths, and how that changes what the board can trust; then apply the same lens to a fresh scenario where you're asked to evaluate a model trained only on post-pandemic purchasing versus one that includes 2020–2021.\n\n*© Gradd — for your personal exam preparation.*\n\n---\n\n## The accuracy claim\n\nThe headline 94% accuracy should not be accepted at face value. Around 6% of Vesla's customers churn in a typical year, so a model that simply predicted \"no customer will churn\" would be about 94% accurate while identifying no churners at all. Accuracy is the wrong measure for such an imbalanced outcome; the board should ask how many actual churners the model correctly identifies (recall), what proportion of flagged customers would actually have churned (precision), and the number and cost of false positives, ideally weighted by the cost of a voucher against the margin retained, since those figures determine whether the retention budget is being aimed at the right people. The output is also a bare flagged/not-flagged list with no probability score, so marketing cannot rank or prioritise the customers most at risk. Until they are reported, the output cannot be relied upon.\n\n## The app-usage recommendation\n\nThe finding that app users churn less is a correlation in the training data; the analyst's recommendation to force app downloads treats it as a cause. It is at least as plausible that Vesla's most engaged, loyal customers are the ones who choose to install the app — in which case compelling less engaged customers to download it would not make them loyal, and adding friction at checkout could itself increase abandonment. The insight worth acting on is the association; the causal claim needs testing (for example, a controlled trial of app prompts) before any checkout mandate.\n\n## Training-data limitations\n\nTwo features of the training data limit what the output can say about next year. First, one of the two training years contained Vesla's largest-ever sitewide discounting campaign, so purchasing behaviour in that year is unlikely to represent a normal year — patterns the model learned may partly reflect the promotion rather than durable customer behaviour. Second, customers who joined within the last twelve months were excluded, so the model has not learned from new-customer behaviour and any predictions for that segment may be unreliable; if the scoring process also excludes them, the flagged list will systematically miss a group the board needs to understand, since it needs to know whether recent acquisition is converting into repeat purchasing.\n\n## Insights that can be acted on\n\nThe customer-services signal — more than two contacts in a year associating with churn — is plausible, actionable and cheap to act on: it suggests a service-friction signal worth investigating as a possible churn driver, regardless of the model. Feeding flagged customers to marketing is reasonable as a pilot, provided the flag quality is first verified (above) and the results of the vouchers are measured against a control group, so Vesla learns whether the intervention works rather than assuming it.\n\n## The \"model is complete\" claim\n\nThe recommendation to treat the model as complete should be rejected. Customer behaviour shifts, the training window is already unrepresentative, and the model has never been validated in live use. The board should require periodic retraining and ongoing monitoring of the model's live hit rate; the cost of retraining should be weighed against the cost of a growing retention budget aimed by a decaying model.\n\n## Conclusion\n\nThe model is a promising start but not yet a safe basis for decisions. Before reliance: report churner-level performance rather than headline accuracy, test the app-usage claim rather than mandating downloads, extend the data to cover new customers and normal trading years, pilot the voucher list against a control group, and schedule retraining.",
+          "latency_ms": 8368,
+          "gap": [],
+          "reveal": [
+            {
+              "design": "B",
+              "paper": "APM",
+              "reached_from": "struggle",
+              "nothingCreditable": false,
+              "conditioned": false,
+              "sections": 6,
+              "reframe": true
+            }
+          ],
+          "offList": [],
+          "unsourced": [
+            {
+              "surface": "case",
+              "paper": "APM",
+              "reached_from": "struggle",
+              "unsourced": [
+                "2020",
+                "2021"
+              ],
+              "checked": 5
+            }
+          ],
+          "unquoted": [],
+          "wrapperCut": []
+        }
+      ],
+      "score": {
+        "verdict": "in_list",
+        "sections_named": [
+          "Training-data limitations"
+        ],
+        "section_index": [
+          3
+        ],
+        "wrapper": "You've nailed the base-rate critique and spotted the correlation-versus-causation trap with the app usage—those are the two hardest calls on this question and you got them exactly right. Where you've walked into a real pitfall is treating the training-data choices as a strength when they're actually material limitations that weaken the model's usefulness to the board. The misconception here is accepting the analyst's framing that a wider range of behaviour (including the sitewide discount year) automatically makes a model more robust—but when that training data is distorted by an anomalous campaign, the model learns patterns that won't repeat, and excluding new customers means the board can't score a segment it actually needs to understand and can't act on them if they appear in the flagged list. Start by reading **Training-data limitations** in the worked answer below to see exactly why those choices are problems, not strengths, and how that changes what the board can trust; then apply the same lens to a fresh scenario where you're asked to evaluate a model trained only on post-pandemic purchasing versus one that includes 2020–2021.\n\n*© Gradd — for your personal exam preparation.*",
+        "wrapper_chars": 1200,
+        "wrapper_has_heading": false,
+        "wrapper_has_rule": false,
+        "wrapper_ends_mid_sentence": false,
+        "separator_present": true,
+        "artefact_chars": 3660,
+        "tail_intact": true,
+        "quotation": {
+          "spans": [],
+          "total": 0,
+          "student_attributed": 0,
+          "fabricated_surviving": 0
+        }
+      },
+      "reveal_log": {
+        "design": "B",
+        "paper": "APM",
+        "reached_from": "struggle",
+        "nothingCreditable": false,
+        "conditioned": false,
+        "sections": 6,
+        "reframe": true
+      }
+    },
+    {
+      "run": 3,
+      "progress_rows_before_post": 0,
+      "legs": [
+        {
+          "leg": "miss1_hint",
+          "status": 200,
+          "message_kind": "hint",
+          "intent": "attempt",
+          "reply": "You've read the training data choices as a strength when the scenario actually signals they're a *material problem* — the sitewide discounting year and the newbie exclusion aren't neutral design calls, they're sources of systematic bias that the model cannot see.\n\n**Next move:** Go back to those two training choices. For each one, write down what *real* customer population the model has never learned how to score — what pattern it's now blind to — and what that means when it tries to predict on today's customer base.",
+          "latency_ms": 5397,
+          "gap": [
+            {
+              "at": "case_gap_verdict",
+              "parsed": true,
+              "creditable": 1,
+              "derived": 1,
+              "correct": false,
+              "label": "Student incorrectly praised training-data choices that the model identifies as material limitations"
+            }
+          ],
+          "reveal": [],
+          "offList": [],
+          "unsourced": [],
+          "unquoted": [],
+          "wrapperCut": []
+        },
+        {
+          "leg": "miss2_teach",
+          "status": 200,
+          "message_kind": "teaching",
+          "intent": "attempt",
+          "reply": "You've made a strong start and you've correctly identified the accuracy trap — that's a genuine problem that many candidates miss. But you've then made a critical move in the opposite direction: you've endorsed the training-data choices as \"sound\", when the scenario actually gives you facts that undermine them.\n\nThe requirement is asking you to *judge this specific churn model against its specific data*. So look again at what the scenario tells you about those two years of training data — especially the *sitewide discounting campaign* that happened in the earlier year. Ask yourself: if Vesla was clearing excess stock with the largest-ever discount drive, what does that do to the purchase patterns the model learned? And then: is a model trained on that distorted year actually a strength when you're trying to predict behaviour in a normal year? The data choice isn't sound — it's actually a material weakness, and you need to name what it costs.\n\nOnce you've thought through that, add one sentence to your answer explaining what the inclusion of the discounting year does to the model's ability to predict churn in a normal operating environment.",
+          "latency_ms": 6238,
+          "gap": [
+            {
+              "at": "case_gap_verdict",
+              "parsed": true,
+              "creditable": 1,
+              "derived": 1,
+              "correct": false,
+              "label": "Student wrongly endorsed training-data choices the model flags as significant limitations"
+            }
+          ],
+          "reveal": [],
+          "offList": [],
+          "unsourced": [],
+          "unquoted": [],
+          "wrapperCut": []
+        },
+        {
+          "leg": "reveal",
+          "status": 200,
+          "message_kind": "reveal",
+          "intent": "reveal",
+          "reply": "You've spotted the core technical flaw — that 94% accuracy is nearly meaningless when churn is so rare — and you've correctly pushed back on the app mandate as correlation-not-causation and flagged the need for probability scores, not just binary flags. The misconception you've walked into is treating the training-data choices (the promotional year and the exclusion of new customers) as strengths when they are actually **significant representativeness gaps that distort what the model has learned and blind it to a customer segment the board urgently needs to understand**. The model isn't learning typical Vesla behaviour; it's partly learning an anomalous past, and it's scoring nobody on new-customer patterns at all. Start by reading the section headed **Training-data limitations** — that's where the examiner rewards you for flipping from \"this sounds methodologically sound\" to \"this actively weakens the output.\" Once you've absorbed that reframe, try applying it to a fresh scenario: imagine a bank's churn model trained only on data from a period when it offered a one-time cash bonus to switchers, then excludes all accounts under six months old. What would that model be blind to, and what risk would the board run by acting on its flagged list?\n\n*© Gradd — for your personal exam preparation.*\n\n---\n\n## The accuracy claim\n\nThe headline 94% accuracy should not be accepted at face value. Around 6% of Vesla's customers churn in a typical year, so a model that simply predicted \"no customer will churn\" would be about 94% accurate while identifying no churners at all. Accuracy is the wrong measure for such an imbalanced outcome; the board should ask how many actual churners the model correctly identifies (recall), what proportion of flagged customers would actually have churned (precision), and the number and cost of false positives, ideally weighted by the cost of a voucher against the margin retained, since those figures determine whether the retention budget is being aimed at the right people. The output is also a bare flagged/not-flagged list with no probability score, so marketing cannot rank or prioritise the customers most at risk. Until they are reported, the output cannot be relied upon.\n\n## The app-usage recommendation\n\nThe finding that app users churn less is a correlation in the training data; the analyst's recommendation to force app downloads treats it as a cause. It is at least as plausible that Vesla's most engaged, loyal customers are the ones who choose to install the app — in which case compelling less engaged customers to download it would not make them loyal, and adding friction at checkout could itself increase abandonment. The insight worth acting on is the association; the causal claim needs testing (for example, a controlled trial of app prompts) before any checkout mandate.\n\n## Training-data limitations\n\nTwo features of the training data limit what the output can say about next year. First, one of the two training years contained Vesla's largest-ever sitewide discounting campaign, so purchasing behaviour in that year is unlikely to represent a normal year — patterns the model learned may partly reflect the promotion rather than durable customer behaviour. Second, customers who joined within the last twelve months were excluded, so the model has not learned from new-customer behaviour and any predictions for that segment may be unreliable; if the scoring process also excludes them, the flagged list will systematically miss a group the board needs to understand, since it needs to know whether recent acquisition is converting into repeat purchasing.\n\n## Insights that can be acted on\n\nThe customer-services signal — more than two contacts in a year associating with churn — is plausible, actionable and cheap to act on: it suggests a service-friction signal worth investigating as a possible churn driver, regardless of the model. Feeding flagged customers to marketing is reasonable as a pilot, provided the flag quality is first verified (above) and the results of the vouchers are measured against a control group, so Vesla learns whether the intervention works rather than assuming it.\n\n## The \"model is complete\" claim\n\nThe recommendation to treat the model as complete should be rejected. Customer behaviour shifts, the training window is already unrepresentative, and the model has never been validated in live use. The board should require periodic retraining and ongoing monitoring of the model's live hit rate; the cost of retraining should be weighed against the cost of a growing retention budget aimed by a decaying model.\n\n## Conclusion\n\nThe model is a promising start but not yet a safe basis for decisions. Before reliance: report churner-level performance rather than headline accuracy, test the app-usage claim rather than mandating downloads, extend the data to cover new customers and normal trading years, pilot the voucher list against a control group, and schedule retraining.",
+          "latency_ms": 7430,
+          "gap": [],
+          "reveal": [
+            {
+              "design": "B",
+              "paper": "APM",
+              "reached_from": "struggle",
+              "nothingCreditable": false,
+              "conditioned": false,
+              "sections": 6,
+              "reframe": true
+            }
+          ],
+          "offList": [],
+          "unsourced": [],
+          "unquoted": [],
+          "wrapperCut": []
+        }
+      ],
+      "score": {
+        "verdict": "in_list",
+        "sections_named": [
+          "Training-data limitations"
+        ],
+        "section_index": [
+          3
+        ],
+        "wrapper": "You've spotted the core technical flaw — that 94% accuracy is nearly meaningless when churn is so rare — and you've correctly pushed back on the app mandate as correlation-not-causation and flagged the need for probability scores, not just binary flags. The misconception you've walked into is treating the training-data choices (the promotional year and the exclusion of new customers) as strengths when they are actually **significant representativeness gaps that distort what the model has learned and blind it to a customer segment the board urgently needs to understand**. The model isn't learning typical Vesla behaviour; it's partly learning an anomalous past, and it's scoring nobody on new-customer patterns at all. Start by reading the section headed **Training-data limitations** — that's where the examiner rewards you for flipping from \"this sounds methodologically sound\" to \"this actively weakens the output.\" Once you've absorbed that reframe, try applying it to a fresh scenario: imagine a bank's churn model trained only on data from a period when it offered a one-time cash bonus to switchers, then excludes all accounts under six months old. What would that model be blind to, and what risk would the board run by acting on its flagged list?\n\n*© Gradd — for your personal exam preparation.*",
+        "wrapper_chars": 1310,
+        "wrapper_has_heading": false,
+        "wrapper_has_rule": false,
+        "wrapper_ends_mid_sentence": false,
+        "separator_present": true,
+        "artefact_chars": 3660,
+        "tail_intact": true,
+        "quotation": {
+          "spans": [
+            {
+              "quoted": "this sounds methodologically sound",
+              "student_attributed": false,
+              "trigger": null,
+              "verbatim": null
+            },
+            {
+              "quoted": "this actively weakens the output.",
+              "student_attributed": false,
+              "trigger": null,
+              "verbatim": null
+            }
+          ],
+          "total": 2,
+          "student_attributed": 0,
+          "fabricated_surviving": 0
+        }
+      },
+      "reveal_log": {
+        "design": "B",
+        "paper": "APM",
+        "reached_from": "struggle",
+        "nothingCreditable": false,
+        "conditioned": false,
+        "sections": 6,
+        "reframe": true
+      }
+    },
+    {
+      "run": 4,
+      "progress_rows_before_post": 0,
+      "legs": [
+        {
+          "leg": "miss1_hint",
+          "status": 200,
+          "message_kind": "hint",
+          "intent": "attempt",
+          "reply": "You've caught the accuracy trap and the app causation risk sharply — both good — but you've then flipped the training data argument on its head. The sitewide discounting year and the exclusion of new customers aren't strengths here; they're both representativeness problems that will push the model to flag the *wrong* customers when it's used on *today's* customer base.\n\nHere's the move: go back to your paragraph on training data and ask yourself — *who does this model actually know how to score well?* It's trained on customers who survived (or didn't) under high discounting pressure and a base that's weighted toward the old, established cohort. When marketing uses it in September 20X5 on a customer mix that now includes six months of newer joiners and normal promotional conditions, what's it actually predicting? Add a sentence naming that mismatch as a *real* refinement Vesla needs — not retraining the whole thing, but at least a validation step on recent cohorts before the list goes live.",
+          "latency_ms": 6734,
+          "gap": [
+            {
+              "at": "case_gap_verdict",
+              "parsed": true,
+              "creditable": 1,
+              "derived": 1,
+              "correct": false,
+              "label": "Student incorrectly endorsed training-data limitations as strengths, misreading representativeness risk"
+            }
+          ],
+          "reveal": [],
+          "offList": [],
+          "unsourced": [],
+          "unquoted": [],
+          "wrapperCut": []
+        },
+        {
+          "leg": "miss2_teach",
+          "status": 200,
+          "message_kind": "teaching",
+          "intent": "attempt",
+          "reply": "I need to stop you on one thing that's actually a material flaw in your reasoning, not a strength.\n\nYou've said including the sitewide discounting year is a strength because it exposes the model to \"a wider range of purchasing behaviour\". But read the scenario again: Vesla ran that campaign specifically to clear excess stock — it was an abnormal event. A model trained on that year learns patterns from a period that doesn't represent normal customer behaviour or normal churn drivers. When marketing now uses this model on today's customers (who are NOT in a mass-clearance environment), the patterns it learned may not hold. That's not generalization — that's contamination of the training signal. The analyst's own words flag this without realizing: they tell you the training years are not comparable to each other.\n\nThe real question the board needs answered is: **which of the model's findings were driven by the abnormal year, and which would still hold if you retrained on two normal years?** You cannot tell from a single model run. That's not a weakness in the training *philosophy* — it's a reason retraining is not optional, it's essential before acting.\n\nAdd this sentence to your assessment: \"The model should be retrained on two consecutive normal-operating years to isolate whether the customer-services and app-usage findings persist, or whether they are artefacts of the discounting campaign year.\"",
+          "latency_ms": 7809,
+          "gap": [
+            {
+              "at": "case_gap_verdict",
+              "parsed": true,
+              "creditable": 1,
+              "derived": 1,
+              "correct": false,
+              "label": "Student incorrectly validated training-data choices that the model identifies as material limitations"
+            }
+          ],
+          "reveal": [],
+          "offList": [],
+          "unsourced": [],
+          "unquoted": [],
+          "wrapperCut": []
+        },
+        {
+          "leg": "reveal",
+          "status": 200,
+          "message_kind": "reveal",
+          "intent": "reveal",
+          "reply": "You've nailed the core insight — accuracy is a trap when churn is rare — and you've got the correlation-vs-causation critique of app usage exactly right. Where you diverged from the examiner's top marks is in how you handled the training data. You wrote that including the sitewide discount year and excluding new customers are genuine strengths, but the reframe is different: those choices are actually **material limitations that make the model learn from an unrepresentative past and blind it to a segment the board urgently needs to score**. The model may perform well on historical data, but generalization and segment coverage are separate from internal accuracy. Start with **Training-data limitations** in the worked answer below — that section shows why a promotion-distorted year and the new-customer exclusion are liabilities, not assets, and what they cost you when the model scores today's customer base. Then apply the same skeptical lens to a fresh scenario: if you were asked to assess a model trained only on last year's data (a pandemic year with unusual purchasing), what segment blindness or distortion would you flag to the board before they acted on its predictions?\n\n*© Gradd — for your personal exam preparation.*\n\n---\n\n## The accuracy claim\n\nThe headline 94% accuracy should not be accepted at face value. Around 6% of Vesla's customers churn in a typical year, so a model that simply predicted \"no customer will churn\" would be about 94% accurate while identifying no churners at all. Accuracy is the wrong measure for such an imbalanced outcome; the board should ask how many actual churners the model correctly identifies (recall), what proportion of flagged customers would actually have churned (precision), and the number and cost of false positives, ideally weighted by the cost of a voucher against the margin retained, since those figures determine whether the retention budget is being aimed at the right people. The output is also a bare flagged/not-flagged list with no probability score, so marketing cannot rank or prioritise the customers most at risk. Until they are reported, the output cannot be relied upon.\n\n## The app-usage recommendation\n\nThe finding that app users churn less is a correlation in the training data; the analyst's recommendation to force app downloads treats it as a cause. It is at least as plausible that Vesla's most engaged, loyal customers are the ones who choose to install the app — in which case compelling less engaged customers to download it would not make them loyal, and adding friction at checkout could itself increase abandonment. The insight worth acting on is the association; the causal claim needs testing (for example, a controlled trial of app prompts) before any checkout mandate.\n\n## Training-data limitations\n\nTwo features of the training data limit what the output can say about next year. First, one of the two training years contained Vesla's largest-ever sitewide discounting campaign, so purchasing behaviour in that year is unlikely to represent a normal year — patterns the model learned may partly reflect the promotion rather than durable customer behaviour. Second, customers who joined within the last twelve months were excluded, so the model has not learned from new-customer behaviour and any predictions for that segment may be unreliable; if the scoring process also excludes them, the flagged list will systematically miss a group the board needs to understand, since it needs to know whether recent acquisition is converting into repeat purchasing.\n\n## Insights that can be acted on\n\nThe customer-services signal — more than two contacts in a year associating with churn — is plausible, actionable and cheap to act on: it suggests a service-friction signal worth investigating as a possible churn driver, regardless of the model. Feeding flagged customers to marketing is reasonable as a pilot, provided the flag quality is first verified (above) and the results of the vouchers are measured against a control group, so Vesla learns whether the intervention works rather than assuming it.\n\n## The \"model is complete\" claim\n\nThe recommendation to treat the model as complete should be rejected. Customer behaviour shifts, the training window is already unrepresentative, and the model has never been validated in live use. The board should require periodic retraining and ongoing monitoring of the model's live hit rate; the cost of retraining should be weighed against the cost of a growing retention budget aimed by a decaying model.\n\n## Conclusion\n\nThe model is a promising start but not yet a safe basis for decisions. Before reliance: report churner-level performance rather than headline accuracy, test the app-usage claim rather than mandating downloads, extend the data to cover new customers and normal trading years, pilot the voucher list against a control group, and schedule retraining.",
+          "latency_ms": 8142,
+          "gap": [],
+          "reveal": [
+            {
+              "design": "B",
+              "paper": "APM",
+              "reached_from": "struggle",
+              "nothingCreditable": false,
+              "conditioned": false,
+              "sections": 6,
+              "reframe": true
+            }
+          ],
+          "offList": [],
+          "unsourced": [],
+          "unquoted": [],
+          "wrapperCut": []
+        }
+      ],
+      "score": {
+        "verdict": "in_list",
+        "sections_named": [
+          "Training-data limitations"
+        ],
+        "section_index": [
+          3
+        ],
+        "wrapper": "You've nailed the core insight — accuracy is a trap when churn is rare — and you've got the correlation-vs-causation critique of app usage exactly right. Where you diverged from the examiner's top marks is in how you handled the training data. You wrote that including the sitewide discount year and excluding new customers are genuine strengths, but the reframe is different: those choices are actually **material limitations that make the model learn from an unrepresentative past and blind it to a segment the board urgently needs to score**. The model may perform well on historical data, but generalization and segment coverage are separate from internal accuracy. Start with **Training-data limitations** in the worked answer below — that section shows why a promotion-distorted year and the new-customer exclusion are liabilities, not assets, and what they cost you when the model scores today's customer base. Then apply the same skeptical lens to a fresh scenario: if you were asked to assess a model trained only on last year's data (a pandemic year with unusual purchasing), what segment blindness or distortion would you flag to the board before they acted on its predictions?\n\n*© Gradd — for your personal exam preparation.*",
+        "wrapper_chars": 1237,
+        "wrapper_has_heading": false,
+        "wrapper_has_rule": false,
+        "wrapper_ends_mid_sentence": false,
+        "separator_present": true,
+        "artefact_chars": 3660,
+        "tail_intact": true,
+        "quotation": {
+          "spans": [],
+          "total": 0,
+          "student_attributed": 0,
+          "fabricated_surviving": 0
+        }
+      },
+      "reveal_log": {
+        "design": "B",
+        "paper": "APM",
+        "reached_from": "struggle",
+        "nothingCreditable": false,
+        "conditioned": false,
+        "sections": 6,
+        "reframe": true
+      }
+    },
+    {
+      "run": 5,
+      "progress_rows_before_post": 0,
+      "legs": [
+        {
+          "leg": "miss1_hint",
+          "status": 200,
+          "message_kind": "hint",
+          "intent": "attempt",
+          "reply": "You've read the training-data choices exactly backwards: the sitewide discount year is *contamination*, not strength, and it's teaching the model to spot the wrong patterns. The real move here is to name what that bias actually costs Vesla when it acts on the output.\n\n---\n\n**What happened:**\n\nYou said including the heavy-discount year would help the model generalise better. It does the opposite. That year skews the entire training set: customers who came *because of* the sale, customers whose purchase behaviour was temporarily inflated by clearance pricing, and the discount-sensitives who churned *after* the promotion ended — all of these become the model's reference for what \"normal\" customer behaviour looks like. When the model then flags customers as churn-risk in 20X5 (a normal year with normal pricing), it's partly identifying people who match the discount-year patterns, which is not the same as identifying real churn risk in today's commercial environment.\n\n**Why it matters here:**\n\nIf marketing issues retention vouchers based on this contaminated flagging, they're over-discounting to customers who might never have been at risk, and potentially discounting the wrong cohorts entirely. That's direct margin leakage. The question asks you to advise on what the board can \"safely act on\" — and safety includes whether the model's training reflects the business context they're operating in *now*.\n\n**Next move:**\n\nTake your answer as written, find the sentence where you endorsed the training data, and replace it with: one sentence naming the discount year as a source of bias (not strength), and one sentence saying what that",
+          "latency_ms": 8063,
+          "gap": [
+            {
+              "at": "case_gap_verdict",
+              "parsed": true,
+              "creditable": 1,
+              "derived": 1,
+              "correct": false,
+              "label": "Student wrongly endorsed training-data flaws as strengths, reversing correct critique"
+            }
+          ],
+          "reveal": [],
+          "offList": [],
+          "unsourced": [],
+          "unquoted": [],
+          "wrapperCut": []
+        },
+        {
+          "leg": "miss2_teach",
+          "status": 200,
+          "message_kind": "teaching",
+          "intent": "attempt",
+          "reply": "You've identified the core statistical misfire—the 94% accuracy trap—which is exactly right and sharp. The problem is what you've done with the training data: you've decided it's *a strength* when the scenario is actually telling you it's *a material limitation* that the model must flag and the board must account for.\n\nLet me show you the mismatch. The model was trained partly on the year Vesla ran its largest-ever discounting campaign. That year's customer behaviour—purchase patterns, contact-service load, churn itself—was shaped by clearance economics that don't exist now. When the board uses this model to score today's customers, it's asking a model built on \"what happened when we were clearing stock\" to predict \"what happens in normal trading.\" The model doesn't know the difference. Including that year was a data choice, yes—but it's a choice that *embeds a historical anomaly into predictions about the future*. That's not a generalisation strength; that's a hidden assumption the board needs to see and assess for itself.\n\nYour answer currently treats this as sound engineering. It isn't—it's a risk the analyst should have flagged and the board should weigh: how much does last year's churn behaviour still look like today's, given the discounting backdrop? Does the pattern hold in normal years only? That question lives in the requirement and your answer walks past it.\n\n**Here's the one edit:** Revise your para on training data to acknowledge that including the sitewide-discounting year means the model learnt churn patterns *shaped by unusual stock-clearing conditions*, and add: the board should ask the data team whether churn predictors remained stable when comparing the normal year to the discounting year—if they shifted materially, the model's accuracy on today's customers is at risk. That one sentence ties the data choice",
+          "latency_ms": 8762,
+          "gap": [
+            {
+              "at": "case_gap_verdict",
+              "parsed": true,
+              "creditable": 1,
+              "derived": 1,
+              "correct": false,
+              "label": "Student incorrectly endorsed training-data choices the model flags as material limitations"
+            }
+          ],
+          "reveal": [],
+          "offList": [],
+          "unsourced": [],
+          "unquoted": [],
+          "wrapperCut": []
+        },
+        {
+          "leg": "reveal",
+          "status": 200,
+          "message_kind": "reveal",
+          "intent": "reveal",
+          "reply": "You've done well to reject a bare accuracy figure and to flag that marketing can't rank risk without probability scores—that's exactly the kind of skepticism this question rewards. The misconception you've walked into is that **the training-data choices (including the discounting year and excluding new customers) are strengths that make the model generalise better, when in fact they are material limitations that leave the board acting on a distorted and incomplete picture of churn risk**. The analyst's exclusion of new customers doesn't just keep the training set clean; it means the model has learned nothing about a fast-growing segment, and if scoring also excludes them, the marketing list will miss them entirely. Similarly, training on a year heavy with sitewide discounting teaches the model to spot churn patterns under abnormal conditions, not the stable-state churn the board faces now. Start by reading **Training-data limitations**, which walks through why those choices undermine rather than strengthen the output—then apply the same lens to a fresh scenario where you're asked whether a model trained only on Black Friday data should be used to forecast steady-state demand.\n\n*© Gradd — for your personal exam preparation.*\n\n---\n\n## The accuracy claim\n\nThe headline 94% accuracy should not be accepted at face value. Around 6% of Vesla's customers churn in a typical year, so a model that simply predicted \"no customer will churn\" would be about 94% accurate while identifying no churners at all. Accuracy is the wrong measure for such an imbalanced outcome; the board should ask how many actual churners the model correctly identifies (recall), what proportion of flagged customers would actually have churned (precision), and the number and cost of false positives, ideally weighted by the cost of a voucher against the margin retained, since those figures determine whether the retention budget is being aimed at the right people. The output is also a bare flagged/not-flagged list with no probability score, so marketing cannot rank or prioritise the customers most at risk. Until they are reported, the output cannot be relied upon.\n\n## The app-usage recommendation\n\nThe finding that app users churn less is a correlation in the training data; the analyst's recommendation to force app downloads treats it as a cause. It is at least as plausible that Vesla's most engaged, loyal customers are the ones who choose to install the app — in which case compelling less engaged customers to download it would not make them loyal, and adding friction at checkout could itself increase abandonment. The insight worth acting on is the association; the causal claim needs testing (for example, a controlled trial of app prompts) before any checkout mandate.\n\n## Training-data limitations\n\nTwo features of the training data limit what the output can say about next year. First, one of the two training years contained Vesla's largest-ever sitewide discounting campaign, so purchasing behaviour in that year is unlikely to represent a normal year — patterns the model learned may partly reflect the promotion rather than durable customer behaviour. Second, customers who joined within the last twelve months were excluded, so the model has not learned from new-customer behaviour and any predictions for that segment may be unreliable; if the scoring process also excludes them, the flagged list will systematically miss a group the board needs to understand, since it needs to know whether recent acquisition is converting into repeat purchasing.\n\n## Insights that can be acted on\n\nThe customer-services signal — more than two contacts in a year associating with churn — is plausible, actionable and cheap to act on: it suggests a service-friction signal worth investigating as a possible churn driver, regardless of the model. Feeding flagged customers to marketing is reasonable as a pilot, provided the flag quality is first verified (above) and the results of the vouchers are measured against a control group, so Vesla learns whether the intervention works rather than assuming it.\n\n## The \"model is complete\" claim\n\nThe recommendation to treat the model as complete should be rejected. Customer behaviour shifts, the training window is already unrepresentative, and the model has never been validated in live use. The board should require periodic retraining and ongoing monitoring of the model's live hit rate; the cost of retraining should be weighed against the cost of a growing retention budget aimed by a decaying model.\n\n## Conclusion\n\nThe model is a promising start but not yet a safe basis for decisions. Before reliance: report churner-level performance rather than headline accuracy, test the app-usage claim rather than mandating downloads, extend the data to cover new customers and normal trading years, pilot the voucher list against a control group, and schedule retraining.",
+          "latency_ms": 7724,
+          "gap": [],
+          "reveal": [
+            {
+              "design": "B",
+              "paper": "APM",
+              "reached_from": "struggle",
+              "nothingCreditable": false,
+              "conditioned": false,
+              "sections": 6,
+              "reframe": true
+            }
+          ],
+          "offList": [],
+          "unsourced": [],
+          "unquoted": [],
+          "wrapperCut": []
+        }
+      ],
+      "score": {
+        "verdict": "in_list",
+        "sections_named": [
+          "Training-data limitations"
+        ],
+        "section_index": [
+          3
+        ],
+        "wrapper": "You've done well to reject a bare accuracy figure and to flag that marketing can't rank risk without probability scores—that's exactly the kind of skepticism this question rewards. The misconception you've walked into is that **the training-data choices (including the discounting year and excluding new customers) are strengths that make the model generalise better, when in fact they are material limitations that leave the board acting on a distorted and incomplete picture of churn risk**. The analyst's exclusion of new customers doesn't just keep the training set clean; it means the model has learned nothing about a fast-growing segment, and if scoring also excludes them, the marketing list will miss them entirely. Similarly, training on a year heavy with sitewide discounting teaches the model to spot churn patterns under abnormal conditions, not the stable-state churn the board faces now. Start by reading **Training-data limitations**, which walks through why those choices undermine rather than strengthen the output—then apply the same lens to a fresh scenario where you're asked whether a model trained only on Black Friday data should be used to forecast steady-state demand.\n\n*© Gradd — for your personal exam preparation.*",
+        "wrapper_chars": 1243,
+        "wrapper_has_heading": false,
+        "wrapper_has_rule": false,
+        "wrapper_ends_mid_sentence": false,
+        "separator_present": true,
+        "artefact_chars": 3660,
+        "tail_intact": true,
+        "quotation": {
+          "spans": [],
+          "total": 0,
+          "student_attributed": 0,
+          "fabricated_surviving": 0
+        }
+      },
+      "reveal_log": {
+        "design": "B",
+        "paper": "APM",
+        "reached_from": "struggle",
+        "nothingCreditable": false,
+        "conditioned": false,
+        "sections": 6,
+        "reframe": true
+      }
+    },
+    {
+      "run": 6,
+      "progress_rows_before_post": 0,
+      "legs": [
+        {
+          "leg": "miss1_hint",
+          "status": 200,
+          "message_kind": "hint",
+          "intent": "attempt",
+          "reply": "You've nailed the statistical trap in the accuracy figure and you're right to smell causation confusion on the app usage — but you've done the opposite thing on the training data: you've reasoned from general principle (wider variety is good) when you need to reason from *Vesla's actual position right now, on 1 September 20X5*. What does it mean that the model was trained on data ending roughly when, and what risk does that create for a prediction the board wants to act on in autumn?\n\n**Next move:** Look at the timeline in the scenario — when was the sitewide discount campaign, when was the training data collected, what date is it now, and how far out does Vesla want to use the model to flag customers. Write down the gap between the latest training data and the decisions marketing will make with the model's output.",
+          "latency_ms": 5821,
+          "gap": [
+            {
+              "at": "case_gap_verdict",
+              "parsed": true,
+              "creditable": 1,
+              "derived": 1,
+              "correct": false,
+              "label": "Student incorrectly endorsed training-data flaws as strengths, missing key limitations"
+            }
+          ],
+          "reveal": [],
+          "offList": [],
+          "unsourced": [],
+          "unquoted": [],
+          "wrapperCut": []
+        },
+        {
+          "leg": "miss2_teach",
+          "status": 200,
+          "message_kind": "teaching",
+          "intent": "attempt",
+          "reply": "You've spotted the accuracy trap and the app causation problem cleanly — those moves are exactly right. But look again at what you said about the training data.\n\nYou wrote that including the sitewide discounting year is \"an advantage\" because it exposes the model to a wider range. Step back: the board's stated priority is to reduce churn *going forward*. The model learned customer behaviour during a year when Vesla was running its largest-ever clearance campaign. What does that tell you about what patterns the model has actually learned to spot — and whether those patterns will still hold when Vesla is *not* running that campaign? The presence of that year in the training set is not a strength you should defend; it's a material source of distortion you need to flag. Churn risk in a fire-sale year is a different beast from churn risk in normal trading, and the model cannot tell them apart.\n\nThat one reframing — naming what the model was actually trained *on* and asking whether that matches the future it's meant to predict — is the application move this question is testing. Write one or two sentences that replace your endorsement with a sceptical assessment: what does the anomalous training year mean for the model's reliability in the board's actual operating environment?",
+          "latency_ms": 7544,
+          "gap": [
+            {
+              "at": "case_gap_verdict",
+              "parsed": true,
+              "creditable": 1,
+              "derived": 1,
+              "correct": false,
+              "label": "Student incorrectly endorsed training-data and model-completeness choices the model flags as limitations"
+            }
+          ],
+          "reveal": [],
+          "offList": [],
+          "unsourced": [],
+          "unquoted": [],
+          "wrapperCut": []
+        },
+        {
+          "leg": "reveal",
+          "status": 200,
+          "message_kind": "reveal",
+          "intent": "reveal",
+          "reply": "You've nailed the critical insight that accuracy alone is misleading here—and you're exactly right that a naive \"nobody churns\" model would score around 94% on a 6% base rate, making that headline number nearly useless. Where you've slipped, though, is endorsing the training-data choices as a genuine strength. The misconception here is **treating the inclusion of a promotion-distorted year and the exclusion of new customers as sound design decisions rather than serious limitations**. Those choices don't make the model generalize better; they make it learn an unrepresentative past and leave it blind to a customer segment the board actually needs to understand. Start by reading **Training-data limitations** in the worked answer below—it walks through why a promotion year contaminates the signal, why new-customer exclusion creates a scoring blind spot, and what the board should ask before accepting this as the final model. Then apply that same questioning to a fresh scenario: if a model were trained only on data from a period when your company changed its returns policy, how would you know whether it was learning genuine churn drivers or just the policy effect?\n\n*© Gradd — for your personal exam preparation.*\n\n---\n\n## The accuracy claim\n\nThe headline 94% accuracy should not be accepted at face value. Around 6% of Vesla's customers churn in a typical year, so a model that simply predicted \"no customer will churn\" would be about 94% accurate while identifying no churners at all. Accuracy is the wrong measure for such an imbalanced outcome; the board should ask how many actual churners the model correctly identifies (recall), what proportion of flagged customers would actually have churned (precision), and the number and cost of false positives, ideally weighted by the cost of a voucher against the margin retained, since those figures determine whether the retention budget is being aimed at the right people. The output is also a bare flagged/not-flagged list with no probability score, so marketing cannot rank or prioritise the customers most at risk. Until they are reported, the output cannot be relied upon.\n\n## The app-usage recommendation\n\nThe finding that app users churn less is a correlation in the training data; the analyst's recommendation to force app downloads treats it as a cause. It is at least as plausible that Vesla's most engaged, loyal customers are the ones who choose to install the app — in which case compelling less engaged customers to download it would not make them loyal, and adding friction at checkout could itself increase abandonment. The insight worth acting on is the association; the causal claim needs testing (for example, a controlled trial of app prompts) before any checkout mandate.\n\n## Training-data limitations\n\nTwo features of the training data limit what the output can say about next year. First, one of the two training years contained Vesla's largest-ever sitewide discounting campaign, so purchasing behaviour in that year is unlikely to represent a normal year — patterns the model learned may partly reflect the promotion rather than durable customer behaviour. Second, customers who joined within the last twelve months were excluded, so the model has not learned from new-customer behaviour and any predictions for that segment may be unreliable; if the scoring process also excludes them, the flagged list will systematically miss a group the board needs to understand, since it needs to know whether recent acquisition is converting into repeat purchasing.\n\n## Insights that can be acted on\n\nThe customer-services signal — more than two contacts in a year associating with churn — is plausible, actionable and cheap to act on: it suggests a service-friction signal worth investigating as a possible churn driver, regardless of the model. Feeding flagged customers to marketing is reasonable as a pilot, provided the flag quality is first verified (above) and the results of the vouchers are measured against a control group, so Vesla learns whether the intervention works rather than assuming it.\n\n## The \"model is complete\" claim\n\nThe recommendation to treat the model as complete should be rejected. Customer behaviour shifts, the training window is already unrepresentative, and the model has never been validated in live use. The board should require periodic retraining and ongoing monitoring of the model's live hit rate; the cost of retraining should be weighed against the cost of a growing retention budget aimed by a decaying model.\n\n## Conclusion\n\nThe model is a promising start but not yet a safe basis for decisions. Before reliance: report churner-level performance rather than headline accuracy, test the app-usage claim rather than mandating downloads, extend the data to cover new customers and normal trading years, pilot the voucher list against a control group, and schedule retraining.",
+          "latency_ms": 7770,
+          "gap": [],
+          "reveal": [
+            {
+              "design": "B",
+              "paper": "APM",
+              "reached_from": "struggle",
+              "nothingCreditable": false,
+              "conditioned": false,
+              "sections": 6,
+              "reframe": true
+            }
+          ],
+          "offList": [],
+          "unsourced": [],
+          "unquoted": [],
+          "wrapperCut": []
+        }
+      ],
+      "score": {
+        "verdict": "in_list",
+        "sections_named": [
+          "Training-data limitations"
+        ],
+        "section_index": [
+          3
+        ],
+        "wrapper": "You've nailed the critical insight that accuracy alone is misleading here—and you're exactly right that a naive \"nobody churns\" model would score around 94% on a 6% base rate, making that headline number nearly useless. Where you've slipped, though, is endorsing the training-data choices as a genuine strength. The misconception here is **treating the inclusion of a promotion-distorted year and the exclusion of new customers as sound design decisions rather than serious limitations**. Those choices don't make the model generalize better; they make it learn an unrepresentative past and leave it blind to a customer segment the board actually needs to understand. Start by reading **Training-data limitations** in the worked answer below—it walks through why a promotion year contaminates the signal, why new-customer exclusion creates a scoring blind spot, and what the board should ask before accepting this as the final model. Then apply that same questioning to a fresh scenario: if a model were trained only on data from a period when your company changed its returns policy, how would you know whether it was learning genuine churn drivers or just the policy effect?\n\n*© Gradd — for your personal exam preparation.*",
+        "wrapper_chars": 1225,
+        "wrapper_has_heading": false,
+        "wrapper_has_rule": false,
+        "wrapper_ends_mid_sentence": false,
+        "separator_present": true,
+        "artefact_chars": 3660,
+        "tail_intact": true,
+        "quotation": {
+          "spans": [
+            {
+              "quoted": "nobody churns",
+              "student_attributed": false,
+              "trigger": null,
+              "verbatim": null
+            }
+          ],
+          "total": 1,
+          "student_attributed": 0,
+          "fabricated_surviving": 0
+        }
+      },
+      "reveal_log": {
+        "design": "B",
+        "paper": "APM",
+        "reached_from": "struggle",
+        "nothingCreditable": false,
+        "conditioned": false,
+        "sections": 6,
+        "reframe": true
+      }
+    },
+    {
+      "run": 7,
+      "progress_rows_before_post": 0,
+      "legs": [
+        {
+          "leg": "miss1_hint",
+          "status": 200,
+          "message_kind": "hint",
+          "intent": "attempt",
+          "reply": "You've nailed the accuracy trap and the causation fallacy on app usage — those are genuinely sharp — but you've backed the training data choice that actually cuts *against* you here. The sitewide-discount year wasn't a strength; it's a loaded gun: a model trained on a year of panicked clearance buying has learned to flag customers whose behaviour *during that year* looked like churn risk, when what you actually need is a model that predicts churn under *normal* trading conditions.\n\n**Next move:** rewrite that paragraph on training data. Name specifically what the model has learned from the discount year (hint: what does heavy discounting do to customer behaviour and purchase patterns?), and explain why that makes the model *less* reliable when marketing tries to use it on customers in a normal year.",
+          "latency_ms": 5551,
+          "gap": [
+            {
+              "at": "case_gap_verdict",
+              "parsed": true,
+              "creditable": 1,
+              "derived": 1,
+              "correct": false,
+              "label": "Student incorrectly endorsed training-data flaws as strengths rather than limitations"
+            }
+          ],
+          "reveal": [],
+          "offList": [],
+          "unsourced": [],
+          "unquoted": [],
+          "wrapperCut": []
+        },
+        {
+          "leg": "miss2_teach",
+          "status": 200,
+          "message_kind": "teaching",
+          "intent": "attempt",
+          "reply": "You've spotted the accuracy trap cleanly and correctly identified the causal-inference problem with app usage — those are both genuinely strong analytical moves. But I need to push back on your endorsement of the training-data choices, because you've read them as strengths when the scenario actually flags them as *liabilities specific to this business*.\n\nThe inclusion of the sitewide discounting year is not a generalisation win here; it's a *temporal bias*. Vesla ran that campaign to clear excess stock — it was an abnormal, one-off event. A customer who churned after that year-long promotional bombardment may have churned *because* of it, not in spite of it. Your model is now trained to predict the behaviour of customers living through a crisis clearance. But the board wants to predict churn under normal trading. That's a different pattern, and your model will misread it.\n\nEqually, the exclusion of new customers looks clean on the surface, but it creates a *survivorship bias*. You've trained the model only on customers who have already stayed for at least a year. You've removed the very cohort that might show you *why* new customers churn — which, for a retailer focused on repeat purchasing, is commercially critical. The board can't use this model to predict churn among its incoming customer stream.\n\nHere's the concrete edit: add a sentence that names which training-data choice *actually* limits the model's usefulness for the board's stated goal, and why. For instance: \"The exclusion of customers who joined within the last twelve months means the model cannot predict churn among new customers, yet protecting the incoming stream is essential for revenue growth in a repeat-purchase business.\" That ties the data flaw directly to *this* board's priority, not to a generic data-science principle.",
+          "latency_ms": 8256,
+          "gap": [
+            {
+              "at": "case_gap_verdict",
+              "parsed": true,
+              "creditable": 1,
+              "derived": 1,
+              "correct": false,
+              "label": "Student incorrectly endorsed training-data flaws as strengths rather than limitations"
+            }
+          ],
+          "reveal": [],
+          "offList": [],
+          "unsourced": [],
+          "unquoted": [],
+          "wrapperCut": []
+        },
+        {
+          "leg": "reveal",
+          "status": 200,
+          "message_kind": "reveal",
+          "intent": "reveal",
+          "reply": "You've nailed the base-rate trap and the correlation-versus-causation problem — those are the two hardest challenges in this question, and you spotted both. You also caught that accuracy alone is nearly useless here. But you then endorsed the training-data choices as genuine strengths when they're actually **material limitations that blur what the model has and hasn't learned**. The misconception: *assuming that excluding recent customers and including a promotion-distorted year make the model more robust, when really they mean the model has never seen its real customer mix and learned to score a group it can't even evaluate.* Start with the section titled **Training-data limitations** in the worked answer below — that's where the flaw in your reasoning becomes clear, and why those two choices are actually constraints the board needs to understand before deploying the flagged list. Once you've worked through that, take a fresh question: if the board decides to pilot retention vouchers on the flagged customers, what data would you need to collect *during the pilot* to measure whether the model's predictions actually held up in live use?\n\n*© Gradd — for your personal exam preparation.*\n\n---\n\n## The accuracy claim\n\nThe headline 94% accuracy should not be accepted at face value. Around 6% of Vesla's customers churn in a typical year, so a model that simply predicted \"no customer will churn\" would be about 94% accurate while identifying no churners at all. Accuracy is the wrong measure for such an imbalanced outcome; the board should ask how many actual churners the model correctly identifies (recall), what proportion of flagged customers would actually have churned (precision), and the number and cost of false positives, ideally weighted by the cost of a voucher against the margin retained, since those figures determine whether the retention budget is being aimed at the right people. The output is also a bare flagged/not-flagged list with no probability score, so marketing cannot rank or prioritise the customers most at risk. Until they are reported, the output cannot be relied upon.\n\n## The app-usage recommendation\n\nThe finding that app users churn less is a correlation in the training data; the analyst's recommendation to force app downloads treats it as a cause. It is at least as plausible that Vesla's most engaged, loyal customers are the ones who choose to install the app — in which case compelling less engaged customers to download it would not make them loyal, and adding friction at checkout could itself increase abandonment. The insight worth acting on is the association; the causal claim needs testing (for example, a controlled trial of app prompts) before any checkout mandate.\n\n## Training-data limitations\n\nTwo features of the training data limit what the output can say about next year. First, one of the two training years contained Vesla's largest-ever sitewide discounting campaign, so purchasing behaviour in that year is unlikely to represent a normal year — patterns the model learned may partly reflect the promotion rather than durable customer behaviour. Second, customers who joined within the last twelve months were excluded, so the model has not learned from new-customer behaviour and any predictions for that segment may be unreliable; if the scoring process also excludes them, the flagged list will systematically miss a group the board needs to understand, since it needs to know whether recent acquisition is converting into repeat purchasing.\n\n## Insights that can be acted on\n\nThe customer-services signal — more than two contacts in a year associating with churn — is plausible, actionable and cheap to act on: it suggests a service-friction signal worth investigating as a possible churn driver, regardless of the model. Feeding flagged customers to marketing is reasonable as a pilot, provided the flag quality is first verified (above) and the results of the vouchers are measured against a control group, so Vesla learns whether the intervention works rather than assuming it.\n\n## The \"model is complete\" claim\n\nThe recommendation to treat the model as complete should be rejected. Customer behaviour shifts, the training window is already unrepresentative, and the model has never been validated in live use. The board should require periodic retraining and ongoing monitoring of the model's live hit rate; the cost of retraining should be weighed against the cost of a growing retention budget aimed by a decaying model.\n\n## Conclusion\n\nThe model is a promising start but not yet a safe basis for decisions. Before reliance: report churner-level performance rather than headline accuracy, test the app-usage claim rather than mandating downloads, extend the data to cover new customers and normal trading years, pilot the voucher list against a control group, and schedule retraining.",
+          "latency_ms": 7446,
+          "gap": [],
+          "reveal": [
+            {
+              "design": "B",
+              "paper": "APM",
+              "reached_from": "struggle",
+              "nothingCreditable": false,
+              "conditioned": false,
+              "sections": 6,
+              "reframe": true
+            }
+          ],
+          "offList": [],
+          "unsourced": [],
+          "unquoted": [],
+          "wrapperCut": []
+        }
+      ],
+      "score": {
+        "verdict": "in_list",
+        "sections_named": [
+          "Training-data limitations"
+        ],
+        "section_index": [
+          3
+        ],
+        "wrapper": "You've nailed the base-rate trap and the correlation-versus-causation problem — those are the two hardest challenges in this question, and you spotted both. You also caught that accuracy alone is nearly useless here. But you then endorsed the training-data choices as genuine strengths when they're actually **material limitations that blur what the model has and hasn't learned**. The misconception: *assuming that excluding recent customers and including a promotion-distorted year make the model more robust, when really they mean the model has never seen its real customer mix and learned to score a group it can't even evaluate.* Start with the section titled **Training-data limitations** in the worked answer below — that's where the flaw in your reasoning becomes clear, and why those two choices are actually constraints the board needs to understand before deploying the flagged list. Once you've worked through that, take a fresh question: if the board decides to pilot retention vouchers on the flagged customers, what data would you need to collect *during the pilot* to measure whether the model's predictions actually held up in live use?\n\n*© Gradd — for your personal exam preparation.*",
+        "wrapper_chars": 1202,
+        "wrapper_has_heading": false,
+        "wrapper_has_rule": false,
+        "wrapper_ends_mid_sentence": false,
+        "separator_present": true,
+        "artefact_chars": 3660,
+        "tail_intact": true,
+        "quotation": {
+          "spans": [],
+          "total": 0,
+          "student_attributed": 0,
+          "fabricated_surviving": 0
+        }
+      },
+      "reveal_log": {
+        "design": "B",
+        "paper": "APM",
+        "reached_from": "struggle",
+        "nothingCreditable": false,
+        "conditioned": false,
+        "sections": 6,
+        "reframe": true
+      }
+    },
+    {
+      "run": 8,
+      "progress_rows_before_post": 0,
+      "legs": [
+        {
+          "leg": "miss1_hint",
+          "status": 200,
+          "message_kind": "hint",
+          "intent": "attempt",
+          "reply": "You've spotted the accuracy trap well, and you're right to challenge the app-causation claim — but you've then flipped into defending the training data on general principles (\"wider range generalises better\") when the scenario gives you a **specific fact** that breaks that logic: customers who joined in the last twelve months were excluded because they lack a full year of history, which means the model has **never seen** Vesla's newest cohorts at all, so it cannot tell you whether the churn patterns it learned still hold for how Vesla acquires customers today.\n\nGo back to your training-data paragraph and add one sentence that names what this exclusion actually cost you: what does it mean for the model's ability to predict churn in the **current** customer base, when the newest entrants — who may have different behaviour — are a blind spot?",
+          "latency_ms": 6548,
+          "gap": [
+            {
+              "at": "case_gap_verdict",
+              "parsed": true,
+              "creditable": 1,
+              "derived": 1,
+              "correct": false,
+              "label": "Student wrongly endorsed flawed training-data choices as model strengths rather than limitations"
+            }
+          ],
+          "reveal": [],
+          "offList": [],
+          "unsourced": [],
+          "unquoted": [],
+          "wrapperCut": []
+        },
+        {
+          "leg": "miss2_teach",
+          "status": 200,
+          "message_kind": "teaching",
+          "intent": "attempt",
+          "reply": "You've seen the statistical trap correctly — that's solid reasoning — and you've rightly flagged the app causation confusion. But you've made a critical error on the training data that swings the entire assessment in the wrong direction.\n\nThe sitewide discounting campaign wasn't a strength; it's a contamination. Here's why it matters to THIS scenario: the model was trained on customer behaviour during an abnormal, one-off event (massive sitewide discounting to clear stock). Customers who were responsive to that offer, or who bought specifically because of it, will have different churn patterns than customers in normal trading conditions. When you feed the model back to marketing in September 20X5 — a year with no sitewide campaign — you're asking it to predict behaviour under conditions it was never trained on. The model has learned what looks like genuine loyalty signals but may actually have learned \"discount responsiveness.\" That's not generalization; that's domain drift. The inclusion of that year is a *liability*, not an advantage — and this matters because the board is about to spend money acting on predictions that may not transfer to normal trading.\n\nThe practical implication: before the flagged list goes to marketing, you need to flag to the board that the model's predictive power may be overstated when applied to a non-discounting environment, and that a separate validation run against customers' actual churn behaviour in 20X5 (now live) is needed to check whether the predictions hold up in normal conditions.\n\n**Add one sentence to your assessment:** something like: \"However, the inclusion of the sitewide discounting year is a material risk: customers' purchase and churn behaviour during a stock-clearance campaign may not generalise to normal trading, and before deploying the flagged list, the model's predictions should be validated against actual churn observed in post-campaign conditions.\"",
+          "latency_ms": 9188,
+          "gap": [
+            {
+              "at": "case_gap_verdict",
+              "parsed": true,
+              "creditable": 1,
+              "derived": 1,
+              "correct": false,
+              "label": "Student incorrectly defended training-data flaws as strengths rather than limitations"
+            }
+          ],
+          "reveal": [],
+          "offList": [],
+          "unsourced": [],
+          "unquoted": [],
+          "wrapperCut": []
+        },
+        {
+          "leg": "reveal",
+          "status": 200,
+          "message_kind": "reveal",
+          "intent": "reveal",
+          "reply": "You've landed the most crucial move: recognising that 94% accuracy is a trap when churn is rare, and demanding recall, precision, and false-positive costs instead. That's the foundation the board needs. Where you shifted course is on training data — you treated the sitewide-discount year and the new-customer exclusion as strengths, but the misconception here is that **a model trained on unrepresentative history will learn patterns that don't generalise to today's customer base, and if the scoring also excludes a segment, the board gets no insight into that segment at all**. Read **Training-data limitations** first, which shows exactly why a promotion-distorted year and the exclusion of new customers are flaws, not features — and then apply that same skepticism to a fresh scenario: if you were building a churn model for a retailer who had just launched in a new market, would you train it on data from their established markets, and why or why not?\n\n*© Gradd — for your personal exam preparation.*\n\n---\n\n## The accuracy claim\n\nThe headline 94% accuracy should not be accepted at face value. Around 6% of Vesla's customers churn in a typical year, so a model that simply predicted \"no customer will churn\" would be about 94% accurate while identifying no churners at all. Accuracy is the wrong measure for such an imbalanced outcome; the board should ask how many actual churners the model correctly identifies (recall), what proportion of flagged customers would actually have churned (precision), and the number and cost of false positives, ideally weighted by the cost of a voucher against the margin retained, since those figures determine whether the retention budget is being aimed at the right people. The output is also a bare flagged/not-flagged list with no probability score, so marketing cannot rank or prioritise the customers most at risk. Until they are reported, the output cannot be relied upon.\n\n## The app-usage recommendation\n\nThe finding that app users churn less is a correlation in the training data; the analyst's recommendation to force app downloads treats it as a cause. It is at least as plausible that Vesla's most engaged, loyal customers are the ones who choose to install the app — in which case compelling less engaged customers to download it would not make them loyal, and adding friction at checkout could itself increase abandonment. The insight worth acting on is the association; the causal claim needs testing (for example, a controlled trial of app prompts) before any checkout mandate.\n\n## Training-data limitations\n\nTwo features of the training data limit what the output can say about next year. First, one of the two training years contained Vesla's largest-ever sitewide discounting campaign, so purchasing behaviour in that year is unlikely to represent a normal year — patterns the model learned may partly reflect the promotion rather than durable customer behaviour. Second, customers who joined within the last twelve months were excluded, so the model has not learned from new-customer behaviour and any predictions for that segment may be unreliable; if the scoring process also excludes them, the flagged list will systematically miss a group the board needs to understand, since it needs to know whether recent acquisition is converting into repeat purchasing.\n\n## Insights that can be acted on\n\nThe customer-services signal — more than two contacts in a year associating with churn — is plausible, actionable and cheap to act on: it suggests a service-friction signal worth investigating as a possible churn driver, regardless of the model. Feeding flagged customers to marketing is reasonable as a pilot, provided the flag quality is first verified (above) and the results of the vouchers are measured against a control group, so Vesla learns whether the intervention works rather than assuming it.\n\n## The \"model is complete\" claim\n\nThe recommendation to treat the model as complete should be rejected. Customer behaviour shifts, the training window is already unrepresentative, and the model has never been validated in live use. The board should require periodic retraining and ongoing monitoring of the model's live hit rate; the cost of retraining should be weighed against the cost of a growing retention budget aimed by a decaying model.\n\n## Conclusion\n\nThe model is a promising start but not yet a safe basis for decisions. Before reliance: report churner-level performance rather than headline accuracy, test the app-usage claim rather than mandating downloads, extend the data to cover new customers and normal trading years, pilot the voucher list against a control group, and schedule retraining.",
+          "latency_ms": 7562,
+          "gap": [],
+          "reveal": [
+            {
+              "design": "B",
+              "paper": "APM",
+              "reached_from": "struggle",
+              "nothingCreditable": false,
+              "conditioned": false,
+              "sections": 6,
+              "reframe": true
+            }
+          ],
+          "offList": [],
+          "unsourced": [],
+          "unquoted": [],
+          "wrapperCut": []
+        }
+      ],
+      "score": {
+        "verdict": "in_list",
+        "sections_named": [
+          "Training-data limitations"
+        ],
+        "section_index": [
+          3
+        ],
+        "wrapper": "You've landed the most crucial move: recognising that 94% accuracy is a trap when churn is rare, and demanding recall, precision, and false-positive costs instead. That's the foundation the board needs. Where you shifted course is on training data — you treated the sitewide-discount year and the new-customer exclusion as strengths, but the misconception here is that **a model trained on unrepresentative history will learn patterns that don't generalise to today's customer base, and if the scoring also excludes a segment, the board gets no insight into that segment at all**. Read **Training-data limitations** first, which shows exactly why a promotion-distorted year and the exclusion of new customers are flaws, not features — and then apply that same skepticism to a fresh scenario: if you were building a churn model for a retailer who had just launched in a new market, would you train it on data from their established markets, and why or why not?\n\n*© Gradd — for your personal exam preparation.*",
+        "wrapper_chars": 1008,
+        "wrapper_has_heading": false,
+        "wrapper_has_rule": false,
+        "wrapper_ends_mid_sentence": false,
+        "separator_present": true,
+        "artefact_chars": 3660,
+        "tail_intact": true,
+        "quotation": {
+          "spans": [],
+          "total": 0,
+          "student_attributed": 0,
+          "fabricated_surviving": 0
+        }
+      },
+      "reveal_log": {
+        "design": "B",
+        "paper": "APM",
+        "reached_from": "struggle",
+        "nothingCreditable": false,
+        "conditioned": false,
+        "sections": 6,
+        "reframe": true
+      }
+    },
+    {
+      "run": 9,
+      "progress_rows_before_post": 0,
+      "legs": [
+        {
+          "leg": "miss1_hint",
+          "status": 200,
+          "message_kind": "hint",
+          "intent": "attempt",
+          "reply": "You've spotted the accuracy trap and the app causation problem — those are solid — but you've reasoned *backwards* on the training data: you've said excluding recent joiners is sound because it keeps the set \"clean\", but you haven't checked what **Vesla's own churn problem actually is**. The board told you churn is the largest drag on revenue growth, which means they need to predict churn across their *whole* active base — so what does it matter that the model has never seen a customer in their first year when that's precisely the cohort marketing most needs to know about?\n\n**Next move:** reread the board's stated priority, then reread the analyst's decision to exclude recent joiners, and write one sentence that names what revenue opportunity the training-data choice silently sacrifices.",
+          "latency_ms": 5736,
+          "gap": [
+            {
+              "at": "case_gap_verdict",
+              "parsed": true,
+              "creditable": 1,
+              "derived": 1,
+              "correct": false,
+              "label": "Student incorrectly validated training-data choices that the model identifies as significant limitations"
+            }
+          ],
+          "reveal": [],
+          "offList": [],
+          "unsourced": [],
+          "unquoted": [],
+          "wrapperCut": []
+        },
+        {
+          "leg": "miss2_teach",
+          "status": 200,
+          "message_kind": "teaching",
+          "intent": "attempt",
+          "reply": "I need to stop you here on one claim that costs marks because it reverses what the scenario actually shows.\n\nYou've said that including the sitewide discounting year is a *strength* because it exposes the model to wider purchasing behaviour — but read the setup again: that discount campaign was run to clear *excess stock*, and it was the largest Vesla had ever done. That's not normal purchasing behaviour; it's a distortion. A model trained heavily on that year will have learned patterns (what customers buy when price is artificially suppressed, how they respond to emergency discounting) that do not predict how they'll behave in a normal year. When marketing now feeds the flagged list into a normal commercial environment with normal pricing, the model's predictions may not hold — the training data has taught it to recognise churners under abnormal conditions, not ordinary ones. That's a genuine weakness you've mistaken for a strength, and it directly undermines your confidence in treating the model as complete.\n\nThe rest of your scepticism is sharp: you're right on accuracy as a measure, right to push back on causality in the app usage finding, and right that the incomplete-history exclusion makes sense. But the discount-year flaw is one the board needs to hear, because it affects whether marketing can safely act on this output.\n\n**Your next move:** rewrite the paragraph on training data to name why the sitewide discounting year is actually a *problem* for deployment in a normal operating year, not an advantage. Then ask yourself: what should the analyst have done differently, and does that affect whether retraining is really as low-value as you concluded?",
+          "latency_ms": 8373,
+          "gap": [
+            {
+              "at": "case_gap_verdict",
+              "parsed": true,
+              "creditable": 1,
+              "derived": 1,
+              "correct": false,
+              "label": "Student wrongly validated training-data flaws as strengths, missing genuine limitations"
+            }
+          ],
+          "reveal": [],
+          "offList": [],
+          "unsourced": [],
+          "unquoted": [],
+          "wrapperCut": []
+        },
+        {
+          "leg": "reveal",
+          "status": 200,
+          "message_kind": "reveal",
+          "intent": "reveal",
+          "reply": "You've nailed the headline risk — the 94% accuracy figure is a statistical trap when almost everyone doesn't churn anyway — and you've correctly spotted that the analyst is confusing correlation with causation on the app. Where you've stepped into a trap is on the training data: you've read the inclusion of the heavy-discount year and the exclusion of new customers as methodological strengths, when in fact they're real limitations that narrow what the model can reliably tell the board. Start by reading **Training-data limitations** in the worked answer below — that section unpacks why a model trained partly on an unrepresentative promotional year and *scored* on a cohort it never learned from is a material flaw, not a strength. Once you've worked through that reasoning, apply it to a fresh scenario: imagine a recruitment model trained on two years of hiring data from before your company expanded into a new region — would you confidently use it to score candidates in that region, and why?\n\n*© Gradd — for your personal exam preparation.*\n\n---\n\n## The accuracy claim\n\nThe headline 94% accuracy should not be accepted at face value. Around 6% of Vesla's customers churn in a typical year, so a model that simply predicted \"no customer will churn\" would be about 94% accurate while identifying no churners at all. Accuracy is the wrong measure for such an imbalanced outcome; the board should ask how many actual churners the model correctly identifies (recall), what proportion of flagged customers would actually have churned (precision), and the number and cost of false positives, ideally weighted by the cost of a voucher against the margin retained, since those figures determine whether the retention budget is being aimed at the right people. The output is also a bare flagged/not-flagged list with no probability score, so marketing cannot rank or prioritise the customers most at risk. Until they are reported, the output cannot be relied upon.\n\n## The app-usage recommendation\n\nThe finding that app users churn less is a correlation in the training data; the analyst's recommendation to force app downloads treats it as a cause. It is at least as plausible that Vesla's most engaged, loyal customers are the ones who choose to install the app — in which case compelling less engaged customers to download it would not make them loyal, and adding friction at checkout could itself increase abandonment. The insight worth acting on is the association; the causal claim needs testing (for example, a controlled trial of app prompts) before any checkout mandate.\n\n## Training-data limitations\n\nTwo features of the training data limit what the output can say about next year. First, one of the two training years contained Vesla's largest-ever sitewide discounting campaign, so purchasing behaviour in that year is unlikely to represent a normal year — patterns the model learned may partly reflect the promotion rather than durable customer behaviour. Second, customers who joined within the last twelve months were excluded, so the model has not learned from new-customer behaviour and any predictions for that segment may be unreliable; if the scoring process also excludes them, the flagged list will systematically miss a group the board needs to understand, since it needs to know whether recent acquisition is converting into repeat purchasing.\n\n## Insights that can be acted on\n\nThe customer-services signal — more than two contacts in a year associating with churn — is plausible, actionable and cheap to act on: it suggests a service-friction signal worth investigating as a possible churn driver, regardless of the model. Feeding flagged customers to marketing is reasonable as a pilot, provided the flag quality is first verified (above) and the results of the vouchers are measured against a control group, so Vesla learns whether the intervention works rather than assuming it.\n\n## The \"model is complete\" claim\n\nThe recommendation to treat the model as complete should be rejected. Customer behaviour shifts, the training window is already unrepresentative, and the model has never been validated in live use. The board should require periodic retraining and ongoing monitoring of the model's live hit rate; the cost of retraining should be weighed against the cost of a growing retention budget aimed by a decaying model.\n\n## Conclusion\n\nThe model is a promising start but not yet a safe basis for decisions. Before reliance: report churner-level performance rather than headline accuracy, test the app-usage claim rather than mandating downloads, extend the data to cover new customers and normal trading years, pilot the voucher list against a control group, and schedule retraining.",
+          "latency_ms": 8316,
+          "gap": [],
+          "reveal": [
+            {
+              "design": "B",
+              "paper": "APM",
+              "reached_from": "struggle",
+              "nothingCreditable": false,
+              "conditioned": false,
+              "sections": 6,
+              "reframe": true
+            }
+          ],
+          "offList": [],
+          "unsourced": [],
+          "unquoted": [],
+          "wrapperCut": []
+        }
+      ],
+      "score": {
+        "verdict": "in_list",
+        "sections_named": [
+          "Training-data limitations"
+        ],
+        "section_index": [
+          3
+        ],
+        "wrapper": "You've nailed the headline risk — the 94% accuracy figure is a statistical trap when almost everyone doesn't churn anyway — and you've correctly spotted that the analyst is confusing correlation with causation on the app. Where you've stepped into a trap is on the training data: you've read the inclusion of the heavy-discount year and the exclusion of new customers as methodological strengths, when in fact they're real limitations that narrow what the model can reliably tell the board. Start by reading **Training-data limitations** in the worked answer below — that section unpacks why a model trained partly on an unrepresentative promotional year and *scored* on a cohort it never learned from is a material flaw, not a strength. Once you've worked through that reasoning, apply it to a fresh scenario: imagine a recruitment model trained on two years of hiring data from before your company expanded into a new region — would you confidently use it to score candidates in that region, and why?\n\n*© Gradd — for your personal exam preparation.*",
+        "wrapper_chars": 1051,
+        "wrapper_has_heading": false,
+        "wrapper_has_rule": false,
+        "wrapper_ends_mid_sentence": false,
+        "separator_present": true,
+        "artefact_chars": 3660,
+        "tail_intact": true,
+        "quotation": {
+          "spans": [],
+          "total": 0,
+          "student_attributed": 0,
+          "fabricated_surviving": 0
+        }
+      },
+      "reveal_log": {
+        "design": "B",
+        "paper": "APM",
+        "reached_from": "struggle",
+        "nothingCreditable": false,
+        "conditioned": false,
+        "sections": 6,
+        "reframe": true
+      }
+    },
+    {
+      "run": 10,
+      "progress_rows_before_post": 0,
+      "legs": [
+        {
+          "leg": "miss1_hint",
+          "status": 200,
+          "message_kind": "hint",
+          "intent": "attempt",
+          "reply": "You've nailed the accuracy trap and the app causality problem — those are both real and well-spotted — but you've read the training data choice backwards: the sitewide discounting year actually *weakens* what the model can tell you about normal churn, not strengthens it, because it trained the model on customer behaviour under artificial conditions that won't repeat. \n\nHere's the move: look at what the analyst said about *why* that year is in the data, and then ask yourself — if customers' behaviour was distorted by one-off heavy discounting, what does a pattern the model learned from that year actually predict about what will happen this year when there's no sitewide campaign running?",
+          "latency_ms": 5402,
+          "gap": [
+            {
+              "at": "case_gap_verdict",
+              "parsed": true,
+              "creditable": 1,
+              "derived": 1,
+              "correct": false,
+              "label": "Student wrongly endorsed training-data choices that model flags as material limitations"
+            }
+          ],
+          "reveal": [],
+          "offList": [],
+          "unsourced": [],
+          "unquoted": [],
+          "wrapperCut": []
+        },
+        {
+          "leg": "miss2_teach",
+          "status": 200,
+          "message_kind": "teaching",
+          "intent": "attempt",
+          "reply": "You've correctly identified the accuracy trap and the app-causality reversal — those are the analytical moves the marker is looking for. But you've made a significant misjudgement on the training data that weakens your overall assessment.\n\nThe sitewide discounting year is **not** a strength here; it's a contamination risk. The model learns patterns from a year when Vesla's own behaviour (heavy discounting) was abnormal and likely drove customer behaviour in ways that won't recur. When you deploy the model now on customers who haven't experienced a sitewide clearance campaign, you're asking it to predict churn based on patterns learned in a year when the business itself was structurally different. That's not \"generalization to wider behaviour\" — it's asking the model to transfer patterns from a year whose conditions no longer hold. You need to name that explicitly: **what does it mean for model reliability if the training year's commercial environment was materially different from the deployment environment?** That's the real application question here.\n\nThe exclusion of new customers is fine (you've got that right), but the inclusion of the abnormal-discount year is a genuine limitation, not a strength, and that matters to the board's confidence in relying on the output.\n\n**Your next move:** add one sentence explaining why training on the sitewide-discount year creates a specific risk to the model's predictive power going forward, and what the board should do to test whether the patterns learned in that year still hold.",
+          "latency_ms": 7485,
+          "gap": [
+            {
+              "at": "case_gap_verdict",
+              "parsed": true,
+              "creditable": 1,
+              "derived": 1,
+              "correct": false,
+              "label": "Student incorrectly defended training-data flaws as strengths rather than limitations"
+            }
+          ],
+          "reveal": [],
+          "offList": [],
+          "unsourced": [],
+          "unquoted": [],
+          "wrapperCut": []
+        },
+        {
+          "leg": "reveal",
+          "status": 200,
+          "message_kind": "reveal",
+          "intent": "reveal",
+          "reply": "You've done strong work identifying that the 94% accuracy claim is misleading in a low-churn context, and you're right to push back on the causal leap from app correlation to a checkout mandate. The misconception you've walked into is treating the sitewide-discount year and new-customer exclusion as training-data *strengths* when they're actually *limitations* that make the model partly blind to Vesla's current business. A year shaped by excess-stock clearing teaches the model about atypical buying patterns, and excluding new customers means the model has learned nothing about a fast-growing segment—and if the scoring also excludes them, the flagged list leaves money on the table. Read **Training-data limitations** first to see why these aren't safeguards but blind spots, then use that lens to think through: if your churn model was trained only on a year when your company ran emergency clearance sales, what risks does that create when you score regular customers, and how would you test whether the model's recommendations actually hold under normal conditions?\n\n*© Gradd — for your personal exam preparation.*\n\n---\n\n## The accuracy claim\n\nThe headline 94% accuracy should not be accepted at face value. Around 6% of Vesla's customers churn in a typical year, so a model that simply predicted \"no customer will churn\" would be about 94% accurate while identifying no churners at all. Accuracy is the wrong measure for such an imbalanced outcome; the board should ask how many actual churners the model correctly identifies (recall), what proportion of flagged customers would actually have churned (precision), and the number and cost of false positives, ideally weighted by the cost of a voucher against the margin retained, since those figures determine whether the retention budget is being aimed at the right people. The output is also a bare flagged/not-flagged list with no probability score, so marketing cannot rank or prioritise the customers most at risk. Until they are reported, the output cannot be relied upon.\n\n## The app-usage recommendation\n\nThe finding that app users churn less is a correlation in the training data; the analyst's recommendation to force app downloads treats it as a cause. It is at least as plausible that Vesla's most engaged, loyal customers are the ones who choose to install the app — in which case compelling less engaged customers to download it would not make them loyal, and adding friction at checkout could itself increase abandonment. The insight worth acting on is the association; the causal claim needs testing (for example, a controlled trial of app prompts) before any checkout mandate.\n\n## Training-data limitations\n\nTwo features of the training data limit what the output can say about next year. First, one of the two training years contained Vesla's largest-ever sitewide discounting campaign, so purchasing behaviour in that year is unlikely to represent a normal year — patterns the model learned may partly reflect the promotion rather than durable customer behaviour. Second, customers who joined within the last twelve months were excluded, so the model has not learned from new-customer behaviour and any predictions for that segment may be unreliable; if the scoring process also excludes them, the flagged list will systematically miss a group the board needs to understand, since it needs to know whether recent acquisition is converting into repeat purchasing.\n\n## Insights that can be acted on\n\nThe customer-services signal — more than two contacts in a year associating with churn — is plausible, actionable and cheap to act on: it suggests a service-friction signal worth investigating as a possible churn driver, regardless of the model. Feeding flagged customers to marketing is reasonable as a pilot, provided the flag quality is first verified (above) and the results of the vouchers are measured against a control group, so Vesla learns whether the intervention works rather than assuming it.\n\n## The \"model is complete\" claim\n\nThe recommendation to treat the model as complete should be rejected. Customer behaviour shifts, the training window is already unrepresentative, and the model has never been validated in live use. The board should require periodic retraining and ongoing monitoring of the model's live hit rate; the cost of retraining should be weighed against the cost of a growing retention budget aimed by a decaying model.\n\n## Conclusion\n\nThe model is a promising start but not yet a safe basis for decisions. Before reliance: report churner-level performance rather than headline accuracy, test the app-usage claim rather than mandating downloads, extend the data to cover new customers and normal trading years, pilot the voucher list against a control group, and schedule retraining.",
+          "latency_ms": 7695,
+          "gap": [],
+          "reveal": [
+            {
+              "design": "B",
+              "paper": "APM",
+              "reached_from": "struggle",
+              "nothingCreditable": false,
+              "conditioned": false,
+              "sections": 6,
+              "reframe": true
+            }
+          ],
+          "offList": [],
+          "unsourced": [],
+          "unquoted": [],
+          "wrapperCut": []
+        }
+      ],
+      "score": {
+        "verdict": "in_list",
+        "sections_named": [
+          "Training-data limitations"
+        ],
+        "section_index": [
+          3
+        ],
+        "wrapper": "You've done strong work identifying that the 94% accuracy claim is misleading in a low-churn context, and you're right to push back on the causal leap from app correlation to a checkout mandate. The misconception you've walked into is treating the sitewide-discount year and new-customer exclusion as training-data *strengths* when they're actually *limitations* that make the model partly blind to Vesla's current business. A year shaped by excess-stock clearing teaches the model about atypical buying patterns, and excluding new customers means the model has learned nothing about a fast-growing segment—and if the scoring also excludes them, the flagged list leaves money on the table. Read **Training-data limitations** first to see why these aren't safeguards but blind spots, then use that lens to think through: if your churn model was trained only on a year when your company ran emergency clearance sales, what risks does that create when you score regular customers, and how would you test whether the model's recommendations actually hold under normal conditions?\n\n*© Gradd — for your personal exam preparation.*",
+        "wrapper_chars": 1124,
+        "wrapper_has_heading": false,
+        "wrapper_has_rule": false,
+        "wrapper_ends_mid_sentence": false,
+        "separator_present": true,
+        "artefact_chars": 3660,
+        "tail_intact": true,
+        "quotation": {
+          "spans": [],
+          "total": 0,
+          "student_attributed": 0,
+          "fabricated_surviving": 0
+        }
+      },
+      "reveal_log": {
+        "design": "B",
+        "paper": "APM",
+        "reached_from": "struggle",
+        "nothingCreditable": false,
+        "conditioned": false,
+        "sections": 6,
+        "reframe": true
+      }
+    }
+  ]
+}
