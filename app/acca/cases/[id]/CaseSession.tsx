@@ -944,7 +944,7 @@ const CSS = `
 
    ⚠️ MEASURED, because the first version of this comment claimed a ~25% height saving and
    that was wrong: on the live reveal it is 26px of width and 28px of height (1,523 -> 1,495).
-   THE BINDING CONSTRAINT IS NOT THIS RULE. `.ec-layout` is capped at max-width 1200px with a
+   THE BINDING CONSTRAINT IS NOT THIS RULE. .ec-layout is capped at max-width 1200px with a
    400px sidebar, so the chat pane is ~706px however wide the screen is — the message was
    already within 26px of the pane. Raising that cap is the lever that would actually shorten
    the reveal (~946px of measure, ~1,150px tall), and it is a reading-measure decision for
