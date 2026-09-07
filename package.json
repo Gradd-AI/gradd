@@ -26,6 +26,7 @@
     "test:phrase-match": "tsx scripts/test-phrase-match.ts",
     "test:reveal-figure-audit": "tsx scripts/test-reveal-figure-audit.ts",
     "test:reveal-quotation": "tsx scripts/test-reveal-quotation.ts",
+    "test:reveal-split": "tsx scripts/test-reveal-split.ts",
     "test:npv": "tsx scripts/test-npv.ts",
     "test:apv": "tsx scripts/test-apv.ts",
     "test:irr": "tsx scripts/test-irr.ts",
