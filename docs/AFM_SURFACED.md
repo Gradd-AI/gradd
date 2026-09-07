@@ -81,6 +81,108 @@ be refused at the serve boundary rather than papered over at turn time.
 
 ---
 
+## 🟠 OPEN 2026-09-07 (r) — THE DRILL ROUTE'S FALSE ABSENCE IS NOT ESTABLISHED AT ZERO, AND `0/10` NEVER ESTABLISHED IT
+
+**The drill arm is the control the case fix was measured against, and it is the weakest number in
+the run.** Pre-fix it measured **0/10**; post-fix, with the drill route's prompt bytes *provably
+unchanged* (`buildStudentAnswerBlock` moved to a shared module and `npm run
+test:student-answer-block` pins all three branches byte-for-byte against the pre-move strings), it
+measured **2/10**. Fisher **p = 0.474** — not significant, and reported rather than explained away.
+
+**On hand-read the two hits are not equal, and one of them is real:**
+
+- `drill#1` — *"you haven't shown me the discounting arithmetic"* against an answer opening
+  *"Discounting each state's own post-tax cash flows at 12% against the THB 480m outlay at t0"*
+  with three NPVs and the weighted sum beneath it. **A genuine false absence.**
+- `drill#6` — *"you haven't walked through the Base-state discounting in your working"*. The seed
+  states `Base: NPV THB 6m` and does **not** show the per-year discounting. **Defensible; probably
+  a grader over-call.**
+
+### ⚠️ THE POINT IS THE BASELINE, NOT THE POST-FIX NUMBER — AND IT IS `P-M6(a)`
+
+**`0/10` is a rate gate wearing a categorical face.** The 95% upper bound on `0/10` is **26%** — a
+clean run at that size is consistent with one drill reply in four carrying the defect. So *"the
+drill route does not do this"*, which this document and the (o) block have both leaned on as the
+thing that made the case engine's failure a **case-engine** failure, was never measured. The
+honest statement is **1–2 in 10 on a surface that measured 0 in 10, at n = 10, with the bytes
+unchanged**, and the most likely explanation is sampling.
+
+**What it does NOT undermine:** the case-side result. That axis moved **30/30 → 0/40** on the
+diagnosis and **11/30 → 0/40** on the prose, at p < 0.001, and it stands on its own paired
+before/after. The drill arm was a *control*, and a control that was never powered cannot convict
+the case engine of being special — it can only fail to.
+
+**What it costs:** the claim that the 2026-07-23 drill fix left that surface clean. That claim is
+now unsupported in both directions.
+
+### 🔵 WHAT WOULD SETTLE IT — n = 30 ON THE DRILL SURFACE, LONG SEED. NOT NOW.
+
+Same probe (`scripts/_false_absence_n30.ts`), the drill arm only, the **long** seed (the length
+effect was the case-side discriminator and the short cell is the one that never fired), n = 30.
+A clean run at that size carries a 95% upper bound of **9.5%** rather than 26% — the same figure
+`P-M6(a)` quotes — so it would put a usable interval on the surface instead of a vacuous one.
+**Deferred deliberately** — it measures a control, not a defect on the serving path, and
+the case fix does not wait on it.
+
+⚠️ **Until it runs, do not quote the drill route as a zero anywhere.** Quote the interval or say
+it is unmeasured.
+
+---
+
+## 🟠 OPEN 2026-09-07 (s) — THE CREDIT-INVERSION GRADER OVER-CALLS TRUE ATTRIBUTIONS NOW THAT THE TUTOR ATTRIBUTES ACCURATELY. INSTRUMENT, NOT TUTOR.
+
+**The fix made the instrument worse, which is the direction nobody watches for.** Pre-fix the
+tutor frequently attributed things the student had not written, and the grader's job was easy.
+Post-fix it credits what the student actually wrote — and the grader now scores some of those
+**true** attributions as inventions.
+
+📐 **The clear case, from the post-fix run:** `long_first#8` was scored `credit_inversion: true`
+for the tutor saying the student had *"already identified that expected value is a repeat-game
+figure, that the probabilities are subjective and unvalidated"* — **all three of which the seed
+answer says.** The tutor was right; the grader was wrong.
+
+**So the axis as reported — 5/40 pre-fix → 6/50 post-fix — is an UPPER BOUND on both sides**, and
+the post-fix side is the one carrying known false positives. It was already flagged inside the (o)
+block; it is lifted here because it is an open instrument defect that outlives that measurement
+and will be inherited by the next arm that reuses this rubric.
+
+### WHERE THE RUBRIC FAILS, EXACTLY
+
+`CREDIT_INVERSION` in `scripts/_false_absence_n30.ts` already demands the disproving quote:
+
+> *Score true ONLY if you can quote both: (a) the tutor's attribution, verbatim; and (b) enough of
+> the student's answer to show it is not there.*
+
+**Clause (b) is stated and not enforced.** Nothing checks that the (b) quote actually fails to
+contain the attributed content — the grader supplies a string and the harness stores it. On
+`long_first#8` the content was in the seed and a (b) quote was produced anyway. The clause reads
+as a guard and behaves as a formality.
+
+### 🔵 THE FIX IS MECHANICAL AND IT IS NOT A REWORDING
+
+Two candidates, both cheap, and the first is the one that matches how the false-absence axis is
+already cross-checked by the deterministic floor:
+
+1. **Verify (b) in code.** The seed answer is a frozen literal in the script — so after grading,
+   assert that the attributed content named in `ci_tutor_quote` is not present in the seed, and
+   surface every row where it is as a **grader disagreement**, the way `absenceFloor` already
+   cross-checks the grader in the other direction. A disagreement is a finding, not a silent
+   score.
+2. **Give the grader the seed as the authority.** State in the clause that the student's answer is
+   given in full, and that if the attributed content appears anywhere in it — in any wording — the
+   score is false. The failure here is the grader treating a paraphrase as absence.
+
+⚠️ **DO THIS BEFORE THE NEXT ARM QUOTES THE CI AXIS.** A metric with known false positives that is
+still reported as a count will be read as a count. Until then the axis is reportable only as an
+upper bound, and every hit needs a hand-read before it is called a defect.
+
+⚠️ **It is not evidence the tutor regressed.** Both the pre- and post-fix CI numbers are bounds,
+they are statistically indistinguishable (Fisher p = 1.000 on independence from the false
+absence), and the mechanism that would produce a real rise — the tutor inventing attributions — is
+the thing the fix removed.
+
+---
+
 ## ✅ CLOSED 2026-09-07 (o) — THE FALSE ABSENCE WAS A MISSING ARGUMENT, NOT A MODEL DEFECT
 
 **Fixed on `fix/case-engine-prior-attempt` (unmerged at the time of writing). The measurement
