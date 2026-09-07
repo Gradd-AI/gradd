@@ -11,6 +11,7 @@ import type { ServedPaper } from '@/lib/acca/paper';
 import { paperHref } from '@/lib/acca/paper-url';
 import { caseOpened } from '@/lib/acca/surface-events';
 import { emitSurfaceEvent } from '@/lib/acca/surface-event-client';
+import { splitServedReveal } from '@/lib/acca/reveal-split';
 
 // ── Types (client-safe subset of the case/turn + case load responses) ──────────
 interface Exhibit { exhibit_order: number; title: string | null; body: string | null }
@@ -589,7 +590,21 @@ export default function CaseSession({
             )}
 
             <div className="ec-messages">
-              {messages.map((msg, i) => (
+              {messages.map((msg, i) => {
+                // ── THE EXPAND CONTROL ──────────────────────────────────────────────────
+                // A served reveal is two things glued together: the model's framing wrapper
+                // (coaching about THIS attempt) and the authored worked answer (a document).
+                // `splitServedReveal` finds the boundary; a null means there is nothing to
+                // expand — a teaching turn, a hint, or a BURN, which serves no artefact at
+                // all — and the control is not rendered.
+                //
+                // Every byte still renders inline. This adds a door to the same artefact at
+                // full measure; it does not hide anything behind one.
+                const split =
+                  msg.role === 'ezra' && msg.kind === 'reveal' && activeReqId
+                    ? splitServedReveal(msg.content)
+                    : null;
+                return (
                 <div key={i} className={`ec-msg ec-msg--${msg.role}${msg.kind ? ` ec-msg--kind-${msg.kind}` : ''}`}>
                   {msg.role === 'ezra' && <div className="ec-msg-avatar" aria-hidden="true">E</div>}
                   <div className="ec-msg-body">
@@ -601,14 +616,35 @@ export default function CaseSession({
                     </div>
                     {msg.role === 'ezra' ? (
                       <div className="ec-msg-content ec-msg-content--ezra">
-                        <MessageRenderer content={msg.content} />
+                        {split ? (
+                          <>
+                            <MessageRenderer content={split.wrapper} />
+                            <div className="ec-reveal-bar">
+                              <span className="ec-reveal-bar-label">Worked answer</span>
+                              {/* Soft navigation → the intercepted overlay, so the transcript
+                                  stays mounted behind it. A hard load of the same URL renders
+                                  the standalone page. Both re-check the gate server-side. */}
+                              <Link
+                                href={`/acca/cases/${caseId}/answer/${activeReqId}`}
+                                className="ec-reveal-expand"
+                                scroll={false}
+                              >
+                                Open full width ↗
+                              </Link>
+                            </div>
+                            <MessageRenderer content={split.artefact} />
+                          </>
+                        ) : (
+                          <MessageRenderer content={msg.content} />
+                        )}
                       </div>
                     ) : (
                       <div className="ec-msg-content ec-msg-content--student">{msg.content}</div>
                     )}
                   </div>
                 </div>
-              ))}
+                );
+              })}
 
               {sending && (
                 <div className="ec-msg ec-msg--ezra">
@@ -957,7 +993,18 @@ const CSS = `
   color: oklch(94% 0.02 80); font-family: var(--font-display); font-weight: 700; font-size: 14px;
   display: grid; place-items: center; flex-shrink: 0; margin-top: 2px;
 }
-.ec-msg-body { display: flex; flex-direction: column; gap: 4px; }
+/* min-width: 0 — a flex item defaults to min-width: auto, which refuses to shrink below its
+   content, so a wide child sizes this column instead of being contained by it. MEASURED on the
+   live reveal at 1920px before the fix: .ec-msg-body 803px inside a 658px .ec-msg, and
+   .ec-messages scrollWidth 871 against clientWidth 706 — THE WHOLE TRANSCRIPT SCROLLED SIDEWAYS,
+   carrying the tutor's prose off the right edge, whenever a worked answer with a table was on
+   screen. MessageRenderer already wraps every table in overflow-x: auto with max-width: 100%;
+   that wrapper was computing 100% of an unconstrained parent and so never engaged. After:
+   scrollWidth 706 = clientWidth 706. Pre-existing — nothing about the expand control caused it —
+   and fixed here because this change restructures the message it showed up in.
+   (No backticks in this block: it is a JS template literal. Same hazard as commit 90f4814,
+   which was also a backtick inside a comment documenting a measurement.) */
+.ec-msg-body { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .ec-msg-sender { font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); }
 .ec-msg--student .ec-msg-sender { text-align: right; }
 .ec-msg-badge {
@@ -967,12 +1014,30 @@ const CSS = `
 }
 .ec-msg-badge--teaching, .ec-msg-badge--reveal { background: var(--brand); color: #fff; border-color: transparent; }
 .ec-msg-badge--correct { background: rgba(34,160,90,0.12); color: #1c8b4e; border-color: rgba(34,160,90,0.25); }
-.ec-msg-content { border-radius: 12px; font-size: 14px; line-height: 1.65; }
+.ec-msg-content { border-radius: 12px; font-size: 14px; line-height: 1.65; max-width: 100%; }
 .ec-msg-content--student {
   background: var(--surface-2); border: 1px solid var(--border-light);
   padding: 14px 18px; color: var(--text); white-space: pre-wrap;
 }
 .ec-msg-content--ezra { background: var(--surface); border: 1px solid var(--border); padding: 16px 20px; color: var(--text); }
+
+/* The expand bar. Sits where the reveal's own --- rule used to render, so it REPLACES a
+   separator rather than adding a band: the wrapper still ends with a horizontal division
+   before the worked answer, and that division now carries a label and a door. */
+.ec-reveal-bar {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  margin: 6px 0 16px; padding-top: 14px; border-top: 1px solid var(--chat-rule);
+}
+.ec-reveal-bar-label {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--text-muted);
+}
+.ec-reveal-expand {
+  font-size: 12px; font-weight: 700; color: var(--brand); text-decoration: none;
+  border: 1px solid var(--border); border-radius: 999px; padding: 5px 12px;
+  background: var(--surface-2); white-space: nowrap;
+}
+.ec-reveal-expand:hover { border-color: var(--brand); }
 
 .ec-thinking { display: flex; gap: 5px; align-items: center; padding: 14px 18px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; }
 .ec-thinking span { width: 7px; height: 7px; border-radius: 50%; background: var(--text-muted); animation: ec-dot 1.2s infinite ease-in-out; }
