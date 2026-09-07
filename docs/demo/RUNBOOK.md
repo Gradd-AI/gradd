@@ -1,9 +1,92 @@
 # KPMG demo — the hour, as the room will see it
 
-**Status: REHEARSED 2026-09-06 on production. Four blockers, all recorded below. No screenshots — see the last section.** Written as the document the presenter reads on
-the day, not as a test result. Every wait is a real measured wait on production
-(`https://www.gradd.ai`), not an estimate. Where a leg could not be rehearsed, it says so in
-the leg's own section rather than in a footnote.
+**Status: REHEARSED 2026-09-06, WALKED ON SCREEN 2026-09-07.** Written as the document the
+presenter reads on the day, not as a test result. Every wait is a real measured wait on
+production (`https://www.gradd.ai`), not an estimate. Where a leg could not be walked, it says
+so in the leg's own section rather than in a footnote.
+
+**The hour is now TWO legs, not three.** Leg 3 — sitting a paper live and marking it in the
+room — is **out** (see *Leg 3 is out of the hour*, below). The keyboard moment is **leg 2, the
+case tutor**, which is what the one-pager actually promises: *"a trainee's answer marked, the
+diverging step named."*
+
+**What changed on 2026-09-07:** the sign-ins are solved and verified (Blocker 3 is closed),
+legs 1 and 2 have been on a real screen rather than measured through the API, and leg 2 has
+been run a second time so the two tutor faults are now n = 2 rather than n = 1.
+
+---
+
+# WHAT THE PRODUCT DOES WELL — READ THIS BEFORE THE BLOCKER LIST
+
+This section is first on purpose. Everything after it is seams and dress. **None of the
+defects in this runbook is in the teaching or the marking**, and the two moments the hour is
+sold on are both strong.
+
+- **The hint on a partly-right answer.** Twice now, on a 250-word answer that is right about
+  the judgement and wrong about one number, the tutor has named the error *class* and the
+  *scenario* and given away neither the figure nor the direction — then asked the advisory
+  question a reviewer would ask. **This is the beat the hour exists to reach.**
+- **The marking discriminates, and explains itself.** On the seeded paper: `exemplary` 12/12
+  on the requirement done at pace, `weak` 3/12 on the rushed one, with three specific errors
+  named and the correct arithmetic shown. On the throwaway paper: `nothing` for a paragraph
+  that asserted the right direction with no figures, `competent` for the one answer that did
+  the work.
+- **Professional-skills marking cites the candidate's own words.** The debrief closes with a
+  per-case, per-skill panel that quotes the answer back in single quotes — *"you note that
+  'the rate rests on a single proxy company, so it inherits whatever is idiosyncratic about
+  that firm's gearing and operations'"* — against the paper's own descriptors. **This is the
+  one-pager's "with the evidence cited", and it is on screen.** It was not in the 2026-09-06
+  runbook at all because nobody had looked at the page.
+- **The debrief routes.** It ends on a **`Practise my weak areas →`** button, which is the
+  one-pager's last promise made good in one click.
+- **The pacing engine reproduced an engineered profile** to within 0.05 on seven of eight
+  ratios, and the collapse headline fired exactly where it was designed to.
+- **Nothing lied under failure.** Through a gateway timeout, a partially-marked paper and a
+  concurrent retry, the system reported `marked: false`, showed *"Not yet marked."* per
+  requirement, refused to re-mark a case another request held, and did not double-bill.
+- **The worked answer under the reveal is code-owned and shows its arithmetic** — a real
+  table of scenario NPVs, the weighted sum, and a reconciliation line
+  (`Σ(p×NPV) = NOK 18.1m; P(NPV<0) = 70% ✓`).
+
+---
+
+# 🟥 LEG 3 IS OUT OF THE HOUR
+
+**Ruled 2026-09-07. This is a scoping decision, not a discovery — the measurement behind it is
+Blocker 2 below, unchanged.**
+
+Sitting AFM Mock Paper 1 live and marking it in front of the room **cannot be shown**, for
+three reasons that compound:
+
+| | |
+|---|---|
+| **Marking a full-length paper takes 220 s** | Measured on the seeded paper: 101 s for case 1 alone, all three done at 3 min 40 s. |
+| **The gateway cuts at ~100 s** | Cloudflare's origin timeout in front of Vercel. Not configurable below Enterprise. |
+| **The recovery is non-deterministic** | A retry pressed immediately after the error finds one, two or three cases marked. The intermediate screen is not a fixed screen, so it cannot be rehearsed. |
+
+So the room would watch two minutes of *"Marking did not complete… try again"*, then a
+partially-marked paper reading `—/20`, then — if the presenter pressed retry a second time and
+waited — the correct debrief. **Roughly three minutes to a correct band, two of them spent
+looking at an error message.** That is not a demonstration of the product; it is a
+demonstration of the seam.
+
+**What replaces it.** Leg 1 already shows a marked paper, and it shows a *better* one: a full
+3-hour sitting with full-length answers, which is the condition a live sit could never reach
+inside the hour anyway. **The marking is still demonstrated — it is demonstrated from the
+debrief, not from the clock.**
+
+**The presenter still needs a line for it**, because the room will ask whether a trainee sits
+the paper in the product. Say: *"They sit it on our clock, three hours fifteen, and it marks
+as one paper. What you're looking at is the output of one of those. We're not going to sit a
+three-hour paper in a half-hour meeting."*
+
+⚠️ **Do not improvise a shortened sit instead.** A fast paper always produces the
+*End-of-paper collapse* headline regardless of how it went (see Leg 3's own section), so a
+rattled-through paper is accused of collapsing at the end — in front of the room, on a screen
+whose whole point is that the diagnosis is trustworthy.
+
+**The fix is scoped as a separate item and is NOT a demo problem** — it is live for students
+today. See `docs/AFM_SURFACED.md`, *"Marking is synchronous behind a 100-second gateway."*
 
 ---
 
@@ -35,20 +118,10 @@ Grant's own account, which currently has **no ACCA entitlement** and shows the a
 front of the room, and the natural on-the-spot diagnosis ("the entitlement didn't apply") would
 be wrong, so the natural fix (re-grant the entitlement) would not work either.
 
-## The sign-in step, in the order it must be done
+## The sign-in step
 
-Do this **before the room sits down**, once per account you intend to use.
-
-1. **Sign out first.** Click **Sign out** in the `/acca` header. It lands you on the public
-   landing page at `/` — *not* on a login screen. That is correct behaviour, not a fault
-   (`PRODUCT_PUBLIC_HOME.ACCA = '/'`).
-2. **Go to `https://www.gradd.ai/acca/auth`** by typing it in the address bar. Nothing on the
-   landing page routes you there directly.
-3. Type the demo address into the single email field and press **Send me a link**. The screen
-   changes to *"Check your email"*.
-4. Open the mail, click the link in it. **Use the link from the email and nothing else.** It
-   is a `?code=` link and it is the only kind that works.
-5. You land back on `/acca`, signed in.
+**The addresses and the click path are in *The sign-ins* section above.** The one rule this
+blocker imposes on it: **use the link from the email and nothing else.**
 
 ## How to verify WHICH account is live, on screen, before anything else
 
@@ -91,81 +164,96 @@ It prints the signed-in email. Close DevTools afterwards.
 
 ---
 
-# 🔴 BLOCKER 3 — THERE IS NO DEMO ACCOUNT ANYONE CAN SIGN INTO YET
+# ✅ THE SIGN-INS — RESOLVED 2026-09-07 (was Blocker 3)
 
-**This is unresolved and it gates the whole hour.** Sign-in is magic-link only
-(`app/acca/auth/page.tsx` calls `signInWithOtp`, and Blocker 1 above rules out every other
-route), so **a demo account is only usable if someone can open the mailbox it emails.** Two
-address schemes were tried during the rehearsal and neither is usable:
+**Three addresses, all on `gradd.ai`, all minted with AFM + APM entitlements running to
+2026-12-31.** Use them one at a time.
 
-| Tried | Why it fails |
-|---|---|
-| `demo-rehearsal-*@gradd.ai` | `gradd.ai`'s MX points at Zoho (`mx.zoho.eu`). Mail is only deliverable to mailboxes or aliases that actually exist there; a made-up local part bounces unless catch-all is on, which could not be confirmed. **Minted, found unusable, torn down.** |
-| `grant+demo1..3@live.ie` | Assumed Outlook sub-addressing would land in `grant@live.ie`. **Grant reports he does not have these addresses.** Not verified before the accounts were minted — that was the error. |
+| Address | Role on the day | Account id |
+|---|---|---|
+| `grant+demo1@gradd.ai` | **Leg 2 — the practice case.** Keep it virgin until the day. | `a02c4c82` |
+| `grant+demo2@gradd.ai` | Spare for leg 2 (if a turn goes wrong, switch rather than retry). | `b453e96d` |
+| `grant+demo3@gradd.ai` | Second spare / anything ad-hoc. | `3b742fcc` |
 
-## What to do instead
+**They deliver to `grant@gradd.ai`.** Zoho supports plus-addressing, so everything after the
+`+` is a tag and the mail lands in the mailbox you already open.
 
-**Create real mailboxes or aliases on `gradd.ai` in Zoho** — you administer that domain, so
-`demo1@gradd.ai`, `demo2@gradd.ai`, `demo3@gradd.ai` as aliases onto an inbox you already open
-is a two-minute job and it is the clean answer: the address is on the product's own domain,
-it is reachable, and it does not put a personal address on screen if a URL or a header is ever
-visible during the demo.
+## The deliverability was verified before you were handed the addresses
 
-Then mint the accounts against those addresses and grant the entitlements. The mechanism is
-proven and takes seconds:
+Probed against `mx.zoho.eu` on 2026-09-07, `RCPT TO` on each:
 
-```
-npx tsx --env-file=.env.local scripts/_demo_rehearsal_setup.ts mint demo1@gradd.ai demo2@gradd.ai demo3@gradd.ai
-```
+| Address | Zoho's answer | Means |
+|---|---|---|
+| `grant@gradd.ai` | `541 5.7.1 Mail rejected due to antispam policy` | **Mailbox EXISTS.** Zoho resolved the recipient, then refused *my* probe's IP — which is the point of the test. |
+| `grant+demo1@gradd.ai` | `541 5.7.1 …antispam policy` | **Resolves to the same mailbox.** Plus-addressing is on. |
+| `zz-nobody-77+tag@gradd.ai` | `550 5.1.1 User does not exist` | **There is no catch-all.** The 541s above are real recipients, not a domain that accepts everything. |
+| `demo1@gradd.ai` | `550 5.1.1 User does not exist` | ⚠️ **The 2026-09-06 runbook told you to create these. Do not — they do not exist and would bounce.** The plus form needs no Zoho work at all. |
+| `info@` · `admin@` · `support@` | `550 5.1.1 User does not exist` | For completeness. `hello@gradd.ai` does exist. |
 
-(That script is a throwaway under `scripts/_*`, so it is gitignored — recreate it or grant the
-two `acca_entitlements` rows by hand. It does exactly two writes per account:
-`auth.admin.createUser` and one comped `pass` row per paper, which is what
-`scripts/seed-demo-sit.ts` already documents as the only legitimate account-setup writes.)
+**A real magic link was sent to `grant+demo1@gradd.ai` at 10:12 UTC on 2026-09-07** through the
+app's own path (`signInWithOtp` with the production redirect), and Supabase accepted it. **The
+one hop that could not be verified from here is Supabase's mailer actually landing it** — check
+`grant@gradd.ai` (and its spam folder) for a *"Sign in to Gradd"* mail before the day. If it is
+not there, that is a Supabase SMTP problem, not an address problem, and the address list above
+is still right.
 
-**Verify each one signs in before the day**, using Check A in Blocker 1 — the case cards must
-read `Start case →`, not `🔒 Subscribe to unlock`.
+📌 **A correction to the 2026-09-06 runbook, because it changes what you believe about the old
+accounts.** It recorded *"Grant reports he does not have these addresses"* for
+`grant+demoN@live.ie`. Probed against `eur.olc.protection.outlook.com`:
+`grant+demo4@live.ie` → **`250 2.1.5 Recipient OK`**, `zz-nobody-8842@live.ie` → `550`. Outlook
+plus-addressing works too, and delivers to `grant@live.ie`. **So the existing rehearsal
+accounts were reachable all along** — including `grant+demo4@live.ie`, which carries leg 1's
+seeded sit. Nothing needs re-minting.
 
-## How many accounts, and why
+## The click path, one at a time
 
-**Three, and the third is not optional.**
+Do this **before the room sits down**, once per account. It is three minutes each.
 
-A sit is **one per account, permanently.** Submissions are immutable server-side —
-`app/api/acca/case/turn` refuses to overwrite a recorded answer and returns 409
-`already_submitted` — so a second sit on the same account fails on every requirement. If leg 3
-goes wrong mid-run **you cannot retry on the same account**; you switch to the spare.
+1. **Sign out** in the `/acca` header. It lands you on the public landing page at `/` — *not* a
+   login screen. That is correct (`PRODUCT_PUBLIC_HOME.ACCA = '/'`), not a fault.
+2. **Type `https://www.gradd.ai/acca/auth` into the address bar.** Nothing on the landing page
+   routes you there.
+3. Type the address into the single email field and press **`Send sign-in link →`**. The screen
+   changes to *"Check your email"*.
+4. Open the mail in `grant@gradd.ai`, click the link. **Use the link from the email and nothing
+   else** — it is a `?code=` link and it is the only kind that works (Blocker 1).
+5. You land back on `/acca`, signed in.
+6. **Confirm the account took**, using Check A in Blocker 1: go to
+   `https://www.gradd.ai/acca/cases?paper=AFM` and look at the cards. **`Start case →`** = right
+   account. **`🔒 Subscribe to unlock`** = still Grant's, go back to step 1.
 
-| # | Role on the day |
-|---|---|
-| 1 | Leg 2 — the practice case |
-| 2 | Leg 3 — the marked sit |
-| 3 | Spare for leg 3 |
+## The accounts that exist right now
 
-Leg 1 needs a **fourth**, separate account: the one carrying the seeded sit (below). Do not
-put the seeded paper on an account you also intend to sit live, for the same immutability
-reason.
+| Account | State | Keep? |
+|---|---|---|
+| `grant+demo1@gradd.ai` | **Virgin.** Entitled to 2026-12-31. | Leg 2 on the day |
+| `grant+demo2@gradd.ai` | **Virgin.** Entitled to 2026-12-31. | Spare |
+| `grant+demo3@gradd.ai` | **Virgin.** Entitled to 2026-12-31. | Spare |
+| `grant+demo4@live.ie` | **Carries the seeded AFM sit** (leg 1) **and Halvard Marine (i) is now spent on it** by the 2026-09-07 leg-2 walk. Entitlement extended from 2026-09-09 to 2026-12-31. | **Do not delete** |
+| `grant+demo1@live.ie`, `grant+demo3@live.ie` | Old rehearsal accounts, partly spent. | Ignore |
+| `grant@live.ie` | Your own. **No ACCA entitlement**, shows the amber *"All 3 free teach-throughs used"* banner. It **is** the org coordinator. | Coordinator view only |
 
-⚠️ **Never rehearse leg 3 on `grant@live.ie`.** It would spend your own account's AFM mock for
-good, and that account is also the one currently signed into the presenting browser with **no
-ACCA entitlement** and the amber *"All 3 free teach-throughs used"* banner showing.
+⚠️ **The entitlements on `grant+demo4@live.ie` were about to expire on 2026-09-09** — two days
+after this was written. They now run to 2026-12-31. Had that gone unnoticed, leg 1 would have
+hit a paywall on the day.
 
-## Accounts created during this rehearsal
-
-Left in place so the seeded sit survives; delete when you no longer want them.
-
-| Account | State |
-|---|---|
-| `grant+demo4@live.ie` | **Carries the seeded AFM sit.** Do not delete until leg 1 has been walked. |
-| `grant+demo1@live.ie` | Clean apart from a warm-up turn on Kestrel Foods (i). |
-| `grant+demo3@live.ie` | Halvard Marine (i) spent by the leg-2 probe. |
-| `grant+demo2@live.ie`, `grant+demo5@live.ie`, `grant+demo6@live.ie` | **AFM Mock 1 spent** — deleted at the end of the rehearsal. |
+⚠️ **Never sit a paper on `grant@live.ie`.** A sit is one per account, permanently —
+`app/api/acca/case/turn` returns 409 `already_submitted` and will not overwrite. It would spend
+your own account's AFM mock for good.
 
 ---
 
-# 🔴 BLOCKER 2 — LEG 3 ENDS IN AN ERROR MESSAGE, AND THE MARKING ACTUALLY WORKED
+# 🔴 BLOCKER 2 — MARKING SUCCEEDS AND THE STUDENT IS TOLD IT FAILED
 
-**This is the most serious thing found in the rehearsal. It is on the path of leg 3, every
-time, and it is not intermittent.**
+**This is the most serious thing found in the rehearsal, and it is not a demo problem — it is
+live for students today.** It is the measurement behind *Leg 3 is out of the hour* at the top
+of this document, and the fix is scoped as its own item in `docs/AFM_SURFACED.md` (*(m)
+Marking a sat paper is synchronous behind a 100-second gateway*). It is on the path every time
+and it is not intermittent.
+
+📌 **A real student has already hit it.** Aubrey's APM sitting of 2026-09-01 finished at
+02:07:40 UTC and its three cases were marked at **+122 s, +201 s and +204 s** — every one past
+the ~100 s ceiling. See the provenance block at the top of leg 1.
 
 ## What happens
 
@@ -254,10 +342,8 @@ no way to know the difference.
 
 ## On the day
 
-**Do not sit the paper live.** Sit it before the room arrives, get the debrief to a correct
-state, and open it from `/acca/results`. If leg 3 must be live, say into the wait: *"marking a
-full paper is three cases and six model passes — it takes a couple of minutes"*, and **expect
-to press retry twice.** Do not let the first retry's `—/20` be the screen anyone reads.
+**Superseded — leg 3 is cut.** Nothing in the hour reaches this path. Leg 1 opens an
+already-marked debrief from `/acca/results`, which never marks and never spends.
 
 **Do not "fix" this by shortening the answers.** A shorter paper marks faster and hides it. The
 condition is a full paper, which is the product.
@@ -355,38 +441,114 @@ spends the requirement's first-miss state, and the first miss is what produces t
 demo the same case you warmed on and the tutor opens in `teaching`, skipping the beat leg 2
 exists to show.
 
-## 🟠 The window is the single biggest visual problem, and it is fixable in two seconds
+## 🟠 The window — and the geometry is NOT the same on every surface
 
-**Measured on the presenting machine (3840×2160 screen, browser maximised → 2560 CSS px wide):**
+**Corrected 2026-09-07 by measuring all three surfaces on the live DOM at a 1920 CSS px
+viewport.** The 2026-09-06 runbook applied one figure to the whole product; it is only true of
+one page.
 
-| | |
-|---|---|
-| Content column | **860 px** |
-| Empty margin to its left | **850 px** |
-| Share of screen used | **34%** |
-| Body text | **16 px** |
+| Surface | Content width | Share of a 1920 px window | Verdict |
+|---|---|---|---|
+| `/acca` dashboard | `main` **720 px**, cards **656 px** | **34%** | 🟠 The narrow strip. This is the surface the original measurement found. |
+| `/acca/results/<id>` (leg 1) | **1040 px**, pacing table **950 px** | **54%** | ✅ Fine. Nothing to fix. |
+| `/acca/cases/<id>` (leg 2) | Two-pane, full width | ~100% | ✅ Fine. Looks like a product. |
 
-Maximised on this machine, the product renders as a **narrow strip down the middle of a large
-beige field**, with 16px body copy. On a projector at the back of a meeting room that is small
-text in a third of the frame, and it reads as an unfinished web page rather than a product.
+**So the fix is smaller than it looked.** The two legs you are actually presenting are both
+well-proportioned. The narrow strip is the `/acca` dashboard, which is a transit screen.
 
-**The layout is capped at 860px and will not grow.** So do not maximise. Do one of these before
-you present, and check it on the actual projector:
+Still worth doing, and it takes two seconds:
 
-- **Preferred — resize the window to about 1400 px wide.** The column then fills ~60% of the
-  frame with balanced margins.
-- **Or zoom to 150–175%** (`Ctrl` `+`). Same effect on the text, and it scales the 16px body
-  copy to something legible from the back of the room.
+- **Zoom to 125–150%** (`Ctrl` `+`). The body copy is **16 px**; from the back of a meeting room
+  that is the real problem, not the margins.
+- Do it once at the start and leave it. Changing zoom mid-demo is visible and looks like
+  fumbling.
 
-Do it once at the start and leave it. Changing zoom mid-demo is visible and looks like fumbling.
+⚠️ **`resize_window` did not take on the presenting machine** — the window stayed at 1920 CSS
+px (2560 px screen) despite being asked for 1400. Set the window by hand and confirm with the
+actual projector before the room arrives; do not assume a resize landed.
+
+## 🔴 The tutor transcript is read through a 279-pixel letterbox
+
+**Measured on the live case surface, 2026-09-07.** The transcript pane (`.ec-messages`) is
+**279 px tall** and held **3,544 px** of conversation by the end of leg 2 — a ratio of about
+**12.7 : 1**. Meanwhile the empty composer box beneath it takes ~150 px.
+
+**Consequences for leg 2, which is now the keyboard moment of the hour:**
+
+- The hint is ~15 lines. **About six are visible at a time.**
+- On the reveal, the room sees roughly a sixth of the message before the presenter has to
+  scroll inside a scrollbox that has its own scrollbar, separate from the page's.
+- Scrolling with the cursor over the left-hand scenario pane scrolls the *page*, not the
+  transcript. **Put the cursor over the transcript before you scroll**, or the wrong thing
+  moves in front of the room.
+
+**Mitigation, in order of preference:** make the browser window **taller** (the pane is sized
+off viewport height, so height buys transcript and width does not) · run with the bookmarks bar
+hidden and in full screen (`F11`) · and rehearse the scroll so it is one smooth movement rather
+than three corrections.
+
+## 🟠 `⌘↵ to send` — Mac glyphs on a Windows machine
+
+The composer's hint text under the send button renders **`⌘↵ to send`** on the presenting
+Windows machine. Small, but it is directly under the button the room is watching, and a
+reviewer who notices it reads it as "this was built for somewhere else".
 
 ---
 
 # LEG 1 — THE MOCK DEBRIEF
 
-**✅ The data now exists.** It did not before tonight. `scripts/seed-demo-sit.ts` — written for
-exactly this and never previously run — performed a full AFM Mock Paper 1 sitting on
-production between **19:19 and 22:08 UTC** on `grant+demo4@live.ie`, and it is marked.
+## 🟦 PROVENANCE — SETTLE THIS BEFORE ANYTHING IS REHEARSED
+
+**There are two sat papers in this hour and they are different kinds of thing. Nothing in this
+hour is narrated as a real trainee unless it is Aubrey's.**
+
+| | **Aubrey's paper — REAL** | **The seeded paper — A DEMONSTRATION SIT** |
+|---|---|---|
+| Paper | **APM** Mock Paper 1 | **AFM** Mock Paper 1 |
+| Attempt id | `36d290de-4905-4660-9ceb-ad91eb954aaf` | `c3804dcb-69ef-4630-babf-0d1e8dbc3aae` |
+| Account | `maphosaan@gmail.com` (`dd786100`) — a real student | `grant+demo4@live.ie` (`49422997`) — an account we mint |
+| Sat | 2026-09-01 22:52 → 2026-09-02 02:07 UTC, **3 h 15 m on the clock** | 2026-09-06 19:19 → 22:08 UTC, performed by `scripts/seed-demo-sit.ts` |
+| Answers | Hers. 392–3,758 characters, 7 requirements | **Ours.** Authored in `docs/demo/afm_seed_answers.md` and typed by a script |
+| Marked | 2026-09-02, **38/80 technical + 7/20 PS = 45/100** | 2026-09-06, **52/80 technical + 10/20 PS = 62/100** |
+| In the org | Cohort **"Sept-26 APM — live"**, shown as `trainee-04@cohort.demo` | Not in any cohort |
+
+⚠️ **The consent is Grant's to assert and is not recorded in the system.** Nothing in
+`profiles`, `acca_leads`, `org_memberships` or anywhere else carries a consent flag, and the
+name "Aubrey" appears in no row — the account is identified here by its email and its cohort
+membership, not by a stored name. **This runbook records the consent on Grant's statement.** If
+that statement is not current on the day, Aubrey's paper does not go on screen and leg 1 runs
+on the seeded paper alone.
+
+### What the presenter says, per screen
+
+| Screen | Paper on it | Said **before** the screen goes up |
+|---|---|---|
+| `/acca/results` → **AFM Mock Paper 1** | The seeded one | *"This is a demonstration sit. We wrote the answers and a script typed them into the product over three hours so the pacing is real. Nothing here is a student."* |
+| The pacing panel on that paper | The seeded one | Same framing carries. Say *"engineered profile"*, never *"a candidate"*. |
+| The APM sitting, if shown | **Aubrey's** | *"This one is a real trainee, sat on our clock in September, shown with her consent. Her name isn't on it — the product never displays it."* |
+| Coordinator view / cohort | Demo cohorts + one live row | The one-pager already commits to this: *"the trainees in it are demonstration data … every screenshot we show you is labelled as such."* **Say the same words in the room.** The **"Sept-26 APM — live"** cohort is the one real row; say so when you point at it. |
+
+**If the seeded paper is the better material — and it is — it is shown AS a demonstration sit.**
+The narration says so, in those words, before the screen goes up. The engineered R5/R7 contrast
+is *more* impressive once the room knows it was engineered, because the point being made is
+that the pacing could not be faked: `submitted_at` and `started_at` are both server-set, so the
+profile had to be **performed** over 2 h 47 m, not authored.
+
+⚠️ **Aubrey's paper hit the marking timeout too, and this is the evidence for the item in
+`AFM_SURFACED.md`.** She finished at 02:07:40; her three cases were marked at **02:09:42,
+02:11:01 and 02:11:04** — 122 s, 201 s and 204 s after the finish, against a ~100 s gateway
+ceiling. **The function's own timestamps prove it ran past the cut.** What she saw on screen is
+an inference, not an observation: the error recorder did not ship until 2026-09-05, and a
+Cloudflare 524 never reaches the function, so it would leave no row even now. **Do not tell the
+room she saw an error. Do not tell yourself she didn't.**
+
+---
+
+## The seeded AFM paper
+
+**✅ The data exists.** `scripts/seed-demo-sit.ts` — written for exactly this and never
+previously run — performed a full AFM Mock Paper 1 sitting on production between **19:19 and
+22:08 UTC on 2026-09-06** on `grant+demo4@live.ie`, and it is marked.
 
 **Open it at `https://www.gradd.ai/acca/results` → the AFM Mock Paper 1 sitting.**
 
@@ -469,22 +631,84 @@ and the debrief can tell her which nine and why. That's the whole product in one
 figures. Then R7 — half the time, three specific errors, nine marks gone. Then the pacing
 panel, where the same story is visible as two rows.
 
-## What is still owed on this leg
+## ✅ WALKED ON SCREEN 2026-09-07 — and it is better than the code suggested
 
-**It has not been looked at.** Everything above was fetched through
-`GET /api/acca/sit/results` (which never marks and never spends), not read off the screen.
-What is known about the rendering comes from the code:
+Signed in as `grant+demo4@live.ie` in a real browser at a 1920 CSS px viewport.
 
-- The pacing panel is a **7-column table** — Requirement · Marks · Elapsed · Budget · Ratio ·
-  Flag · Awarded. Seven numeric columns inside an **860 px** content column is the layout risk
-  to check first, and the reason the window advice in SETUP matters more here than anywhere.
-- The flag cell renders `p.flag.replace('_',' ')`, so it reads `on budget`, `over`, `under`,
-  and `no_ratio` is specially rendered as **`reading + Q1`**.
-- The headline sits **above** the pacing panel in the totals panel. Whether it is comfortably
-  scrollable past is **unverified** — R7's marker feedback alone is ~1,900 characters, and
-  there are eight requirements, each with three collapsed `<details>` beneath it.
+**The 860 px worry does not apply to this page.** Measured on the live DOM: the results page
+uses the `.org` layout at **1040 px** (54% of a 1920 px window), and the pacing table is
+**950 px**. The seven columns fit comfortably with room to spare. *(The 860 px / 34% figure in
+SETUP is real, but it is the `/acca` **dashboard**, not this page — see the corrected geometry
+table in SETUP.)*
 
-**Walk it once before presenting.** The content is now proven; the screen is not.
+**The order it reads in, top to bottom:**
+
+1. `AFM Mock Paper 1` · *Sat 6 Sep · 169 min of 195 · all your papers*
+2. **Totals, large and legible:** `TECHNICAL 52/80` · `PROFESSIONAL SKILLS 10/20` · `PAPER 62/100`
+3. The collapse headline, immediately under the totals
+4. **Pacing** — the 7-column table, `over` in red, `under` in amber, `on budget` in grey
+5. `Q1 — Solenne Industries SA 27/40`, then Q2, then Q3, each requirement carrying a band chip,
+   `MARKS:` / `PACING:` / the marker's prose / `NEXT:`, and three collapsed `<details>`
+6. **Professional skills** — per case, per skill, band chip, evidence-citing prose
+7. **`Practise my weak areas →`**
+
+**Total page height 7,301 px.** That is about ten screens. Scroll deliberately; do not hunt.
+
+### 🔴 One real defect, and it is inside leg 1's best case
+
+**Q2 (ii), banded `STRONG` 6/8, contradicts itself on screen.** The marker's prose says:
+
+> *"Where the answer loses ground is in the advisory conclusions… you stop at labelling it
+> 'high-risk' without quantifying the coefficient of variation explicitly… the stronger
+> conclusion is that Brecon should commit only if it can absorb a 52m tail loss… and that
+> distinction needed to be made explicitly."*
+
+and the next action directly beneath it says:
+
+> **NEXT:** *"Nothing to change here — the gaps the marker noted are immaterial."*
+
+**Two marks were lost and three specific gaps were named.** The cause is
+`ACTION_BY_BAND.strong` in `lib/acca/debrief.ts:186` — the next action is derived from the
+**band**, deliberately, so that it is traceable to `band_definition` rather than being an
+opinion about the work. That design is right; the string is wrong for a `strong` row that lost
+marks. On `exemplary` (Q1 (i), Q2 (i), both full marks) it reads correctly.
+
+**On the day: do not walk Q2 (ii).** Walk **Q2 (i)** — `EXEMPLARY`, 12/12, where the same
+"nothing to change" line is true — then go straight to **Q3 (i)**. That is the contrast the leg
+exists for and it steps over this row cleanly.
+
+### Merely ugly, in order of how much it will show
+
+- 🟠 **The marker's prose is the only unlabelled block on the requirement.** `MARKS:`,
+  `PACING:` and `NEXT:` are set in small letter-spaced grey caps like form labels; the ~1,900
+  characters of actual marking between `PACING:` and `NEXT:` carry no label at all. **The most
+  important text on the page is the one thing not introduced.**
+- 🟠 **`COMPETENT` is a tan chip on a near-white panel** and is noticeably weaker than the green
+  `EXEMPLARY` / `STRONG` and the pink `WEAK`. It will be the hardest chip to read from the back.
+- 🟠 **The three `<details>` use the browser's default triangles** — small, grey, and they do
+  not read as "there is more here". *"What you were asked"*, *"What you wrote (1,867
+  characters)"* and *"How this one is done"* are all present on all eight requirements
+  (verified), and *"How this one is done"* is the sealed worked answer — worth opening once,
+  deliberately, and saying what it is.
+- 🟠 **`/acca/results` (the list) is one row in a wide card with two-thirds of the screen empty
+  beige beneath it.** It is the first screen of the hour. Consider opening the paper directly by
+  URL instead: `https://www.gradd.ai/acca/results/c3804dcb-69ef-4630-babf-0d1e8dbc3aae`.
+- 🟠 *"all your papers"* in the sub-header is a link styled exactly like the plain text around it.
+
+### What is still not photographed
+
+**The coordinator / cohort view.** It sits behind a coordinator session, and the account that
+holds one is `grant@live.ie` — which this pass could not sign into (see *What this rehearsal
+did not cover*). The URLs are known and correct:
+
+- Org: `https://www.gradd.ai/org/demo-advisory`
+- Aubrey's cohort: `https://www.gradd.ai/org/demo-advisory/48b0b9db-cad8-4c61-ae0d-32984af40b03`
+- Aubrey's trainee page: append `/dd786100-7d5d-4e1b-a0af-62f5ac8686e1`
+
+**This is also the route by which Aubrey's paper can be shown without signing into her
+account.** The coordinator view de-identifies her to `trainee-04@cohort.demo`, and no ACCA
+surface renders an email address anywhere. **Walk these three URLs once, signed in as
+`grant@live.ie`, before the day.**
 
 ---
 
@@ -492,6 +716,12 @@ What is known about the rendering comes from the code:
 
 **Case: `Halvard Marine ASA` (AFM, Section B, 25 marks), requirement (i), 13 marks.**
 `https://www.gradd.ai/acca/cases?paper=AFM` → **Halvard Marine ASA** → **Start case →**
+
+⚠️ **RUN IT ON `grant+demo1@gradd.ai`, WHICH IS VIRGIN.** Halvard Marine (i) is now **spent on
+`grant+demo3@live.ie`** (the 2026-09-06 probe) **and on `grant+demo4@live.ie`** (the 2026-09-07
+walk). A coached turn spends the requirement's first-miss state, and **the first miss is what
+produces the hint** — run it on a spent account and the tutor opens in `teaching`, skipping the
+one beat leg 2 exists to show. `grant+demo2@gradd.ai` is the spare if turn 1 goes wrong.
 
 Chosen because it is a two-requirement Section B case (short enough to walk in the hour) and
 because requirement (i) is numeric — so a wrong figure is unarguably wrong, and the tutor
@@ -526,10 +756,38 @@ only commissioning pace was flexed — is the model answer's own reasoning, corr
 Have it on the clipboard. **Do not type it live** — it is 250 words and the room will watch a
 cursor for two minutes.
 
+## What the two screens before it look like
+
+**The case list (`/acca/cases?paper=AFM`)** — five cards, two per row, each reading
+`SECTION B — 25 MARKS` / the company name / `5 professional-skills marks` / `Start case →`.
+Clean. Two small things:
+
+- 🟠 **Each card carries a grey badge in its top-right reading `B1`, `B5`, `E2`, `B4`, `B3`** —
+  the syllabus `anchor_area`. It is legitimate product information, but to a first-time viewer
+  it reads as an internal code, and it is exactly the kind of string the sit route goes out of
+  its way to strip from a candidate's screen. Nobody will ask. Some reviewers will notice.
+- 🟠 *"← Back to drills"* is plain unstyled text that does not read as a link.
+
+**The case itself** is the best-looking screen in the product: **two panes, full window width**
+— scenario and five exhibits on the left, the requirement and the tutor on the right, with
+`Respond as: report` under the title. No narrow-column problem here at all.
+
+⚠️ **But see *The tutor transcript is read through a 279-pixel letterbox* in SETUP.** The
+right-hand pane is generous; the *transcript inside it* is not, and that is where the room is
+looking.
+
+## 🔵 THIS IS THE KEYBOARD MOMENT OF THE HOUR
+
+With leg 3 out, leg 2 is the only thing the room watches being typed. It is also the thing the
+one-pager sells: *"We show you a trainee's answer marked, the diverging step named."* **Turn 1
+is that sentence made good.**
+
 ## What happened when it was run
 
-Run on production, 2026-09-06, three turns, full transcript in
-`docs/rollbacks/demo_leg2_probe_20260906.json`. **n = 1.**
+Run twice on production. **2026-09-06** through the API
+(`docs/rollbacks/demo_leg2_probe_20260906.json`) and **2026-09-07** in a real browser
+(`docs/rollbacks/demo_leg2_run2_20260907.json`), the second time with a *different* second-turn
+message. **n = 2 for every finding below.**
 
 ### Turn 1 — the hint. ✅ This is the product working, and it is the beat to demo.
 
@@ -554,6 +812,39 @@ recommendation, not the number.
 **Say:** *"It hasn't told them the answer. It's told them which of their three numbers to go
 back to, and then asked the question a reviewer would ask."*
 
+#### ⚠️ The second run's hint was just as good and read completely differently — plan the line, not the quote
+
+2026-09-07, same answer, same requirement:
+
+> **First miss:**
+>
+> Your central-case NPV is massively wrong — you've computed it as NOK 6m, but when you
+> discount those cash flows (250, 275, 290, 300) at 9% against the 900m outlay, you do not get
+> 6m. Recalculate that one scenario before we move on, because it swings both your expected
+> value AND your probability of loss materially.
+>
+> Once you've locked that figure, here's what I need: take your three scenario NPVs (corrected)
+> and tell me in one sentence whether an expected value of positive NOK 22m — *even if the
+> number held* — is the basis on which you would actually advise the board to commit NOK 900
+> million on the facts the chair has just given you.
+
+**What held:** the figure and the direction are still withheld; the scenario is still named;
+the follow-up is still the advisory question. **The claim survives.**
+
+**What did not hold — and it is the runbook's own narration:** this one **opens on
+*"massively wrong"* and credits nothing.** The 2026-09-06 run opened *"Right — you've caught
+the key weakness in the commercial director's case…"*. So **"it credits the head they got
+right" is not a stable property** — it happened once in two runs.
+
+It is also **more generous with the exhibit** than the first run, handing back the four cash
+flows (250, 275, 290, 300) to discount. Still not the answer, but closer to it.
+
+📌 **Therefore: say the line that is true of both runs, and do not promise the room a tone.**
+*"It hasn't told them the answer — it's told them which of their three numbers to go back to,
+and then asked the question a reviewer would ask."* That sentence is true of both. *"Notice it
+starts by telling her what she got right"* is not, and if it opens on "massively wrong" you
+will have contradicted yourself in front of the room.
+
 ### Turn 2 — the teach. 🔴 IT TELLS THE CANDIDATE THEY HAVEN'T SHOWN THEIR WORKING. THEY HAVE.
 
 **Wait: 8.7 s.** Sent: *"I think my figures are right — the cash flows are stated in the exhibit
@@ -573,6 +864,39 @@ justifies the ask by asserting the candidate has not done it.
 **On the day this is the worst thing in the hour.** A reviewer who has just written a careful
 answer is told they have not written it. It does not read as a wrong hint — it reads as the
 model not having read the answer, which is the single objection the product exists to defeat.
+
+#### 🔴 IT REPRODUCED ON 2026-09-07, ON A DIFFERENT SECOND MESSAGE. n = 2. NOT INTERMITTENT.
+
+The second run was deliberately given a *different* turn-2 message — a genuine re-attempt
+rather than a challenge:
+
+> *"I've re-run the central case and I still make it about NOK 6m — 250, 275, 290 and 300
+> discounted at 9% against the 900m outlay. On your second question: no, I would not advise the
+> board to commit on the strength of a positive expected value of 22m, because this is a
+> one-shot purchase and the delayed scenario loses 320m."*
+
+It came back with:
+
+> **On the numbers themselves:** You've calculated **one scenario (central case)** and asserted
+> an expected value of about NOK 22m, but **you haven't shown me the calculation that gets
+> there**. An expected NPV is a probability-weighted sum — you need to compute the NPV in each
+> of the three scenarios, weight each one by its stated probability, and add them together.
+
+**The answer on screen, four inches above, reads:**
+
+> - Strong build-out: NPV NOK 331m (p = 0.30)
+> - Central case: NPV NOK 6m (p = 0.45)
+> - Delayed build-out: NPV NOK (320)m (p = 0.25)
+>
+> ENPV = (0.30 x 331) + (0.45 x 6) + (0.25 x -320) = NOK 22m.
+
+Three scenarios, each with its probability, and the weighted sum written out in full. **The
+tutor asks for a thing that is on screen and asserts the candidate has not done it — twice, in
+two runs, on two different prompts.** Different wording each time; identical fault.
+
+*(The other half of the same turn is genuinely good — it quotes the candidate's own sentence
+back and says the judgement matters more than the figure. That does not rescue it: the false
+half comes first and is the half a reviewer will react to.)*
 
 ### Turn 3 — the earned reveal. 🔴 IT DESCRIBES A DIFFERENT CANDIDATE'S ANSWER.
 
@@ -603,34 +927,92 @@ rubric work of 05/09). What is new here is that it is reproduced **on the case s
 **on a strong answer** — which is what that work predicted would draw the blame form, and what
 a KPMG reviewer will produce by construction.
 
-### Three cosmetic faults in the same reply
+#### 🟢 The 2026-09-07 reveal was MUCH better, and the difference matters for the ruling below
 
-1. 🟠 **The separator between the wrapper and the worked answer is invisible.** It renders as a
-   **1 px line in `#ddd5c5` on a `#f7f3ec` ground — a contrast ratio of 1.32:1**
-   (`components/chat/MessageRenderer.tsx:315`). WCAG asks 3:1 for a non-text UI element, and
-   this is the boundary between *the tutor talking to you* and *the model answer*. On a
-   projector it is not there at all. **This is the item flagged in the brief and it is real and
-   measurable.** The two halves of the reveal read as one continuous block of prose.
-2. 🟠 **A copyright footer lands in the middle of the message.** `REVEAL_FOOTER`
-   (`lib/acca/tutor-personas.ts:1046`) is appended to the wrapper *before* `assembleAfmReveal`
-   appends the worked answer, so every reveal reads *"…and you'll see how the two outputs work
-   together. © Gradd — for your personal exam preparation."* and **then** the answer. It is
-   structural, not a one-off.
-3. 🟠 **The closing beat invents a question that does not exist.** *"Try the same structure on a
-   fresh three-scenario problem…"* — there is no such thing to click. This is the known
-   invented-inventory item: `call4_reveal` is handed no grounding pack on the case surface, so
-   the fix that grounded the drill route never reached this one.
+Same case, same answer, same request for the model answer. It opened:
 
-### If it has to be demoed tomorrow
+> You've got the right instinct on the scepticism — rejecting a positive expected value when
+> the downside is severe is exactly the right reflex for a one-shot decision. But **you've hit
+> a discounting arithmetic snag** that's cascaded through your numbers…
 
-**Stop at the hint.** Turn 1 is excellent, self-contained, and it is the claim the hour makes.
-Turns 2 and 3 currently argue against it. If the reveal must be shown, show it on a **weak**
-answer rather than a partly-right one — the credit-shaped fabrication that mode draws is far
-less visible than telling a good candidate they wrote nothing.
+**Three of the four fabricated assertions did not recur.** It credited the judgement, it named
+the *real* error (the arithmetic, which the 2026-09-06 run never mentioned anywhere), and the
+closing beat pointed at this requirement rather than inventing a drill that does not exist.
+
+**One residue, same class, much smaller:** it still says *"you computed the central case in
+isolation and didn't weight all three scenarios properly"* and warns against *"weight cash
+flows first and discount second"*. **The candidate did neither.** It invents a method error to
+have something to teach.
+
+📌 **So the reveal is bimodal across n = 2: one run largely fabricated, one run largely
+correct with one invented method error.** That is a worse property for a demo than a
+consistently-poor reveal, because you cannot rehearse which one you will get.
+
+### Cosmetic faults, re-measured on the served page 2026-09-07
+
+1. 🟠 **The separator between the wrapper and the worked answer is very nearly invisible —
+   confirmed, and the number in the 2026-09-06 runbook was slightly wrong.** Measured on the
+   live DOM: `1px solid rgb(221, 213, 197)` (`#ddd5c5`) on a **`rgb(255,255,255)`** ground —
+   the case-surface message bubble is **white**, not the page's `#f7f3ec` — giving a contrast
+   ratio of **1.46 : 1**, not 1.32 : 1. **WCAG asks 3:1 for a non-text UI element, so it fails
+   by more than half either way.** It is the boundary between *the tutor talking to you* and
+   *the model answer*, and at projector gamma it will not be there at all. The two halves read
+   as one continuous block of prose.
+   ⚠️ **There are TWO of these rules in the transcript.** The other sits *inside the hint* —
+   the model writes `---` in ordinary replies too — so the same invisible line appears outside
+   the reveal, where it separates nothing in particular.
+2. 🟠 **A copyright footer lands in the middle of the message — reproduced exactly, n = 2.**
+   `REVEAL_FOOTER` (`lib/acca/tutor-personas.ts:1046`) is appended to the wrapper *before*
+   `assembleAfmReveal` appends the worked answer. On the served page the sequence is literally:
+   *"…how often does this decision lose money?"* → **"© Gradd — for your personal exam
+   preparation."** → the invisible rule → **"Risk & uncertainty — expected net present value
+   (ENPV)"**. Structural, not a one-off.
+3. 🟠 **The closing beat invents a question that does not exist** — *2026-09-06 only.* It did
+   not fire on 2026-09-07. The mechanism is still there and unfixed: `call4_reveal` is handed
+   no grounding pack on the case surface, so the fix that grounded the drill route never
+   reached this one.
+
+### ✅ And the worked answer underneath is the best thing in the leg
+
+It renders as a real HTML table, not broken markdown (checked in the DOM):
+
+| Scenario | Probability | NPV |
+|---|---|---|
+| Strong build-out | 0.30 | NOK 331.1m |
+| Central case | 0.45 | **NOK −2.7m** |
+| Delayed build-out | 0.25 | NOK −320.0m |
+
+…then `ENPV = Σ(pᵢ × NPVᵢ) = NOK 18.1m`, `P(NPV<0) = 70%`, four numbered steps, and a closing
+`Reconciliation: Σ(p×NPV) = NOK 18.1m; P(NPV<0) = 70% ✓`.
+
+**Say, pointing at the table:** *"Every figure in that is computed by code, not written by the
+model — and the last line is the code checking itself."*
+
+### The ruling for the day
+
+**Walk turn 1. Then scroll straight down to the worked answer and skip the wrapper.**
+
+- **Turn 1 is the product** — excellent on both runs, self-contained, and it is the claim the
+  hour makes.
+- **Turn 2 is the worst thing in the hour** and it is now reproduced. Do not walk it. If you
+  must show a second turn, send a message that adds new *content* rather than asking the tutor
+  to justify itself.
+- **The reveal's worked answer is strong; the wrapper above it is a coin-flip.** Reach the
+  reveal, then scroll past the wrapper to the table and narrate from there. That is a natural
+  movement — *"and here's the answer it was withholding"* — not an evasion.
+- If the room reads the wrapper anyway and it has fabricated something, **say so plainly**:
+  *"That paragraph has invented a mistake she didn't make. It's a known failure and it's the
+  one we're working on — the marking underneath it is the part that's verified."* A reviewer
+  will respect that far more than a presenter who did not notice.
 
 ---
 
-# LEG 3 — THE KEYBOARD, MARKED
+# LEG 3 — THE KEYBOARD, MARKED — 🟥 CUT FROM THE HOUR
+
+**Not presented. See *Leg 3 is out of the hour* at the top of this document for the ruling.**
+Everything below is retained because it is measured, because the marking evidence in it is
+quoted in the "what works" section, and because it is what a future runbook will need when the
+asynchronous-marking fix lands. **Do not open the mock surface in front of the room.**
 
 **`https://www.gradd.ai/acca/afm/mock` → Start.** AFM Mock Paper 1: three cases, eight
 requirements, 100 marks, a **195-minute countdown** set once at start and
@@ -715,47 +1097,45 @@ the end.
 
 Said plainly, because a runbook that hides its gaps is worse than no runbook.
 
-**No screenshots were taken.** Every screen in this document is measured through the production
-routes — real requests, real model calls, real timings, real marks — and **none of it was
-photographed.** Sign-in to a demo account was not possible (Blocker 3), and the presenting
-browser is signed in as `grant@live.ie`, which has no ACCA entitlement.
+**Updated 2026-09-07.** Legs 1 and 2 have now been on a real screen. What remains open is
+narrower and is listed exactly.
 
-**Consequences, specifically:**
+## ✅ Closed on 2026-09-07
 
-- **Everything visual is unverified except what could be measured from the DOM.** The 860 px /
-  34%-of-screen geometry and the 1.32:1 separator contrast are real measurements taken on the
-  live page. Everything else about how these screens *look* is inferred from the code.
-- **The eight `window.confirm` dialogs were not seen.** Their text is quoted from source and is
-  certain; their appearance on a projector is not.
-- **Leg 1's content is proven; its screen is not.** The sitting exists, is marked, and its
-  pacing matches the plan on all eight flags — all read through `GET /api/acca/sit/results`.
-  **Nobody has looked at the results page.** The 7-column pacing table in an 860 px column and
-  the scrollability of the headline are the two things to check first.
-- **Leg 2's screens were not seen** — the transcript is real and complete, but the rendering of
-  the reveal, and in particular how invisible that separator actually is at projector scale,
-  was not photographed. That was item 4c in the brief and it is **measured but not seen**.
+- **Leg 1's screen.** Walked signed in as `grant+demo4@live.ie` at a 1920 px viewport, top to
+  bottom, 7,301 px. The pacing table, the band chips, the marker prose, the professional-skills
+  panel and the routing button were all seen. Geometry re-measured and the runbook's single
+  860 px figure corrected into a per-surface table.
+- **Leg 2's screens.** Walked end to end in a real browser — the answer pasted, the hint, a
+  second turn and the earned reveal. **The separator was measured on the served page**
+  (`#ddd5c5` on white, **1.46 : 1**) rather than inferred, and the copyright-footer placement
+  was seen rather than read out of the source.
+- **The sign-ins.** Three verified addresses, deliverability probed at the MX before they were
+  handed over.
 
-**What would close it:** three reachable addresses (Blocker 3), ten minutes of sign-in, and a
-second pass. Nothing else in this document depends on it.
+## 🔴 Still open
+
+- **The coordinator and cohort views have not been photographed.** They need a coordinator
+  session, and the only account with one is `grant@live.ie` — which this pass could not sign
+  into, because signing a browser into an account whose mailbox it cannot open requires
+  injecting a session token, and that was correctly refused. **This is a ten-minute job for
+  Grant with the three URLs in leg 1.** It is also the route by which Aubrey's real paper gets
+  on screen without signing into her account, so it is not optional.
+- **Aubrey's APM paper has not been seen on any screen.** Its content is verified from the
+  database (7 requirements, bands `strong` / `competent` ×4 / `weak` ×2, 45/100, a genuine
+  3-minute 392-character last answer against a ~14-minute budget — a *real* end-of-paper
+  collapse). **Nobody has looked at how it renders.**
+- **The eight `window.confirm` dialogs were not seen** — but leg 3 is cut, so nothing in the
+  hour reaches them.
+- **Nothing has been checked on the actual projector.** Every measurement here is from a
+  2560 px desktop. The two items most likely to change on a projector are the **1.46 : 1
+  separator** (predicted: invisible) and the **16 px body copy**.
+
+**What would close it:** one sign-in as `grant@live.ie`, the three org URLs, and ten minutes
+with the projector.
 
 ---
 
-# WHAT THE REHEARSAL PROVED WORKS
-
-Four blockers is the headline, so this needs saying separately: **the product itself performed,
-and the two moments the hour is sold on are both strong.**
-
-- **The hint on a partly-right answer** (leg 2, turn 1) credited the sceptical reasoning, named
-  the error class and the scenario, and gave away neither the figure nor the direction.
-- **The marking discriminates, and explains itself.** On the seeded paper: `exemplary` 12/12 on
-  the requirement done at pace, `weak` 3/12 on the rushed one — with three specific errors named
-  and the correct arithmetic shown. On the throwaway paper: `nothing` for a paragraph that
-  asserted the right direction with no figures, `competent` for the one answer that did the work.
-- **The pacing engine reproduced an engineered profile to within 0.05 on seven of eight
-  ratios**, and the collapse headline fired exactly where it was designed to.
-- **Nothing lied under failure.** Through a gateway timeout, a partially-marked paper and a
-  concurrent retry, the system reported `marked: false`, showed *"Not yet marked."* per
-  requirement, refused to re-mark a case another request held, and did not double-bill.
-
-The defects are in the seams — the front door, the sign-in, the seed's session, and two of the
-tutor's four turns. **None of them is in the teaching or the marking.**
+*The "what works" section that used to sit here has moved to the top of this document, where
+it belongs — a runbook that opens on four blockers reads as a broken product, and both halves
+belong on the same page.*

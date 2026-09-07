@@ -1,0 +1,78 @@
+{
+  "what": "Leg 2 second run — the partly-right answer on the Halvard Marine case surface, walked in a real browser on production. n=2 for this beat (first run 2026-09-06, docs/rollbacks/demo_leg2_probe_20260906.json).",
+  "when_utc": "2026-09-07T10:15Z - 10:28Z",
+  "how": "Real Chrome against https://www.gradd.ai, signed in as grant+demo4@live.ie, window 1920 CSS px wide.",
+  "case": {
+    "id": "ac000000-0000-4000-8000-00000000b101",
+    "title": "Halvard Marine ASA",
+    "requirement": "(i) — 13 marks",
+    "url": "https://www.gradd.ai/acca/cases/ac000000-0000-4000-8000-00000000b101"
+  },
+  "answer_posted": "The runbook's pasted answer verbatim — right about the judgement, wrong about the central-case NPV (states +NOK 6m against a true -NOK 2.7m, and 25% against a true 70%).",
+  "turns": [
+    {
+      "n": 1,
+      "mode": "HINT",
+      "wait_s": "~9",
+      "verdict": "GOOD, but the register moved",
+      "text": "First miss:\n\nYour central-case NPV is massively wrong — you've computed it as NOK 6m, but when you discount those cash flows (250, 275, 290, 300) at 9% against the 900m outlay, you do not get 6m. Recalculate that one scenario before we move on, because it swings both your expected value AND your probability of loss materially.\n\nOnce you've locked that figure, here's what I need: take your three scenario NPVs (corrected) and tell me in one sentence whether an expected value of positive NOK 22m — even if the number held — is the basis on which you would actually advise the board to commit NOK 900 million on the facts the chair has just given you.",
+      "notes": [
+        "Withholds the figure and the direction — the core claim HOLDS.",
+        "Names the scenario AND quotes the four cash flows off the exhibit — more help than the 2026-09-06 run gave.",
+        "Opens 'massively wrong'. It does NOT credit the head the candidate got right, which the 2026-09-06 run did ('Right — you've caught the key weakness…'). The runbook's 'it credits what they got right' line is therefore NOT stable across runs."
+      ]
+    },
+    {
+      "n": 2,
+      "mode": "TEACHING",
+      "wait_s": "~10",
+      "verdict": "THE 2026-09-06 FAULT REPRODUCED",
+      "student_said": "I've re-run the central case and I still make it about NOK 6m — 250, 275, 290 and 300 discounted at 9% against the 900m outlay. On your second question: no, I would not advise the board to commit on the strength of a positive expected value of 22m, because this is a one-shot purchase and the delayed scenario loses 320m.",
+      "text_excerpt": "You've calculated one scenario (central case) and asserted an expected value of about NOK 22m, but you haven't shown me the calculation that gets there. An expected NPV is a probability-weighted sum — you need to compute the NPV in each of the three scenarios, weight each one by its stated probability, and add them together.",
+      "notes": [
+        "FALSE. The answer on screen gives all three scenario NPVs with their probabilities and writes the weighted sum out in full: ENPV = (0.30 x 331) + (0.45 x 6) + (0.25 x -320) = NOK 22m.",
+        "Different wording from 2026-09-06 ('I need to see your working … tells me you haven't written down the numbers yet'), same false assertion, same turn. n=2, and the second-turn message was NOT the same one. Not intermittent.",
+        "It DOES credit the judgement correctly and quotes the candidate's own sentence back — the good half of the turn is real."
+      ]
+    },
+    {
+      "n": 3,
+      "mode": "MODEL ANSWER (earned reveal)",
+      "wait_s": "~10",
+      "verdict": "MUCH BETTER THAN 2026-09-06, one residue",
+      "notes": [
+        "NO fabricated-blame opening. It opens by crediting: 'You've got the right instinct on the scepticism—rejecting a positive expected value when the downside is severe is exactly the right reflex for a one-shot decision.'",
+        "It names the REAL error: 'you've hit a discounting arithmetic snag that's cascaded through your numbers'.",
+        "RESIDUE: it still invents a method error — 'you computed the central case in isolation and didn't weight all three scenarios properly' and 'When you weight cash flows first and discount second'. The candidate did neither. Same class as 2026-09-06, much reduced severity.",
+        "The closing beat did NOT invent a non-existent drill this run — it ends on a real instruction about this requirement. The invented-inventory item did not fire.",
+        "REPRODUCED EXACTLY: the copyright footer lands mid-message — '© Gradd — for your personal exam preparation.' immediately precedes the separator and the worked answer.",
+        "The worked answer itself is excellent and renders as a real HTML <table>: Strong 0.30 / NOK 331.1m, Central 0.45 / NOK -2.7m, Delayed 0.25 / NOK -320.0m, ENPV NOK 18.1m, P(NPV<0) 70%, and a reconciliation line."
+      ]
+    }
+  ],
+  "measured_on_the_served_page": {
+    "separator_wrapper_to_answer": {
+      "selector": "second <hr> in the reveal message",
+      "computed_border": "1px solid rgb(221, 213, 197)  (#ddd5c5)",
+      "ground": "rgb(255, 255, 255) — the message bubble is WHITE on this surface, not the page's #f7f3ec",
+      "contrast_ratio": 1.46,
+      "wcag_requirement": "3:1 for a non-text UI element",
+      "correction": "The 2026-09-06 runbook recorded 1.32:1 against a #f7f3ec ground. The real ground under the case-surface bubble is white, so the true ratio is 1.46:1. Still under half the WCAG floor.",
+      "sits_between": "'© Gradd — for your personal exam preparation.'  ->  'Risk & uncertainty — expected net present value (ENPV)'"
+    },
+    "second_separator": "There are TWO <hr>s in the transcript. The other one is inside the HINT — the model writes '---' in ordinary replies too, so the same invisible rule appears outside the reveal.",
+    "transcript_pane": {
+      "selector": ".ec-messages",
+      "client_height_px": 279,
+      "scroll_height_px": 3544,
+      "ratio": "12.7 : 1",
+      "finding": "The entire conversation is read through a 279-pixel letterbox while the empty composer below it takes ~150px. On the reveal, roughly 6 lines of a ~40-line message are visible at a time."
+    },
+    "composer_hint": "Renders '⌘↵ to send' — Mac modifier glyphs, on a Windows presenting machine."
+  },
+  "layout_corrections_to_the_runbook": {
+    "acca_dashboard": "main = 720px content 656px at a 1920px viewport = 34% of the window. The 34% figure is real and is THIS surface.",
+    "results_page": ".org wrapper = 1040px at 1920px = 54%. The 7-column pacing table is 950px and fits comfortably. NOT 860px.",
+    "case_surface": "Two-pane, full width. Scenario+exhibits left, requirement+tutor right. No narrow-column problem at all."
+  }
+}
