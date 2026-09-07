@@ -2,6 +2,85 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
+## 🔴 OPEN 2026-09-07 (p) — THE SERVED REVEAL IS PERSISTED NOWHERE. A REFRESH LOSES THE WORKED ANSWER **AND** THE CONVERSATION.
+
+**Found while designing the expand control; it is the constraint that shaped that design and it
+is a bigger problem than the expand.**
+
+`ezra_response` appears in exactly two places in the codebase — `app/api/acca/case/turn/route.ts`
+and `app/api/acca/tutor/route.ts` — and **both are `NextResponse.json`**. Nothing writes the
+served text to any table. `acca_case_progress` stores `last_diagnosis`, `last_real_attempt`,
+`miss_count`, bands and marks; it stores no message. `CaseSession` says so at the top of its own
+resume path: *"Derived purely from progress; no chat history is restored."*
+
+**So the reveal a student EARNED — two genuine misses, a paid entitlement, a model call — exists
+only in the HTTP response and in React state, and a refresh destroys it permanently.** The
+student can re-earn nothing: `resolved` is now true, so asking again re-serves *a* reveal, but it
+is a fresh model call with a different wrapper, and the transcript that led to it is gone.
+
+📐 **This is the everyday case, not an edge.** The worked answer is what a student returns to
+when revising. Today there is nothing to return to.
+
+### 🔵 SCOPED, NOT NOW
+
+**The honest fix is to persist the served reveal**, not to reconstruct it:
+
+1. **A migration** — a column on `acca_case_progress` / `acca_tutor_progress` (or a small
+   `acca_served_reveals` table keyed the same way) holding the exact `assembleAfmReveal` output,
+   its `served_at`, and the paper/row it came from.
+2. **A write path** at both serve sites, immediately after `const served = assembleAfmReveal(...)`
+   — `teach-engine.ts:1135` and `tutor/route.ts:1148`. **Error-checked**, per the 2026-09-05
+   lesson: supabase-js resolves with `{data, error}` and does not throw, so an unchecked write
+   here would silently store nothing and the failure would look exactly like success.
+3. **A read path** for the expanded view and for a returning student.
+
+⚠️ **It must not block the serve.** A reveal the student earned must never fail to reach them
+because a persistence write failed — best-effort, recorded through the error recorder, never
+awaited into the response's success condition.
+⚠️ **It is a disclosure decision as well as a storage one.** Storing the served artefact makes
+the worked answer durably retrievable per student; the `mock_only` reserved-content rule and the
+`revealDecision` gate both have to hold on the read path, not just the write.
+
+**Why not now:** the expand control (approved 2026-09-07) does not need it — the intercepting
+route reproduces the artefact from the row deterministically and the in-session path passes the
+served bytes untouched. This item is the *separate* problem that a refresh loses everything, and
+it wants its own block.
+
+---
+
+## 🟠 OPEN 2026-09-07 (q) — `call1_generate` GENERATES A MODEL ANSWER AT TURN TIME. DEAD FOR ALL 192 PUBLISHED ITEMS, REACHABLE, AND IT MUST FAIL CLOSED.
+
+Both engines branch on whether the row carries a stored answer:
+
+```
+if (storedModelAnswer) { modelAnswer = storedModelAnswer; }
+else { modelAnswer = await call1_generate(question, fullContext); }
+```
+
+`app/api/acca/case/turn/route.ts:459` and `app/api/acca/tutor/route.ts:1445`.
+
+📐 **MEASURED 2026-09-07: 0 of 38 `acca_case_requirements` and 0 of 154 published `acca_drills`
+have an empty `model_answer`. The branch is dead for every live item — all 192.**
+
+**But it is reachable**, and everything downstream of the reveal assumes the artefact is a pure
+function of the row:
+
+- The **expand control** (approved, unbuilt) reproduces the artefact server-side as
+  `normaliseRevealArtefact(row.model_answer)`. On a generated answer there is nothing to
+  reproduce — the text existed only in that turn's `session_state`, which is client state.
+- The **figure moat** rests on the stored answer being code-verified. A generated one has been
+  through no gate, no `answer_schema`, no numeric verifier.
+
+⚠️ **THE RULE: fail closed, never fall back.** An empty `model_answer` must produce **no expand
+control** and a **404** on the answer route — never a silently different artefact, and never a
+fresh generation to fill the gap. A reader who cannot tell the two apart is the failure mode.
+
+**Not fixed here.** Two follow-ups worth deciding together: whether the generate branch should
+exist at all now that every served row has an authored answer, and whether an unstored row should
+be refused at the serve boundary rather than papered over at turn time.
+
+---
+
 ## 🔴 OPEN 2026-09-07 (o) — THE FALSE ABSENCE: THE TUTOR DENIES WORKING THE STUDENT SHOWED. n = 40, MEASURED, NO FIX.
 
 **This is a NEW class and it is not the attribution family already on the board.** That family
