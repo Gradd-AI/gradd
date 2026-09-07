@@ -951,6 +951,21 @@ It came back with:
 > there**. An expected NPV is a probability-weighted sum — you need to compute the NPV in each
 > of the three scenarios, weight each one by its stated probability, and add them together.
 
+📐 **NOW MEASURED AT n = 40, AND IT IS WORSE THAN n = 2 SUGGESTED.** Frozen seed, frozen neutral
+follow-up, three case seeds × 10 plus a matched drill arm × 10 (`AFM_SURFACED.md` item (o);
+data in `docs/rollbacks/false_absence_merged_20260907.graded.json`):
+
+| | rate |
+|---|---|
+| Case turn 2 **flatly denies** something the answer contains | **11/30 = 37%** |
+| Case turn 2 **re-asks** for something already on the page | **20/30 = 67%** |
+| Drill turn 2, same shape | **0/10** |
+
+**It tracks the LENGTH of the answer** (strip the prose, keep the same arithmetic: 9/10 → 2/10,
+p = 0.005) **and not the position of the working** (move it to the end: 9/10 → 9/10, p = 1.000).
+**Two-thirds of the time, a long answer's second turn asks the candidate for something they have
+already written.** That is the number to hold in your head when deciding whether to walk turn 2.
+
 **The answer on screen, four inches above, reads:**
 
 > - Strong build-out: NPV NOK 331m (p = 0.30)
