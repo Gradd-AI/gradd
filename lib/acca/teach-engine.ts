@@ -364,6 +364,48 @@ export function caseSystemFor(paper: string): string {
 }
 
 // ── Anthropic client ──────────────────────────────────────────────────────────
+//
+// ⚠️ NO PROMPT CACHING ON ANY LEG IN THIS FILE, AND THAT IS A MEASURED DECISION AS OF
+// 2026-09-08 — NOT THE OVERSIGHT IT LOOKS LIKE. The drill route (app/api/acca/tutor/route.ts)
+// wraps all 12 of its Anthropic call sites in `cacheBlock` / `cachePrefix`
+// (lib/acca/prompt-cache.ts). This engine was extracted as a faithful copy of that route's §7
+// BEFORE that wiring went in, and the obvious next move is to port it. It was costed and
+// declined.
+//
+// WHAT PORTING IT WOULD BUY. The only clean stable prefix on every leg here is
+// `${contextLine}Question: ${question}\n\n` — the per-turn student-answer block sits BEFORE the
+// per-requirement mark scheme, grounded facts and model answer in byte order, so the larger
+// stable chunk TRAILS the volatile one (`groundedFacts` is volatile too: `detectContradictions`
+// reads the student's message). Against the model floors that prefix measures:
+//
+//   call3_hint / call3_teach / call3_confirm / call4_reveal — Haiku 4.5, floor 4096
+//       2,595–3,281 tokens across all 38 published requirements →  0/38 cache.  Silently.
+//   call2_diagnose — Sonnet 4.6, floor 1024
+//       1,034–1,859 tokens                                     → 38/38 cache.
+//
+// So one leg of six, worth ~$0.002 per case session (1,201 tokens at 0.1x instead of 1x, twice
+// in a three-turn session, less the first-turn write premium).
+//
+// AND IT BUYS NO LATENCY. Measured on that leg, n=10 per arm, live, production prompt shape:
+// cached median 2,786ms vs uncached 2,513ms, 10/10 cache hits, identical output length. The
+// cached arm was SLOWER at the median — noise, but emphatically not a speed-up. The wait on
+// this path is output generation and TTFT; input processing was never the bottleneck.
+//
+// WHY THAT IS A DECLINE AND NOT A DEFERRAL. The one leg it would touch is `call2_diagnose`,
+// whose prompt shape is the thing a week of measurement stabilised (the four banked regression
+// axes — attribution, credit inversion, pointer, truncation — and the prior-attempt fix). Two
+// tenths of a cent and zero latency does not buy a diff to that leg.
+//
+// ⚠️ THE ONE THING THAT WOULD CHANGE THE ANSWER IS THE FLOOR, NOT THE WIRING. If a persona or a
+// scenario grows the Haiku prefix past 4,096 — the largest anywhere in the live corpus is 3,364,
+// so it is 732 tokens away — five legs become cacheable at once and this should be re-costed.
+// ⚠️ IT WOULD STILL NOT BE A LATENCY FIX. Do not reach for caching to shorten a perceived wait;
+// see docs/AFM_SURFACED.md, the 2026-09-08 caching item, and item (w) for what actually would.
+//
+// ⚠️ IF IT IS EVER PORTED: `cachePrefix` MUST NOT REORDER. Moving the mark scheme and model
+// answer ahead of the student's attempt would take the cacheable prefix from 1,203 to 2,073
+// tokens on call2 — and it is a prompt change to the diagnose leg wearing a billing change's
+// clothes. prompt-cache.ts's header forbids it for exactly this reason.
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 
