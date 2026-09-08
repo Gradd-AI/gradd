@@ -57,6 +57,102 @@ demonstrate what the screen is for; they are not evidence that it works.
 
 ---
 
+## 🟠 SCOPED, NOT BUILT — 2026-09-08 (w) — NOTHING STREAMS. THE STUDENT SEES NOTHING UNTIL THE LAST TOKEN OF THE SECOND CALL, AND ROUGHLY HALF THAT WAIT IS AN INTERNAL VERDICT WITH NO VISIBLE PRODUCT.
+
+A teach turn is **two serial model calls behind one JSON body.** `runTeachTurn`
+(`lib/acca/teach-engine.ts`) awaits `call2_diagnose`, then awaits one of
+`call3_hint`/`call3_teach`/`call3_confirm`, then returns a string; the route wraps it in
+`NextResponse.json`. Neither call uses `.stream()`. So the wait the student experiences is
+`call2 + call3 + transport`, and **the screen is blank for all of it.**
+
+**The shape of the wait is the point, not its length.** `call2_diagnose` produces a 12–15 word
+gap label the student never sees — it is an internal verdict that exists to condition the second
+call. It is also the **slower of the two**: it is the only leg on Sonnet 4.6 (every other leg is
+Haiku 4.5), and the runbook's own timing puts it at **~4.6s warm**. So the student spends roughly
+half of a two-call turn waiting on a call whose entire output is invisible to them.
+
+### 🔵 THE HONEST FIX, SCOPED
+
+**Stream `call3_*`, not `call2`.** Nothing can be shown during `call2` — there is no visible
+product to stream — so the win is not in making `call2` stream; it is in making the *second* call
+start painting the moment it has a first token, instead of at its last. That converts a
+"blank → everything" wait into "blank for the diagnose leg → prose appearing", which is the
+difference between a page that looks broken and a tutor that looks like it is thinking.
+
+1. `anthropic.messages.stream(...)` on the three `call3_*` legs and `call4_reveal`.
+2. The route becomes a streaming response, which means **`runTeachTurn` can no longer return a
+   string** — it currently returns `ezraResponse` alongside eight other fields the route writes to
+   `acca_case_progress`. The persistence must still run on the *complete* text, after the stream
+   closes, or a turn's miss count is written from a partial reply.
+3. **The reveal leg is the hard one and must be scoped separately.** `call4_reveal` does not serve
+   the model's output — it serves `assembleAfmReveal(wrapper, modelAnswer)`, and the wrapper passes
+   through `sanitizeAfmWrapper` → `enforceVerbatimQuotation` before assembly. Both of those are
+   **whole-text** transforms: the sanitizer cuts at a heading shape that may not have arrived yet,
+   and the quotation check runs to a fixed point over the finished text. **Streaming a reveal token
+   by token would serve text that the guards later remove.** Either stream only the legs with no
+   post-hoc transform, or buffer the wrapper and stream only the appended artefact.
+
+⚠️ **This is a latency-PERCEPTION fix and must not be sold as a latency fix.** It moves no wall
+clock. The 88 seconds of dead air recorded in the runbook's full run of 2026-09-08 is unchanged by
+it; what changes is how much of that time the screen is empty.
+
+---
+
+## 🟠 MEASURED 2026-09-08 (y) — THE FIRST `call2_diagnose` OF A COLD PROCESS COSTS ~10 SECONDS MORE THAN A WARM ONE AT IDENTICAL TOKEN COUNTS. THIS IS WHAT THE WARM-UP TURN IS FOR, AND IT IS NOW A NUMBER.
+
+**14.4s cold vs 4.6s warm**, same leg, same prompt shape, **same input and output token counts** —
+so it is not the model doing more work. It is connection setup: TLS + HTTP/2 to the API on a
+function instance that has not called it before, plus the instance's own cold start.
+
+**The consequence for the demo is that the warm-up turn is load-bearing and was previously
+justified by feel.** It now has a number: skipping it puts a ~10-second one-off penalty on the
+*first* thing the room watches, which is the worst possible placement for it.
+
+⚠️ **It is per-instance, not per-session.** Fluid Compute reuses instances, so a second student
+landing on a warm instance never pays it — and a deploy, a scale-out, or a long idle gap puts the
+next request back on a cold one. The warm-up turn protects the demo; it does not fix this for
+students.
+
+---
+
+## 🔵 NOTE 2026-09-08 (z) — `APM_INTENT_LAYER` AND `APM_COMPLETENESS_GATE` ARE UNSET IN PRODUCTION, AND EACH WOULD ADD A SERIAL CALL TO EVERY TURN. DO NOT ENABLE BEFORE THE DEMO.
+
+Both are read at module load in `lib/acca/teach-engine.ts` (`:850`, `:206`) and both are off.
+Recorded here because they read as dormant improvements and are in fact **latency costs on the one
+surface the demo walks**:
+
+| flag | what it adds | when |
+|---|---|---|
+| `APM_INTENT_LAYER` | `call0_classify` — Haiku, `max_tokens: 10` | **every turn**, before the moat |
+| `APM_COMPLETENESS_GATE` | `completenessCheck` — Haiku, `max_tokens: 256` | only when `call2` says CORRECT |
+
+`APM_INTENT_LAYER` is the expensive one: it is unconditional, so it turns every two-call turn into
+a three-call turn. `APM_COMPLETENESS_GATE` fires only on the correct branch, which is the branch
+where the student is *already happy* — but that is also the branch the demo's leg 2 is trying to
+reach.
+
+**Neither is a bad feature and this is not an argument against them** — the completeness gate is
+the wired half of the `passed` verdict and is recorded as VERIFIED WORKING. It is an argument
+against flipping either flag in the week of a demo whose measured problem is dead air.
+
+---
+
+## 🟢 LOGGED 2026-09-08 (x) — A SESSION LEFT IDLE ~1 HOUR DROPS TO THE SIGN-IN PAGE. BEHAVIOUR, NOT A DEFECT.
+
+Left idle for about an hour, the next page load bounces to `/acca/auth`: the access token
+expires, the refresh fails, the cookie is cleared, and the load is unauthenticated. The runbook
+already carries the instruction (do not leave the demo machine parked on a signed-in tab between
+legs); **what it did not carry is the behaviour itself**, so the instruction read as
+superstition and the next person to hit it would have diagnosed it from scratch.
+
+Recorded as behaviour rather than filed as a bug: a refresh that fails after an idle hour and
+lands the user on a sign-in page is what the auth stack is supposed to do. What makes it worth a
+line is that **it is silent and it looks like a product failure from the front of a room** —
+there is no "your session expired, sign in again" state, just the marketing-adjacent auth page,
+which is also where a wrong-account org URL lands (finding 1 of the 2026-09-08 run).
+
+---
+
 ## 🔴 OPEN 2026-09-07 (p) — THE SERVED REVEAL IS PERSISTED NOWHERE. A REFRESH LOSES THE WORKED ANSWER **AND** THE CONVERSATION.
 
 **Found while designing the expand control; it is the constraint that shaped that design and it
