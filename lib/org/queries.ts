@@ -72,6 +72,29 @@ export interface CohortHeatmap {
   rows: { userId: string; email: string | null; name: string; cells: Record<string, HeatmapCell> }[];
 }
 
+/** Whether the cohort-average roll-up row earns its place under the heatmap.
+ *
+ *  AT n = 1 THE AVERAGE **IS** THE ONLY TRAINEE'S ROW, cell for cell, by construction — the
+ *  mean of one number is that number. It restates the row directly above it under a different
+ *  label, which reads as a rendering bug rather than as a summary. Sighted on the live
+ *  `Sept-26 APM — live` cohort (one member), where both rows render `1.0 · 1.0 · 1.0 …`
+ *  identically.
+ *
+ *  n = 0 is suppressed by the same condition and for a weaker but real reason: there is
+ *  nothing to average, so every cell would render '·' beside an empty table body.
+ *
+ *  Keyed on the count of RENDERED trainee rows, because the claim being defended is about two
+ *  rows a coordinator sees stacked one above the other. That is the same population the
+ *  roll-up averages: `getCohortReadiness` and `getCohortHeatmap` both enumerate
+ *  `cohortUserIds(cohortId)`, so the band join on the page drops nobody.
+ *
+ *  ⚠️ PRESENTATION ONLY. Nothing about the roll-up ARITHMETIC changes, and no readiness,
+ *  coverage or miss-rate number moves — a suppressed row is a row not drawn, not a row
+ *  computed differently. */
+export function showCohortAverage(traineeRows: number): boolean {
+  return traineeRows > 1;
+}
+
 // ── Org / cohort lookups ──────────────────────────────────────────────────────
 
 export async function getOrgBySlug(slug: string): Promise<Org | null> {

@@ -18,7 +18,7 @@ import {
 } from '../lib/org/readiness';
 // Pure exports only. queries.ts imports createServiceClient, but that is a FUNCTION — no client
 // is constructed and no env is read at module load, so this stays a pure, env-free fixture.
-import { scopeDrillRows, scopeMarkRows, scopeMockRows, cohortPaper } from '../lib/org/queries';
+import { scopeDrillRows, scopeMarkRows, scopeMockRows, cohortPaper, showCohortAverage } from '../lib/org/queries';
 import { MOCK_PAPERS } from '../lib/acca/mocks';
 
 let failures = 0;
@@ -424,6 +424,28 @@ const ROWS = [
   check('T29: asking for AFM keeps the AFM attempt (the other direction)',
     scopeMockRows(ATTEMPTS, 'AFM').length === 1
     && scopeMockRows(ATTEMPTS, 'AFM')[0].mock_id === AFM_MOCK);
+}
+
+// ── T30–T34: the cohort-average roll-up row is suppressed at n <= 1 ───────────
+// SIGHTED on the live `Sept-26 APM — live` cohort (one member): the roll-up rendered
+// `1.0 · 1.0 · 1.0 …` directly beneath a trainee row reading `1.0 · 1.0 · 1.0 …`, because
+// the mean of one number is that number. It reads as a duplicated row, i.e. as a bug.
+{
+  check('T30: n = 1 suppresses the row — the average IS the only trainee\'s row',
+    showCohortAverage(1) === false);
+  check('T31: n = 0 suppresses it too — nothing to average, every cell would be "·"',
+    showCohortAverage(0) === false);
+  check('T32: n = 2 SHOWS it — the boundary, and the first n where an average adds anything',
+    showCohortAverage(2) === true);
+  check('T33: a real cohort size shows it (Sept-26 APM, 13 trainees)',
+    showCohortAverage(13) === true);
+
+  // THE PRE-FIX RENDER, PINNED WRONG. The row was drawn unconditionally, so this is what
+  // shipped; if the condition is ever removed this check is what fails rather than a
+  // coordinator noticing a duplicated row mid-demo.
+  const LEGACY_show = (_traineeRows: number) => true;
+  check('T34: the unconditional pre-fix render is pinned WRONG at n = 1',
+    LEGACY_show(1) === true && showCohortAverage(1) !== LEGACY_show(1));
 }
 
 console.log(`

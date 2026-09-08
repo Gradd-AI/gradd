@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 import { requireCoordinator } from '@/lib/org/guard';
 import {
   getOrgBySlug, getCohortById, getOrgUtilisation,
-  getCohortReadiness, getCohortHeatmap,
+  getCohortReadiness, getCohortHeatmap, showCohortAverage,
 } from '@/lib/org/queries';
 import { ORG_CSS, bandTone, cellTone, SUB_AREA_NAME, type Band } from '@/components/org/orgTheme';
 
@@ -101,6 +101,9 @@ export default async function CohortHeatmapPage({ params }: { params: Promise<{ 
                 </tr>
               );
             })}
+            {/* At n <= 1 the average restates the single trainee's row cell for cell — see
+                `showCohortAverage`. The roll-up above is still computed; it is just not drawn. */}
+            {showCohortAverage(rows.length) && (
             <tr className="rollup">
               <td className="name">Cohort average</td>
               {heat.subAreas.map((sa) => {
@@ -118,6 +121,7 @@ export default async function CohortHeatmapPage({ params }: { params: Promise<{ 
                 );
               })}
             </tr>
+            )}
           </tbody>
         </table>
       </div>
