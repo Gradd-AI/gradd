@@ -753,20 +753,102 @@ branch HAS merged, Q2 (ii) is safe and reads correctly.
   URL instead: `https://www.gradd.ai/acca/results/c3804dcb-69ef-4630-babf-0d1e8dbc3aae`.
 - 🟠 *"all your papers"* in the sub-header is a link styled exactly like the plain text around it.
 
-### What is still not photographed
+## THE COORDINATOR SECTION — FOUR SCREENS, IN THIS ORDER
 
-**The coordinator / cohort view.** It sits behind a coordinator session, and the account that
-holds one is `grant@live.ie` — which this pass could not sign into (see *What this rehearsal
-did not cover*). The URLs are known and correct:
+**✅ PHOTOGRAPHED 2026-09-08** (`docs/demo/screens/leg1_cohort_heatmap_sept26.jpg`,
+`…_dec26.jpg`). Signed in as `grant@live.ie`, which is the org coordinator. Both seeded
+heatmaps render **varied** — a real spread of miss-rates, thinly-populated columns, and one
+never-started trainee — so this view is IN the hour.
 
-- Org: `https://www.gradd.ai/org/demo-advisory`
-- Aubrey's cohort: `https://www.gradd.ai/org/demo-advisory/48b0b9db-cad8-4c61-ae0d-32984af40b03`
-- Aubrey's trainee page: append `/dd786100-7d5d-4e1b-a0af-62f5ac8686e1`
+Aubrey's paper is shown **through this route, not by signing into her account.** The coordinator
+view de-identifies her to `trainee-04@cohort.demo`, and no ACCA surface renders an email address
+anywhere.
 
-**This is also the route by which Aubrey's paper can be shown without signing into her
-account.** The coordinator view de-identifies her to `trainee-04@cohort.demo`, and no ACCA
-surface renders an email address anywhere. **Walk these three URLs once, signed in as
-`grant@live.ie`, before the day.**
+### 1 · The seeded cohort heatmap — **say the words before it goes up**
+
+`https://www.gradd.ai/org/demo-advisory/d82aa14f-12ab-4807-9001-3658272b5093` → **Sept-26 APM**
+
+> *"The trainees in this cohort are **demonstration data**. Every screenshot we show you is
+> labelled as such."*
+
+That is the one-pager's own commitment, verbatim. **Say it before the screen goes up, not after
+someone asks.**
+
+**Use Sept-26, not Dec-26.** Both are varied, but Sept-26 is the better screen and the difference
+is not cosmetic:
+
+| | Sept-26 APM (13) | Dec-26 APM (12) |
+|---|---|---|
+| The story in it | **D2 is a cohort-wide wall at 0.9** — thirteen people, one sub-area, everybody weak | C1 at 0.6, and little else |
+| Never-started trainee | **Priya Nair — a whole row of `·`, banded RED** | none |
+| Bottom of the table | mixed | four greens in a solid `0.0` wall — reads as filler |
+
+**What to point at, in order:** the **D2 column** (*"that is not thirteen individual problems,
+that is one teaching problem"*), then **Priya's empty row** (*"and this one hasn't started —
+which is the thing a coordinator finds out too late"*), then the **Cohort average** row along
+the bottom.
+
+### 2 · Aubrey's page, opened **scrolled to Mock Paper 1**
+
+`https://www.gradd.ai/org/demo-advisory/48b0b9db-cad8-4c61-ae0d-32984af40b03/dd786100-7d5d-4e1b-a0af-62f5ac8686e1`
+
+> *"This one is a real trainee, sat on our clock in September, shown with her consent. Her name
+> isn't on it — the product never displays it."*
+
+⚠️ **DO NOT SHOW THE READINESS PANEL AT THE TOP OF THIS PAGE.** Scroll to **Mock paper** before
+the screen is visible, or land there and scroll *down* only. The panel is the first thing on the
+page and it is the one thing on it we do not stand behind.
+
+**Why:** its Coverage component reads **0.00 / `0/12 sub-areas`** and bands her **RED** — while
+six inches below, the same page reports her marked paper at **45/100 with COMPETENT bands and
+quoted evidence.** The two halves disagree, and the half with the evidence behind it is the lower
+one. Coverage only counts a sub-area once an attempt is auto-marked `correct`, and that gate has
+**never fired for any real student** (890 misses against 25 correct across the whole product; 14
+attempts and 0 correct for Aubrey). Logged as `AFM_SURFACED.md` **2026-09-08 (r)**; the gate is
+**not** being patched before the day — it needs a cohort to calibrate against.
+
+**🎙️ If someone scrolls up, or asks what the red band is — the honest line, once, then move on:**
+
+> *"That's a readiness score we're still calibrating, and we don't put weight on it yet. It only
+> credits a topic once our automatic marker calls an answer correct, and that check is currently
+> far too strict — it reads near-zero for everyone, so it tells you nothing about her. The marks
+> underneath it are the marked paper, and those we do stand behind."*
+
+**Do not defend the number and do not explain the regex.** Name it as uncalibrated, say what you
+*do* stand behind, and go back down the page.
+
+### 3 · The pacing table
+
+Under **Mock paper**, below the three totals (`Technical 38/80` · `Professional skills 7/20` ·
+`Paper 45/100`), the **Pacing** heading and its table. **1040 px layout, 950 px table** — the
+same geometry as `/acca/results`, which measured fine; nothing to fix.
+
+This is the screen that makes the point a mark alone cannot: it names each requirement `Q1 (i)`,
+`Q1 (ii)` … and reports the real wall-clock minutes against budget, `over` in red and `under` in
+amber. **She sat the full 3 h 15 m** — this is not a reconstruction.
+
+### 4 · **Q1 (i)**, `COMPETENT`, with **"Show Trainee's answer"** expanded
+
+Keep scrolling to **`Q1 — Halworth Hotels`** → **`(i) The benchmarking exercise`**.
+
+| | |
+|---|---|
+| Band | **`COMPETENT`** |
+| Marks | **8 / 16** — the **biggest single requirement on the paper** |
+| Her answer | **3,570 characters** — substantial, not a fragment |
+
+**Click `Show Trainee's answer` and leave it open.** This is the whole argument of the leg in one
+frame: her real answer, at length, beside a band and a mark and the marker's prose citing what she
+actually wrote. **Read one sentence of the marker's prose aloud** — it is the only unlabelled
+block on the requirement (see *Merely ugly* above), so point at it rather than expecting the room
+to find it.
+
+⚠️ **`COMPETENT` is a tan chip on a near-white panel** and is the hardest band chip to read from
+the back of a room. Say the word as you point at it.
+
+⚠️ **Q1 (i) is safe.** The self-contradiction defect found on 2026-09-07 lands on **Q2 (ii)** and
+**Q1 (iv)** of the *seeded AFM* paper — a different paper and different requirements. Nothing on
+Aubrey's APM paper is implicated by it.
 
 ---
 
@@ -1343,12 +1425,13 @@ narrower and is listed exactly.
 
 ## 🔴 Still open
 
-- **The coordinator and cohort views have not been photographed.** They need a coordinator
-  session, and the only account with one is `grant@live.ie` — which this pass could not sign
-  into, because signing a browser into an account whose mailbox it cannot open requires
-  injecting a session token, and that was correctly refused. **This is a ten-minute job for
-  Grant with the three URLs in leg 1.** It is also the route by which Aubrey's real paper gets
-  on screen without signing into her account, so it is not optional.
+- ✅ **CLOSED 2026-09-08 — the coordinator and cohort views are photographed.** Walked signed in
+  as `grant@live.ie` on production: both seeded heatmaps render varied and are IN the hour
+  (`docs/demo/screens/leg1_cohort_heatmap_*.jpg`), and the four-screen click path is written up
+  in **THE COORDINATOR SECTION** in leg 1. **One thing came out of that walk and is not
+  cosmetic:** the readiness panel at the top of the trainee page contradicts the marked paper
+  below it, so leg 1 now says explicitly not to show it and gives the presenter a line for the
+  case where someone scrolls up. See `AFM_SURFACED.md` **2026-09-08 (r)**.
 - **Aubrey's APM paper has not been seen on any screen.** Its content is verified from the
   database (7 requirements, bands `strong` / `competent` ×4 / `weak` ×2, 45/100, a genuine
   3-minute 392-character last answer against a ~14-minute budget — a *real* end-of-paper
