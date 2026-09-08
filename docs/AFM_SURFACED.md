@@ -153,6 +153,116 @@ which is also where a wrong-account org URL lands (finding 1 of the 2026-09-08 r
 
 ---
 
+## 🟢 MEASURED 2026-09-08 (aa) — PROMPT CACHING ON THE TEACHING PATH: COSTED, DECLINED ON THE NUMBERS. **THE DURABLE FINDING IS THAT INPUT CACHING DOES NOT MOVE A WAIT THAT IS OUTPUT GENERATION AND TTFT.**
+
+**Read this before reaching for prompt caching to fix a perceived wait.** That is the reason this
+item exists; the specific decision below is secondary and may be re-taken when the floor moves.
+
+`lib/acca/teach-engine.ts` — the CASE engine, the surface the demo's leg 2 walks — has no
+`cache_control` on any of its six legs. The mechanism to add it already exists
+(`lib/acca/prompt-cache.ts`) and is already live on the DRILL route
+(`app/api/acca/tutor/route.ts`, all **12** call sites). The engine was extracted as *"a FAITHFUL
+COPY"* of that route's §7 **before** the caching went in and never received it. Porting it is a
+half-hour job. It was measured first, and the measurement says don't.
+
+### THE FLOOR, LIVE-FIRE — NOT FROM THE DOCS TABLE
+
+Real prefixes, real API, `cache_control` correctly placed on both the system block and the user
+prefix:
+
+```
+— SONNET 4.6 (call2_diagnose), floor 1024 —
+turn 1 (cold)          write= 1201   read=    0   uncached=  14
+turn 2 (same prefix)   write=    0   read= 1201   uncached=  16
+
+— HAIKU 4.5 (call3_*, call4_reveal), floor 4096 —
+turn 1 (cold)          write=    0   read=    0   uncached=2615
+turn 2 (same prefix)   write=    0   read=    0   uncached=2617
+```
+
+**Haiku 4.5's minimum cacheable prefix is 4,096 tokens. The prefix is 2,615. Nothing caches and
+nothing errors** — the API silently declines to create the entry, exactly as documented.
+
+### COVERAGE ACROSS EVERY LIVE ITEM
+
+The only clean stable prefix on any leg, on either surface, is
+`${contextLine}Question: ${question}` — the per-turn student-answer block sits **before** the
+per-item mark scheme, grounded facts and model answer in byte order, so the larger stable chunk
+TRAILS the volatile one. (`groundedFacts` is volatile too: `detectContradictions` reads the
+student's message.)
+
+| surface / leg | model | floor | stable prefix (min–max) | **actually caches** |
+|---|---|---:|---|---|
+| **case** `call3_hint` / `call3_teach` / `call3_confirm` / `call4_reveal` | Haiku 4.5 | 4096 | 2,595 – 3,281 | **0 / 38** |
+| **case** `call2_diagnose` | Sonnet 4.6 | 1024 | 1,034 – 1,859 | **38 / 38** |
+| **drill** — 11 of the tutor route's 12 wired legs | Haiku 4.5 | 4096 | 2,059 – 3,364 | **0 / 154** |
+| **drill** `call2_diagnose` | Sonnet 4.6 | 1024 | 698 – 1,732 | **41 / 154** (APM 2/91, AFM 39/63) |
+
+🔴 **THE DRILL ROUTE'S CACHING IS LIVE, CORRECT, AND INERT ON 11 OF ITS 12 CALL SITES, FOR ALL 154
+PUBLISHED DRILLS.** `prompt-cache.ts`'s header predicted the Haiku legs *"will clear 4096 only for
+longer drills"*, which implies some do. **None do.** The largest stable prefix anywhere in the live
+corpus — all 192 published items — is **3,364 tokens, 732 short of the floor**. Header corrected
+2026-09-08; the markers stay, because they are correct, cost nothing, and pay the moment a persona
+or scenario grows past the floor.
+
+📐 **The one leg that works is the one nobody would have guessed.** On the CASE surface
+`call2_diagnose` fires **38/38**, against the drill surface's 41/154 — because case scenarios are
+larger than drill `context_text`. **The surface with no caching is the surface where caching would
+work most reliably.**
+
+### THE LATENCY ARMS — THIS IS THE PART THAT GENERALISES
+
+n = 10 per arm, live, production prompt shape (Sonnet 4.6, `max_tokens: 160`, the real
+context/question/attempt/mark-scheme/model-answer assembly):
+
+| arm | median | min | max | cache hits | output tokens |
+|---|---:|---:|---:|---:|---:|
+| **cached** | **2,786 ms** | 2,247 | 8,865 | **10/10** | 34 |
+| **uncached** | **2,513 ms** | 2,106 | 9,228 | 0/10 | 34 |
+
+**The cached arm is 273 ms SLOWER at the median.** The distributions overlap almost completely and
+the output length is identical, so the honest reading is *no effect*, not *a regression* — but it
+is emphatically not a speed-up.
+
+⚠️ **DO NOT REPORT THIS AS A FLAT RESULT CAUSED BY CACHING NOT WORKING.** 10/10 hits, 1,201 tokens
+read on every cached call. **It worked perfectly and bought nothing.** Input-token processing was
+never the bottleneck on this path; the wait is output generation plus TTFT. That is the finding
+worth carrying: **caching is a COST lever, not a LATENCY lever, and on a two-call turn whose
+visible problem is dead air it changes nothing a student can perceive.** For the wait itself see
+item **(w)** — streaming `call3_*` — and item **(y)** — the cold-process penalty.
+
+### THE DECISION
+
+**Declined.** Porting the wiring lights up one leg of six, worth **~$0.002 per case session**
+(1,201 tokens at 0.1× instead of 1×, twice in a three-turn session, less a $0.0009 first-turn
+write premium) and **zero latency** — against a diff to `call2_diagnose`, the leg whose prompt
+shape is what a week of measurement stabilised (the four banked regression axes and the
+prior-attempt fix). Recorded as a comment at the client in `teach-engine.ts` so its absence stops
+reading as an oversight.
+
+⚠️ **THE PREFIX IS PROVABLY STABLE — THAT WAS NEVER THE BLOCKER.** `sha256` of the assembled
+prefix over three independent DB fetches: `81658dc377fa80d4` three times, 3,310 bytes, identical.
+No timestamp, no UUID, no request id; exhibits are `.order('exhibit_order', { ascending: true })`
+so the unordered-join invalidator is already closed; the three env-driven prompt variants are read
+at module load and land after the breakpoint anyway. And `cachePrefix` **throws** if the built
+content does not start with the declared prefix, so the split cannot silently desync from a later
+edit. Caching here is safe. It is simply not worth anything.
+
+### WHAT WOULD CHANGE THE ANSWER
+
+**The FLOOR, not the wiring.** If a persona or a scenario grows the Haiku stable prefix past 4,096
+— it is 732 tokens away — **five legs become cacheable at once on each surface** and this should be
+re-costed. Two things that must not be mistaken for that trigger:
+
+- ⛔ **Reordering to chase the prefix.** Moving the mark scheme and model answer ahead of the
+  student's attempt takes call2's cacheable prefix from **1,203 → 2,073** tokens. It is also a
+  prompt change to the diagnose leg wearing a billing change's clothes, and `prompt-cache.ts`
+  forbids it in its header for that reason.
+- ⛔ **Re-costing it as a latency fix.** The arms above are the answer to that and do not depend on
+  the floor.
+
+---
+
 ## 🔴 OPEN 2026-09-07 (p) — THE SERVED REVEAL IS PERSISTED NOWHERE. A REFRESH LOSES THE WORKED ANSWER **AND** THE CONVERSATION.
 
 **Found while designing the expand control; it is the constraint that shaped that design and it
