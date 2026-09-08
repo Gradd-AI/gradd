@@ -1,9 +1,15 @@
 # KPMG demo — the hour, as the room will see it
 
-**Status: REHEARSED 2026-09-06, WALKED ON SCREEN 2026-09-07.** Written as the document the
-presenter reads on the day, not as a test result. Every wait is a real measured wait on
-production (`https://www.gradd.ai`), not an estimate. Where a leg could not be walked, it says
-so in the leg's own section rather than in a footnote.
+**Status: REHEARSED 2026-09-06 · WALKED ON SCREEN 2026-09-07 · LEG 2 RUN END TO END ON
+PRODUCTION 2026-09-08.** Written as the document the presenter reads on the day, not as a test
+result. Every wait is a real measured wait on production (`https://www.gradd.ai`), not an
+estimate. Where a leg could not be walked, it says so in the leg's own section rather than in a
+footnote.
+
+⚠️ **READ *THE FULL RUN OF 2026-09-08* FIRST — it corrects nine things in the sections below**,
+including the waits (2–4× longer than budgeted), the Check B snippet (it threw), and the fact
+that **the hour as written needs three separate sign-ins.** Turn 2's fix and the expand have both
+now been walked in a browser on production; **leg 1 has not been walked since 2026-09-07.**
 
 **The hour is now TWO legs, not three.** Leg 3 — sitting a paper live and marking it in the
 room — is **out** (see *Leg 3 is out of the hour*, below). The keyboard moment is **leg 2, the
@@ -18,13 +24,254 @@ been run a second time so the two tutor faults are now n = 2 rather than n = 1.
 
 - ✅ **Turn 2's false absence is fixed and merged** (`20005b0`) — the tutor no longer tells the
   candidate they have not shown working they have shown. 11/30 → **0/40**, p < 0.001. It was
-  *"the worst thing in the hour"*; it is not any more. ⚠️ Measured on the API, **not yet re-walked
-  in a browser.**
+  *"the worst thing in the hour"*; it is not any more. ✅ **AND NOW WALKED IN A BROWSER ON
+  PRODUCTION — 2026-09-08. The fix holds.** See *THE FULL RUN OF 2026-09-08*, finding 5.
 - ✅ **The worked answer opens as a full-width page on one click** (`7d49832`, deployed
   `dpl_7DsxNN3WV1AWBK6Cb1C8cKu3CdQA`). **The leg-2 narration is no longer *"scroll past the
   wrapper"* — it is *"click expand."*** See *The click path, exactly* in LEG 2, and read the note
   on `Escape` / `Close` **before** you try it in front of people.
 
+
+---
+
+# 📋 THE FULL RUN OF 2026-09-08 — READ THIS BEFORE THE SECTIONS IT CORRECTS
+
+**One uninterrupted pass on production, timed, in the order this runbook gives, on the spare
+account `grant+demo2@gradd.ai`.** Nothing rehearsed twice, nothing fixed mid-run. Recorded as a
+**diff against the runbook**, not as a pass/fail — each finding names what the runbook said, what
+actually happened, and what was corrected.
+
+**What was walked:** sign-out → the real sign-in send → account verification → warm-up turn →
+**leg 2 end to end, including turn 2 and the expand — the two things that had never been walked in
+a browser on production.** Both now have been. **What was NOT walked: leg 1** — see finding 1,
+which is also the run's largest finding.
+
+## 🔴 FINDING 1 — THE HOUR NEEDS THREE ACCOUNTS, AND NO SECTION OF THIS RUNBOOK SAYS SO
+
+The three things the hour shows sit on three **disjoint** accounts. Verified against `auth.users`
+joined to `org_memberships` / `acca_mock_attempts` / `acca_entitlements`, 2026-09-08:
+
+| Account | Org member | Completed sits | ACCA entitlements | What only IT can show |
+|---|---|---|---|---|
+| `grant@live.ie` | **1** | 0 | **0** | **The coordinator view** (leg 1, screens 1–4) |
+| `grant+demo4@live.ie` | 0 | **1** | 2 | **The seeded AFM debrief** at `/acca/results` |
+| `grant+demo1/2/3@gradd.ai` | 0 | 0 | 2 | **A virgin case for leg 2** |
+
+**No account holds two of the three.** So the hour as written is: sign in, show the debrief, **sign
+out, sign in again**, show the coordinator screens, **sign out, sign in again**, do leg 2. This
+runbook prices a sign-in at *"three minutes each"* and requires opening a mailbox each time —
+**roughly nine minutes of a sixty-minute meeting spent signing in, twice of them in front of the
+room.**
+
+⚠️ **And it is worse than slow, because the failure is silent.** Opening a coordinator URL on the
+wrong account does **not** 404 and does **not** say "no access" — **it redirects to the public
+marketing homepage.** Walked: `/org/demo-advisory/d82aa14f…` as `grant+demo2@gradd.ai` → landed on
+`https://www.gradd.ai/` with the *"Nobody marks what you write"* sales page. In the room that reads
+as the product falling over into its own advertising.
+
+**What to do on the day — pick one, in advance, and rehearse it:**
+
+- ✅ **RECOMMENDED — two browser profiles, or one normal window and one incognito**, both signed in
+  before the room arrives: window A = `grant@live.ie` (coordinator), window B = a `gradd.ai` demo
+  account (leg 2). Switching is then `Alt`+`Tab`, not a sign-in. The seeded debrief needs a third;
+  if you want only two windows, **cut the seeded `/acca/results` screen and open leg 1 at the
+  coordinator view**, which is where Aubrey's marked paper lives anyway.
+- Do every sign-in **before the room sits down**, and do not sign out between legs.
+- **Never** navigate to an `/org/` URL without having confirmed the account first.
+
+**Not fixed here — it is a data question, not a runbook one.** Giving `grant@live.ie` an ACCA
+entitlement, or putting `grant+demo4@live.ie` in the org, would collapse three accounts to two or
+one. Both are live writes and out of scope for this block. **Grant's call.**
+
+## ⏱️ FINDING 2 — THE WAITS ARE 2–4× WHAT THIS RUNBOOK BUDGETS. PLAN THE NARRATION AGAIN.
+
+Wall clock on production, 2026-09-08, click to complete reply on screen.
+
+| Step | Runbook says | **Measured today** | |
+|---|---|---|---|
+| Case load (click → composer) | 2.1 s | **10 s** | |
+| Warm-up turn (Kestrel) | 6.7–8.1 s | **11.2 s** | |
+| **Leg 2 turn 1 — the hint** | 8.5 s | **12.0 s** | |
+| **Leg 2 turn 2 — the teach** | 8.7 s | **39.2 s** | 🔴 |
+| **Leg 2 turn 3 — the reveal** | 8.6 s | **26.6 s** | 🔴 |
+| **Expand click → document on screen** | *implied instant* | **~9–10 s** | 🔴 |
+
+🔴 **LEG 2's DEAD AIR IS ABOUT 88 SECONDS, NOT 30.** This runbook says *"call it 30 seconds of dead
+air across the leg, in four chunks."* Measured: **12.0 + 39.2 + 26.6 + ~10 = ~88 s**, and the
+largest single silence is **39 seconds on one turn**. That is long enough for a room to assume it
+has frozen.
+
+**This changes the narration, not the leg.** The per-wait lines in leg 2 are written for eight
+seconds and will run out. **Prepare a second sentence for every wait**, and have something to say at
+the twenty-second mark of turn 2 rather than standing in silence. Suggested for the long one:
+
+> *"It's re-reading her whole answer, not just her last line — that's a fix that went in this week,
+> and it's the reason it won't tell her she hasn't shown working she's shown."*
+
+⚠️ **n = 1 per figure, on one network.** Do not treat 39 s as *the* number; treat it as evidence the
+8-second budget is not safe. **Re-time on the presenting machine, on the room's network, before the
+day.**
+
+## 🔴 FINDING 3 — CHECK B, THE IDENTITY SNIPPET, IS BROKEN BY THE STEP DIRECTLY BEFORE IT
+
+**The snippet in Blocker 1 threw on its first real use.** Pasted on `www.gradd.ai` immediately after
+sending a sign-in link — exactly where this runbook sequences it:
+
+```
+Uncaught InvalidCharacterError: Failed to execute 'atob' on 'Window':
+The string to be decoded is not correctly encoded.
+```
+
+**Cause.** The filter is `startsWith('sb-uomxsbagekubfvkukokj-auth-token')`, and that prefix matches
+**two** cookies:
+
+- `sb-uomxsbagekubfvkukokj-auth-token` — the session
+- `sb-uomxsbagekubfvkukokj-auth-token-code-verifier` — **the PKCE verifier, written the instant you
+  press `Send sign-in link →`**
+
+`.sort()` puts the session first, the two values are concatenated, and `atob` is handed something
+that is not base64. **So the check fails precisely when the runbook tells you to run it** — after
+step 3 of the click path — leaving the presenter with a red console error and no answer to "which
+account am I on".
+
+✅ **CORRECTED SNIPPET — paste this one.** It matches the session cookie and its numbered chunks
+(`.0`, `.1`) and nothing else, and returns `SIGNED OUT` instead of throwing:
+
+```js
+(() => { const B = 'sb-uomxsbagekubfvkukokj-auth-token';
+  const p = document.cookie.split(';').map(c => c.trim())
+    .filter(c => { const n = c.slice(0, c.indexOf('=')); return n === B || /^\.\d+$/.test(n.slice(B.length)); })
+    .sort();
+  if (!p.length) return 'SIGNED OUT';
+  let r = p.map(c => c.slice(c.indexOf('=') + 1)).join('');
+  if (r.startsWith('base64-')) r = r.slice(7);
+  return JSON.parse(atob(JSON.parse(atob(r)).access_token.split('.')[1])).email; })()
+```
+
+Verified both ways on the day: returned `grant+demo2@gradd.ai` with the verifier cookie present, and
+`SIGNED OUT` after a sign-out.
+
+## 🟢 FINDING 4 — `fix/demo-legibility-and-strong-action` IS MERGED AND LIVE. FOUR PLACES SAY IT IS NOT.
+
+Merged as **`e8a1f9a`** (2026-09-07), an ancestor of `main`, and **confirmed live in the deployed
+CSS**: `--chat-rule` computes to **`#8a8172`** on the case surface, against `--chat-border`'s old
+`#ddd5c5`. Seen on screen — the rule above the `WORKED ANSWER` bar is plainly visible.
+
+**Three consequences, all in the runbook's favour:**
+
+- **Q2 (ii) is SAFE to walk.** The instruction *"IF THE BRANCH HAS NOT MERGED: do not walk Q2 (ii)"*
+  no longer applies. ⚠️ *Not re-verified on screen — leg 1 was not walked. Confirm once before
+  relying on it.*
+- **The invisible separator is fixed**, on both rules in the transcript.
+- **The transcript is taller.** Measured `.ec-messages` = **518 px** at a 925 px viewport, composer
+  **121 px** — the post-fix geometry, not the 279 px letterbox the heading still names.
+
+## ✅ FINDING 5 — TURN 2's FIX HOLDS IN A BROWSER. FIRST TIME WALKED ON PRODUCTION.
+
+Sent this runbook's own second-run turn-2 message — the genuine re-attempt, the harder of the two.
+What came back:
+
+> You've gripped the scepticism that matters—this is one-shot, the weights are subjective, and the
+> downside is material. But the arithmetic has tripped you: before you advise the board whether 22m
+> changes anything, you need to know whether 22m is correct. Go back to the central case and step
+> through the discounting of each year's flow at 9%—**not the answer itself, just the method**: are
+> you treating each as an inflow arriving at the end of year 1, 2, 3, and 4, and dividing by the
+> right power of 1.09? […]
+
+**No false absence.** It never says the candidate has not shown working. It quotes her own figure
+(`22m`) and her own scepticism back at her, and asks her to **check** her method rather than
+asserting she never did it. **The API measurement (11/30 → 0/40) now has a browser walk behind it,
+and the leg-2 ruling's caveat — *"it has not been re-walked in a browser"* — is discharged.**
+
+⚠️ **n = 1 in a browser.** It exercises the same code path as the 40-run API measurement, so this
+confirms rather than re-establishes. It is still one run, and the register moves like everything
+else here.
+
+## ✅ FINDING 6 — THE EXPAND WORKS ON PRODUCTION, AND ALL THREE DISMISSALS ARE AS DOCUMENTED
+
+Clicked `Open full width ↗` on `www.gradd.ai` for the first time. **Everything this runbook claims
+about it is true.**
+
+- The sheet opens over the dimmed case. **Geometry exactly as documented:** `article.rd` =
+  **900 px**, `.rd-body` = **802 px**, the scenario table **800 px**, **no horizontal scroll**.
+- **The whole scenario table is on screen at once** — Strong 0.30 / NOK 331.1m · **Central case 0.45
+  / NOK −2.7m** · Delayed 0.25 / NOK −320.0m — then `ENPV = Σ(pᵢ × NPVᵢ) = NOK 18.1m` and
+  `Probability of a negative NPV = 70%`. **The beat lands.**
+- **`Escape`** → back on `/acca/cases/<id>`, overlay gone, **all 7 messages still in the
+  transcript**, expand bar still there, page scroll released. ✅
+- **`Close`** → identical, and confirmed **`position: fixed`**, so it stays put after scrolling. ✅
+- **Browser Back** → identical. ✅
+- The reveal was properly earned: `miss_count: 2, resolved: true`.
+
+⚠️ **The one correction: it is not instant.** Budget **~9–10 seconds** between the click and the
+document. Say the line *while* clicking, not after it.
+
+*(The backdrop click was not re-tested today; the other three were.)*
+
+## 📌 FINDING 7 — BLOCKER 1 REPRODUCED IN A BROWSER, AND ITS SHAPE HAS CHANGED
+
+Navigated a real admin-generated `verify?token=…` link. **Both halves of Blocker 1 are confirmed:**
+the URL fragment carried `grant+demo4@live.ie`'s access token while **the session cookie was still
+`grant+demo2@gradd.ai`** — the previous account, exactly the danger the blocker names.
+
+**But the heading is now wrong in one word: it does not fail *silently* when the link points at the
+callback.** It landed on `/acca/auth?error=auth_failed` showing:
+
+> *"That link expired or was already used — request a new one."*
+
+**So there IS a visible error, and that is the mitigation.** ⚠️ **The message misdiagnoses it** — the
+link was freshly minted and never used. A presenter who believes it will request another link and
+loop. **The silent case in the original blocker remains true** for a link whose `redirect_to`
+bypasses `/auth/callback` and lands straight on `/acca`.
+
+**Read the blocker as: an admin-generated link never signs you in; depending on where it redirects
+you get either a wrong-cause error or nothing at all. Use the emailed link.**
+
+## 🔇 FINDING 8 — TURN 1 GAVE AWAY THE DIRECTION. THE CLAIM NEEDS NARROWING.
+
+Today's hint, on the identical pasted answer:
+
+> You've nailed the scepticism — that commentary on repeated games, judgement probabilities, and the
+> narrowness of the scenarios is exactly the professional instinct the board needs to hear. But your
+> central case NPV is **too high**: recalculate year 2 and year 3 for that scenario and check your
+> discount factors, then restate what P(NPV < 0) actually is using your corrected figures.
+
+**Register: opens on credit** — so credit-first is 2 of 3, and the *bimodal* rule stands unchanged.
+**Still do not promise the room a tone.**
+
+🔴 **But this runbook says of turn 1 that it *"gives away neither the figure nor the direction."*
+This run gave away the direction** — *"too high"* — and named the two years to redo. The figure was
+still withheld, and it still closed on the advisory question.
+
+**So narrow the claim to what held on all three runs:** *"It hasn't told them the answer — it's told
+them which of their three numbers to go back to, and then asked the question a reviewer would ask."*
+**That sentence is still true of every run.** Do not add "and not even which way it's wrong."
+
+## 🟠 FINDING 9 — SMALLER THINGS, SEEN
+
+- **`⌘↵ to send` confirmed on screen** on the Windows machine, under the send button. Unchanged.
+- **The `B1`/`B5`/`E2`/`B4`/`B3` card badges and the unstyled *"← Back to drills"* confirmed.**
+- **The composer's button relabels after turn 1** — `Submit attempt →` becomes **`Send →`** and the
+  placeholder becomes *"Continue…"*. The click path only ever names `Submit attempt`. There is also
+  a **`Move on without finishing →`** button beside it; know it is there so you do not hit it.
+- 🔴 **A deep link to a case renders a bare cream page reading *"Loading case…"*** — no header, no
+  chrome, nothing branded, for several seconds. If you open leg 2 by URL rather than from the card,
+  that is the first thing the room sees. **Open it from the case list.**
+- **The closing "fresh question" beat invented a scenario again** — *"a fresh vessel decision …
+  different cost … different scenario cash flows and different probabilities."* This runbook records
+  it as *"2026-09-06 only; it did not fire on 2026-09-07."* **It fired today: n = 3, 2 of 3.**
+- **The `© Gradd` footer mid-message reproduced**, between the wrapper and the `WORKED ANSWER` bar.
+  n = 3.
+
+## ⚪ WHAT THIS RUN DID NOT COVER, SAID PLAINLY
+
+- **Leg 1 was not walked at all** — neither the seeded `/acca/results` debrief nor the four
+  coordinator screens. Blocked by finding 1: both need accounts whose sign-in requires the
+  `grant@gradd.ai` / `grant@live.ie` mailbox, which was not available to this run. **Everything leg 1
+  says remains as it was on 2026-09-07/08 — it is neither confirmed nor contradicted here.**
+- **The seeded-heatmap honesty line added today has not been said against the live screen.**
+- **Nothing was checked on the projector.** Still open, unchanged.
+- **Every model-facing figure here is n = 1**, on one machine and one network.
 ---
 
 # WHAT THE PRODUCT DOES WELL — READ THIS BEFORE THE BLOCKER LIST
@@ -33,10 +280,12 @@ This section is first on purpose. Everything after it is seams and dress. **None
 defects in this runbook is in the teaching or the marking**, and the two moments the hour is
 sold on are both strong.
 
-- **The hint on a partly-right answer.** Twice now, on a 250-word answer that is right about
+- **The hint on a partly-right answer.** Three times now, on a 250-word answer that is right about
   the judgement and wrong about one number, the tutor has named the error *class* and the
-  *scenario* and given away neither the figure nor the direction — then asked the advisory
-  question a reviewer would ask. **This is the beat the hour exists to reach.**
+  *scenario*, **withheld the figure**, and asked the advisory question a reviewer would ask.
+  **This is the beat the hour exists to reach.** ⚠️ **The DIRECTION is not reliably withheld —
+  corrected 2026-09-08**, when it said the central case was *"too high"*. The figure was still
+  withheld on all three runs; the direction was not. See finding 8.
 - **The marking discriminates, and explains itself.** On the seeded paper: `exemplary` 12/12
   on the requirement done at pace, `weak` 3/12 on the rushed one, with three specific errors
   named and the correct arithmetic shown. On the throwaway paper: `nothing` for a paragraph
@@ -154,15 +403,26 @@ identical. For leg 3, where the spare matters, use check B.
 **Check B — identity, definitive.** Pre-flight only; never with the room watching. Open
 DevTools (`F12`) → Console, on any `www.gradd.ai` page, and paste:
 
+🔴 **THE SNIPPET THAT USED TO BE HERE THREW, AND IT THREW BECAUSE OF THE STEP RIGHT BEFORE IT
+(corrected 2026-09-08).** Its filter, `startsWith('sb-…-auth-token')`, also matched
+`sb-…-auth-token-code-verifier` — **the PKCE cookie written the instant you press
+`Send sign-in link →`** — so `.sort()` concatenated two unrelated values and `atob` threw
+`InvalidCharacterError`. **Use the version below**, which matches the session cookie and its
+numbered chunks (`.0`, `.1`) and nothing else:
+
 ```js
-(() => { const p = document.cookie.split(';').map(c => c.trim())
-  .filter(c => c.startsWith('sb-uomxsbagekubfvkukokj-auth-token')).sort();
+(() => { const B = 'sb-uomxsbagekubfvkukokj-auth-token';
+  const p = document.cookie.split(';').map(c => c.trim())
+    .filter(c => { const n = c.slice(0, c.indexOf('=')); return n === B || /^\.\d+$/.test(n.slice(B.length)); })
+    .sort();
+  if (!p.length) return 'SIGNED OUT';
   let r = p.map(c => c.slice(c.indexOf('=') + 1)).join('');
   if (r.startsWith('base64-')) r = r.slice(7);
   return JSON.parse(atob(JSON.parse(atob(r)).access_token.split('.')[1])).email; })()
 ```
 
-It prints the signed-in email. Close DevTools afterwards.
+It prints the signed-in email, or `SIGNED OUT`. Verified both ways on production 2026-09-08.
+Close DevTools afterwards.
 
 ## Two side effects of pre-authenticating, so they don't surprise you
 
@@ -443,7 +703,15 @@ Measured on production, real routes, real model calls, 2026-09-06 19:22 UTC.
 waits — **it only confirms the room's network reaches production.** Do it anyway, on the
 throwaway case (below), five minutes before you start.
 
-⚠️ **PLAN YOUR NARRATION AROUND 6–8 SECONDS OF SILENCE PER TURN.** Leg 2 is three turns plus a
+🔴 **SUPERSEDED — THE 2026-09-08 RUN MEASURED 2–4× THIS. PLAN FOR ~88 SECONDS, NOT 30.**
+Measured on production that day: hint **12.0 s**, teach **39.2 s**, reveal **26.6 s**, expand
+**~10 s** — **~88 seconds of dead air across leg 2, with a single 39-second silence in the
+middle.** The per-screen lines below are written for eight seconds and **will run out**. Prepare
+a second sentence for every wait and have one ready at the twenty-second mark of turn 2. Full
+table and a suggested line: *THE FULL RUN OF 2026-09-08*, finding 2. ⚠️ n = 1 per figure on one
+network — re-time on the presenting machine before the day.
+
+*(Superseded.)* **PLAN YOUR NARRATION AROUND 6–8 SECONDS OF SILENCE PER TURN.** Leg 2 is three turns plus a
 reveal — call it **30 seconds of dead air across the leg**, in four chunks. That is a long time
 in a room. The per-screen sections below give you a line to say into each wait.
 
@@ -478,11 +746,18 @@ Still worth doing, and it takes two seconds:
 px (2560 px screen) despite being asked for 1400. Set the window by hand and confirm with the
 actual projector before the room arrives; do not assume a resize landed.
 
-## 🔴 The tutor transcript is read through a 279-pixel letterbox
+## 🟠 The tutor transcript is read through a letterbox — SMALLER SINCE THE FIX MERGED
 
-⚠️ **A FIX IS WRITTEN AND NOT YET MERGED — branch `fix/demo-legibility-and-strong-action`.**
-Everything in this section describes **production as it stands today**. If that branch has
-merged and deployed by the time you present, the transcript is **384 px** at this window
+✅ **THE FIX IS MERGED AND LIVE — corrected 2026-09-08.** `fix/demo-legibility-and-strong-action`
+landed as **`e8a1f9a`**, is an ancestor of `main`, and was confirmed in the **deployed** CSS
+(`--chat-rule` computes to `#8a8172` on the case surface). **You are in the AFTER column below,
+not the BEFORE one.** Measured on production 2026-09-08 at a 925 px viewport: `.ec-messages`
+**518 px**, composer **121 px**. The "279 px" in the old heading is the pre-fix figure at a
+755 px viewport and is retained only so the before/after table reads.
+
+⚠️ *(Historical, for the record — the state this section was written in.)*
+Everything in this section described **production before that merge**. Now that the branch has
+merged and deployed, the transcript is **384 px** at this window
 instead of 279 (and the composer 148 px instead of 227) — check which state you are in before
 rehearsing the scroll, because the two need different handling. Measured before/after at three
 viewport heights:
@@ -719,7 +994,7 @@ fixture): 8 of 8 requirements, zero contradictions, both full-marks rows unchang
 is also how Q1 (iv) was found — reading the screen caught one of the two, running the real
 assembly caught both.
 
-✅ **FIXED ON THE UNMERGED BRANCH `fix/demo-legibility-and-strong-action`.** The action stays
+✅ **FIXED — AND THE BRANCH IS NOW MERGED AND LIVE (`e8a1f9a`, confirmed 2026-09-08).** The action stays
 band-derived and still reports `next_action_source: 'band_definition'` — it is not allowed to
 read the prose — but a `strong` row **that lost marks** now gets its own line: *"The descriptor
 is met well and the gaps are minor — but they cost marks. Close the points named above to turn
@@ -730,7 +1005,12 @@ it can never lose marks, and `competent`/`weak`/`nothing` already say a point wa
 `npm run test:debrief` pins the old string as MUST-FAIL on any row with marks lost, and pins
 that a `strong` row losing nothing still gets the short no-change line.
 
-**On the day, IF THE BRANCH HAS NOT MERGED: do not walk Q2 (ii).** Walk **Q2 (i)** —
+✅ **ON THE DAY: Q2 (ii) IS SAFE. The branch merged (`e8a1f9a`) and is live — verified 2026-09-08.**
+The instruction below no longer applies and is kept only so the reasoning survives. ⚠️ **The fixed
+string has not been seen on the results page itself** — leg 1 was not walked on 2026-09-08 — so
+open Q2 (ii) once yourself before you narrate it.
+
+*(Superseded.)* **On the day, IF THE BRANCH HAS NOT MERGED: do not walk Q2 (ii).** Walk **Q2 (i)** —
 `EXEMPLARY`, 12/12, where the same "nothing to change" line is true — then go straight to
 **Q3 (i)**. That is the contrast the leg exists for and it steps over this row cleanly. If the
 branch HAS merged, Q2 (ii) is safe and reads correctly.
@@ -787,6 +1067,71 @@ is not cosmetic:
 that is one teaching problem"*), then **Priya's empty row** (*"and this one hasn't started —
 which is the thing a coordinator finds out too late"*), then the **Cohort average** row along
 the bottom.
+
+#### 🎙️ "Would a real cohort look like this?" — THE HONEST LINE, AND IT IS THE PILOT'S OWN ARGUMENT
+
+**Someone will ask this, and the true answer is better for us than a deflection.** It is also
+the second half of the same admission leg 1 already makes about the readiness panel two screens
+later (*"a check that is currently far too strict"*) — so if you dodge it here and concede it
+there, you have contradicted yourself inside one leg.
+
+**The mechanism, stated plainly and not softened.** The greens on this board are **written
+directly by the seeder**. `scripts/seed-demo-org.ts` composes each trainee from a persona and
+writes `outcome: 'correct'` or `'miss'` into `acca_drill_attempts` as a literal. The heatmap
+then colours honestly on what it finds — `missRate = misses ÷ attempts`, a cell counts as
+covered on any `correct` — but **it is colouring an authored answer.** No drill was attempted,
+no answer was written, and **the marker that decides `correct` in the live product was never
+called.** The seed does not go through the tutor route at all.
+
+**And that marker is the thing we do not yet have calibrated.** In the product, a `correct`
+comes from one gate — `call2_diagnose`'s verdict on a real answer. Measured on production,
+2026-09-08, every drill attempt in the product's history:
+
+| | correct | miss | correct rate |
+|---|---|---|---|
+| **Seeded demo trainees** (22 accounts) | **178** | 138 | **56%** |
+| Our own red-team harness (`ee07f08c`) — machine traffic replaying canned probes | 24 | 844 | 2.8% |
+| An adversarial probe account (`f321935f`) — its single `correct` is a **known false positive** on a truncated non-answer | 1 | 31 | — |
+| **Real people. Both of them. Including Aubrey's 14 attempts** | **0** | **15** | **0%** |
+
+**So: the gate has never once returned `correct` for a real student.** Every `correct` outside
+the seed belongs to a machine or to a probe, and the probe's is wrong. **A real cohort's board
+would be redder than this one — probably entirely red.**
+
+**Say this, and do not improve on it:**
+
+> *"No — and I'd rather tell you that than have you find it. Those green cells are written by
+> our seeder, not earned by anybody. The check that decides whether an answer is right is the
+> one thing in here we haven't been able to calibrate, because calibrating it needs a real
+> cohort answering real questions — and right now it is far too strict: it has never passed a
+> real student once. So a live board would run redder than this until we've tuned it. **That is
+> what we want the pilot for.** The shape of the screen is real — it is computed from attempts
+> exactly the way it would be from yours. What we can't hand you yet is the threshold."*
+
+**Why this is the right thing to say and not a concession.** The pilot's whole proposition is
+that we need a cohort to tune against; this is the most concrete instance of it in the hour, and
+it is *asked for* rather than volunteered. A reviewer who is told the miss-rate arithmetic is
+real and the pass-threshold is not has been given something checkable. One who is told the board
+is representative has been given something they will disprove the first week of a pilot.
+
+⚠️ **Three things not to say.**
+
+- **Do not say "the data is synthetic" and leave it there.** It is true and it is not the
+  question — the room is asking about the *shape*, and the shape of the miss-rates is the part
+  that would survive a pilot. Concede the outcomes, keep the arithmetic.
+- **Do not offer the 56% against 0% as a "known ratio to correct by".** It is not one. It is two
+  populations that have nothing to do with each other — one authored, one fifteen attempts by
+  two people. Quoting it as a calibration is inventing a number in the room.
+- **Do not defend the gate.** It is too strict, we know why (it is one model verdict on a whole
+  answer, with no cohort behind the threshold), and it is logged as `AFM_SURFACED.md`
+  **2026-09-08 (r)**. Name it, and move to the D2 column, which is the screen's real argument
+  and does not depend on a single green cell.
+
+📌 **The D2 story survives this answer completely, and that is why the answer is cheap.** D2
+reads as a wall because thirteen trainees carry **misses** there — and a miss is what this
+product records in overwhelming volume on real traffic too (890 of them). **The finding the
+screen exists to make is built out of the half of the data that is not in question.** Point at
+D2 *after* you have answered, not instead of answering.
 
 ### 2 · Aubrey's page, opened **scrolled to Mock Paper 1**
 
@@ -944,9 +1289,13 @@ What came back, in full (466 characters):
 > figure, tell me in one sentence whether it changes whether you'd recommend this order to the
 > board.
 
-**This is the moment the hour is selling.** It names the error *class* and the *scenario*, gives
-away neither the figure nor the direction, and refuses to let the candidate stop at the
+**This is the moment the hour is selling.** It names the error *class* and the *scenario*, **gives
+away the figure on none of the three runs**, and refuses to let the candidate stop at the
 arithmetic: the follow-up question is about the recommendation, not the number.
+
+⚠️ **The DIRECTION is not guaranteed — corrected 2026-09-08.** This paragraph used to say "neither
+the figure nor the direction". On the third run the hint said the central case was **"too high"**
+and named the two years to redo. **Narrate the withheld FIGURE, never the withheld direction.**
 
 **Say:** *"It hasn't told them the answer. It's told them which of their three numbers to go
 back to, and then asked the question a reviewer would ask."*
@@ -1159,7 +1508,9 @@ consistently-poor reveal, because you cannot rehearse which one you will get.
    ⚠️ **There are TWO of these rules in the transcript.** The other sits *inside the hint* —
    the model writes `---` in ordinary replies too — so the same invisible line appears outside
    the reveal, where it separates nothing in particular.
-   ✅ **FIXED ON THE SAME UNMERGED BRANCH.** `MessageRenderer` draws every `---` from one code
+   ✅ **FIXED, MERGED AND LIVE — `e8a1f9a`. Confirmed on production 2026-09-08:** `--chat-rule`
+   computes to `#8a8172` on the case surface, and the rule above the `WORKED ANSWER` bar was
+   plainly visible on screen. **This fault is closed.** `MessageRenderer` draws every `---` from one code
    path, so **one change covers both rules**. It now takes its colour from a new `--chat-rule`
    token — separate from `--chat-border`, which also draws table cells and card outlines where
    the light value is right — set to **`#8a8172`: 3.84 : 1 on the white bubble and 3.47 : 1 on
@@ -1175,10 +1526,14 @@ consistently-poor reveal, because you cannot rehearse which one you will get.
    *"…how often does this decision lose money?"* → **"© Gradd — for your personal exam
    preparation."** → the invisible rule → **"Risk & uncertainty — expected net present value
    (ENPV)"**. Structural, not a one-off.
-3. 🟠 **The closing beat invents a question that does not exist** — *2026-09-06 only.* It did
-   not fire on 2026-09-07. The mechanism is still there and unfixed: `call4_reveal` is handed
-   no grounding pack on the case surface, so the fix that grounded the drill route never
-   reached this one.
+3. 🟠 **The closing beat invents a question that does not exist** — **n = 3, fired 2 of 3
+   (corrected 2026-09-08).** This read *"2026-09-06 only; it did not fire on 2026-09-07"*. **It
+   fired again on 2026-09-08**, as an invented numeric scenario: *"a fresh vessel decision where
+   the board is considering a different four-year vessel with a different cost, operating in a
+   market with different scenario cash flows and different probabilities."* **Treat it as the
+   usual case, not the exception.** The mechanism is still there and unfixed: `call4_reveal` is
+   handed no grounding pack on the case surface, so the fix that grounded the drill route never
+   reached this one. It sits *below* the expand bar, so narrating from the document steps over it.
 
 ### ✅ And the worked answer underneath is the best thing in the leg — AND IT NOW OPENS AS A PAGE
 
@@ -1285,13 +1640,23 @@ row and every refusal is a plain 404. Confirmed live against that exact URL: **u
 earned it and is paying. **If a reviewer asks whether the answers are just sitting at a URL: no,
 and you can say that flatly.**
 
-## 🔵 WALK IT ONCE ON THE DAY
+## ✅ WALKED ON PRODUCTION — 2026-09-08. THE CLICK HAS NOW BEEN MADE.
 
-This was walked on **Halvard Marine (i) — the leg-2 case — through the real routes, and the
-screenshots above are that walk.** But it was walked on **localhost against the production
-database**, on a synthetic account that has since been deleted, not on production and not on
-`grant+demo1@gradd.ai`. **The deploy is confirmed green; the click has not been made on
-`www.gradd.ai`.** Make it once, on the spare, before the room.
+**Done on `www.gradd.ai`, on the spare `grant+demo2@gradd.ai`, on Halvard Marine (i), reached
+through three real turns.** The section that used to sit here said *"the click has not been made
+on `www.gradd.ai`"*. It has.
+
+**What held, measured on the live DOM:** `article.rd` **900 px** · `.rd-body` **802 px** · the
+scenario table **800 px** · **no horizontal scroll** · the whole scenario table on screen at once
+with the central case at **NOK −2.7m** · `ENPV = NOK 18.1m` · `P(NPV<0) = 70%`. **`Escape`,
+`Close` and browser Back each returned to `/acca/cases/<id>` with all seven messages still in the
+transcript, the expand bar still there and page scroll released.** `Close` confirmed
+`position: fixed`. The reveal was properly earned (`miss_count: 2, resolved: true`).
+
+🔴 **The one correction: it is NOT instant.** Click → document took **~9–10 seconds**. Say your
+line *while* you click, not after it.
+
+*(The backdrop click was not re-tested on 2026-09-08; the other three were.)*
 
 ### The ruling for the day
 
@@ -1300,9 +1665,11 @@ database**, on a synthetic account that has since been deleted, not on productio
 - **Turn 1 is the product** — excellent on both runs, self-contained, and it is the claim the
   hour makes.
 - **Turn 2's false absence is FIXED and merged** (`20005b0`) — 11/30 → 0/40 on the flat denial,
-  p < 0.001. It is no longer the worst thing in the hour. ⚠️ **It has not been re-walked in a
-  browser since the fix.** Walk it yourself before you decide to show it; the measurement is on
-  the API, and the ruling below is unchanged until you have.
+  p < 0.001. It is no longer the worst thing in the hour. ✅ **WALKED IN A BROWSER ON PRODUCTION
+  2026-09-08 AND THE FIX HOLDS** — no false absence; it quoted the candidate's own `22m` back and
+  asked her to check her method rather than asserting she had not shown it. **The caveat that used
+  to sit here is discharged; turn 2 may be shown.** ⚠️ n = 1 in a browser, so it confirms the 40-run
+  API measurement rather than re-establishing it. ⚠️ **It took 39 seconds** — see finding 2.
 - **The reveal's wrapper is still a coin-flip.** Reach the reveal, click expand, and narrate from
   the document. That is now a *click*, not a scroll — **the cleanest movement in the hour**, and
   it reads as a feature rather than as looking away: *"and here's the answer it was withholding —
@@ -1439,11 +1806,26 @@ narrower and is listed exactly.
 - **The eight `window.confirm` dialogs were not seen** — but leg 3 is cut, so nothing in the
   hour reaches them.
 - **Nothing has been checked on the actual projector.** Every measurement here is from a
-  2560 px desktop. The two items most likely to change on a projector are the **1.46 : 1
-  separator** (predicted: invisible) and the **16 px body copy**.
+  2560 px desktop. The item most likely to change on a projector is now the **16 px body copy** —
+  the 1.46 : 1 separator is **fixed and live** (`#8a8172`, confirmed 2026-09-08), so it is off
+  this list. ⚠️ The declared token is measured, not its visibility; still check the projector.
 
-**What would close it:** one sign-in as `grant@live.ie`, the three org URLs, and ten minutes
-with the projector.
+### Added by the 2026-09-08 run
+
+- 🔴 **THE HOUR NEEDS THREE SIGN-INS AND NOTHING HAS BEEN REHEARSED THAT WAY.** Coordinator,
+  seeded debrief and leg 2 live on three disjoint accounts (finding 1). **Decide the mechanism —
+  two pre-signed-in browser profiles is the recommendation — and rehearse the switch**, because
+  a wrong-account `/org/` URL silently lands on the public marketing homepage.
+- 🔴 **The waits need re-timing on the presenting machine.** 2026-09-08 measured ~88 s of dead
+  air across leg 2 against a 30 s budget, with one 39-second silence. n = 1, one network.
+- **Leg 1 was NOT walked on 2026-09-08** — neither the seeded `/acca/results` debrief nor the
+  four coordinator screens. Its 2026-09-07/08 state is unchanged and uncontradicted, but the
+  **Q2 (ii) fix has not been seen on screen** even though the branch is now merged and live.
+- **The seeded-heatmap honesty line** added 2026-09-08 has not been said against the live screen.
+
+**What would close it:** one sign-in as `grant@live.ie` and one as `grant+demo4@live.ie`, the
+three org URLs plus the seeded debrief, a re-time of the three leg-2 turns on the presenting
+machine, and ten minutes with the projector.
 
 ---
 
