@@ -130,7 +130,7 @@ export default async function CohortHeatmapPage({ params }: { params: Promise<{ 
           the published pool, so an untouched sub-area renders as an empty column ON PURPOSE —
           see getCohortHeatmap. The old caption told a coordinator that the most informative cells
           on the screen could not exist. */}
-      <p className="org-note">Each cell is the miss-rate for that sub-area (0.0 clean → 1.0 all-miss); hue runs sage → rust as it climbs. Every published sub-area gets a column, so a “·” means nobody has attempted it yet. Hover any cell for the underlying counts; click a trainee for the full readiness breakdown.</p>
+      <p className="org-note">Each cell is the miss-rate for that sub-area (0.0 clean → 1.0 all-miss); hue runs sage → rust as it climbs. A "·" is a sub-area that trainee has not attempted. Every published sub-area gets a column, so a whole column of "·" means nobody in the cohort has started it. Hover any cell for the underlying counts; click a trainee for the full readiness breakdown.</p>
     </div>
   );
 }
