@@ -7,9 +7,16 @@ estimate. Where a leg could not be walked, it says so in the leg's own section r
 footnote.
 
 ⚠️ **READ *THE FULL RUN OF 2026-09-08* FIRST — it corrects nine things in the sections below**,
-including the waits (2–4× longer than budgeted), the Check B snippet (it threw), and the fact
-that **the hour as written needs three separate sign-ins.** Turn 2's fix and the expand have both
+including the waits (the 88-second figure — **now diagnosed: it is the API call, not the page, and
+39 s is not the number**), the Check B snippet (it threw), and the fact that the hour as written
+needed three separate sign-ins. Turn 2's fix and the expand have both
 now been walked in a browser on production; **leg 1 has not been walked since 2026-09-07.**
+
+✅ **THE THREE SIGN-INS ARE NOW ONE.** `grant+demo1@gradd.ai` was made a coordinator of
+`demo-advisory` on 2026-09-08 and already held AFM + APM entitlements, so **one account carries
+the whole hour**. **The seeded AFM debrief is cut** and leg 1 opens at the coordinator view. See
+*RESOLVED 2026-09-08* under finding 1. ⚠️ **That account has never signed in — do it before the
+day.**
 
 **The hour is now TWO legs, not three.** Leg 3 — sitting a paper live and marking it in the
 room — is **out** (see *Leg 3 is out of the hour*, below). The keyboard moment is **leg 2, the
@@ -83,6 +90,69 @@ as the product falling over into its own advertising.
 entitlement, or putting `grant+demo4@live.ie` in the org, would collapse three accounts to two or
 one. Both are live writes and out of scope for this block. **Grant's call.**
 
+### ✅ RESOLVED 2026-09-08 — GRANT RULED IT. ONE ACCOUNT FOR THE WHOLE HOUR.
+
+**`grant+demo1@gradd.ai` is now a coordinator of `demo-advisory`.** One row inserted into
+`org_memberships`, additive, nothing updated and nothing deleted:
+
+```sql
+INSERT INTO org_memberships (org_id, user_id, email, role, status, invited_at, joined_at)
+VALUES ('e2256bfa-9f76-414f-9c2e-dd3a28d55899',   -- orgs.slug = 'demo-advisory'
+        'a02c4c82-dc81-452c-a423-73abc463d403',   -- auth.users grant+demo1@gradd.ai
+        'grant+demo1@gradd.ai', 'coordinator', 'active', now(), now());
+```
+
+New membership id **`5e8f1acf-ecd9-4d8c-8839-fd6ca18a7225`**. Verified after: **3 coordinators,
+not 2**, and the two originals byte-identical on all eight columns — `grant@live.ie`
+(`33a9b469`, `joined_at` still `2026-08-08 08:47:49.401326+00`) and the unclaimed email-first row
+`coordinator@demo-advisory.example` (`83032b11`, `user_id` still null, `joined_at` still null).
+The org's 31 `member` rows were not touched. `demo1` holds no membership on any other org.
+
+**No `ON CONFLICT`, deliberately.** The unique index `uq_org_memberships_org_email
+(org_id, lower(email))` is the guard: had a row already existed this errors rather than silently
+touching one. **To undo, delete that one id** — nothing else moved.
+
+**So the hour is now ONE account.** `grant+demo1@gradd.ai` already carried comped **AFM + APM**
+entitlements to `2026-12-31` (`6087a86d` / `a09b2ec4`) and was **completely virgin** — zero rows
+across `acca_case_progress`, `acca_tutor_progress`, `acca_drill_attempts`, `acca_mock_attempts`
+and `acca_case_marking`, verified before the write. It is now the only account that holds both
+halves of the hour: **the coordinator view AND a virgin case for leg 2.** Sign in once, before
+the room arrives. **No sign-out in the hour, and no `Alt`+`Tab` between two windows.**
+
+⚠️ **`grant@live.ie` is still a coordinator and nothing about it changed.** It remains the
+fallback if `demo1` will not sign in on the day.
+
+### 🟥 AND THE SEEDED AFM SIT DROPS OUT OF THE HOUR
+
+**Leg 1 no longer opens at `/acca/results`. It opens at the coordinator view.** The seeded AFM
+Mock Paper 1 on `grant+demo4@live.ie` — the demonstration sit, the R5/R7 contrast, the
+end-of-paper collapse headline — **is cut from the run.**
+
+**Why, and it is not because the material is weak.** It is the best-engineered material in the
+hour. It is cut because **it is the one thing left that needs a second account.** The seeded sit
+lives on `grant+demo4@live.ie`, which is *not* in the org and never should be — it is a minted
+account whose whole purpose is that it is not a student. Keeping that screen means keeping a
+sign-out, a second mailbox trip, and the silent-redirect hazard this finding is about, **for a
+paper we have to introduce with the words *"nothing here is a student"* anyway.**
+
+**And we are not losing a marked paper — we are losing the weaker of the two.** Aubrey's APM
+sitting is reachable **through the coordinator view**, on the account we are already signed in
+as, at screen 2 of the coordinator section. **Hers is the real one**: sat on our clock over
+3 h 15 m on 2026-09-01, marked 45/100, with her own answers at 392–3,758 characters and the
+marker's prose quoting them. The seeded paper's job in the hour was to show a marked paper with
+real pacing; Aubrey's does that **and** survives the question *"is this a real person?"* — which
+the seeded one is narrated into surviving, but only by conceding it first.
+
+**What is lost, said plainly, because it is worth knowing before the day:** the R5/R7 contrast
+(`exemplary` 12/12 at 25 minutes against `weak` 3/12 at 12 minutes, same candidate) has no
+equivalent on Aubrey's paper. **The pacing table at coordinator screen 3 is the replacement**,
+and it carries the same argument in a weaker form: per-requirement minutes against budget, `over`
+in red and `under` in amber, on a paper genuinely sat over 3 h 15 m.
+
+📌 **The provenance table above is not deleted.** The seeded paper stays documented, and
+`grant+demo4@live.ie` stays un-deleted, because the hour may need it back if Aubrey's consent is
+not current on the day — the condition the **PROVENANCE** block already names.
+
 ## ⏱️ FINDING 2 — THE WAITS ARE 2–4× WHAT THIS RUNBOOK BUDGETS. PLAN THE NARRATION AGAIN.
 
 Wall clock on production, 2026-09-08, click to complete reply on screen.
@@ -111,6 +181,122 @@ the twenty-second mark of turn 2 rather than standing in silence. Suggested for 
 ⚠️ **n = 1 per figure, on one network.** Do not treat 39 s as *the* number; treat it as evidence the
 8-second budget is not safe. **Re-time on the presenting machine, on the room's network, before the
 day.**
+
+### 🔬 DIAGNOSED 2026-09-08 — IT IS THE API CALL. THE PAGE IS NOT IMPLICATED. AND 39 s IS NOT THE NUMBER.
+
+**The page was the cheap thing to rule out and it is ruled out.** `CaseSession.tsx` issues **one
+`fetch` per turn** and nothing else: no re-fetch, no second request, no polling, **no
+`setInterval`, no `setTimeout`, no `router.refresh`, no revalidation** (grepped, zero hits). While
+the student waits, the only effect that can fire is a `scrollIntoView`. When the response lands
+the component does **three `setState` calls** and stops. There is nothing in the client that could
+hold a room for thirty seconds.
+
+**What the wait actually is, measured today** by driving `runTeachTurn` — the exact function the
+route awaits — against the real Halvard Marine case, the real requirement, and this runbook's own
+pasted answer, with `global.fetch` wrapped so every Anthropic round trip is timed on its own:
+
+| Turn | Calls, in series | Model · input → output | **n = 3, warm** |
+|---|---|---|---|
+| **1 — the hint** | `call2_diagnose` → `call3_hint` | `claude-sonnet-4-6` 2,518 tok → 61–79 tok (`max_tokens` **160**) · then `haiku-4.5` 3,737 tok → 117–149 tok | **5.5 · 6.4** s |
+| **2 — the teach** | `call2_diagnose` → `call3_teach` | `sonnet-4-6` 2,621 tok → 66–74 · then `haiku-4.5` 3,920 tok → 145–203 | **6.2 · 6.5 · 8.2** s |
+| **3 — the reveal** | `call4_reveal` alone | `haiku-4.5` 1,445 tok → 269–500 | **4.7 · 4.9 · 6.6** s |
+
+- **Non-model time inside the engine: 2–6 ms.** Not seconds. Milliseconds.
+- **The route's own fixed overhead is ~120 ms.** Measured on the deployed endpoint from a home
+  connection, n = 6 unauthenticated `401`s (network + Vercel + middleware + the `getUser` round
+  trip): **1,123 ms on the first request, then 123 · 122 · 111 · 113 · 121 ms.** Vercel is not
+  where the time goes either.
+- ⚠️ **One outlier, and it is worth knowing what it was.** The very first `call2_diagnose` of a
+  cold process took **14.4 s** — against **4.6 s** for the next call in the same process with
+  effectively identical token counts. That is connection setup, not the model, and it is a real
+  hazard on the day: **the first turn after a long idle is the slow one.**
+
+**So the leg's server-side cost is ~17–21 s of model time, not 78.** Against the browser's
+12.0 + 39.2 + 26.6. And there is a **control that disagrees with the 88**: the 2026-09-07 browser
+run — same case, same answer, same route, same three turns — measured **~9 · ~10 · ~10 s**
+(`docs/rollbacks/demo_leg2_run2_20260907.json`). Engine (~18 s) + overhead (~1 s) lands on the
+09-07 figures almost exactly. **Read the 88 as a bad afternoon, not as the product's shape.**
+
+⚠️ **What is NOT explained, said plainly.** ~57 s across three turns on 2026-09-08 has no home in
+the client, in Vercel's overhead, or in the engine's own cost. The remaining candidate is
+Anthropic latency from Vercel's region at that moment, and **I could not measure that** — it needs
+a timed call from inside a deployed function, which is a code change. **n = 1 stands. Do not
+narrate the 39 s away, and do not budget for it as normal either.**
+
+**Two structural amplifiers, both real, neither fixed here.**
+
+- 🔴 **Nothing streams.** The turn returns one JSON body, so the student sees nothing until the
+  last token of the **second** call — and roughly half the wait is `call2_diagnose`, whose 60–79
+  tokens of output they will **never see**. It is an internal verdict. A room watching a spinner
+  is watching a call whose product is invisible to them.
+- 🔴 **Nothing is cached.** `teach-engine.ts` contains **no `cache_control` anywhere**. Every turn
+  re-sends the scenario and exhibits (3,455 chars) and the model answer (2,386 chars) at full
+  latency — ~2.5k tokens to Sonnet and ~3.9k to Haiku, three turns running, all of it identical
+  across the leg. Both are on the fix list, not the demo list.
+
+📌 **Production runs `APM_EARNED_REVEAL` and nothing else** (`vercel env ls production`).
+`APM_INTENT_LAYER` and `APM_COMPLETENESS_GATE` are **unset**, so `call0_classify` and
+`completenessCheck` never fire — an attempt turn is exactly **two** calls. **Turning either flag
+on adds a third or fourth serial call to every turn.** Do not enable one before the day.
+
+### 🎙️ THE NARRATION, PER BEAT, WITH THE SECONDS BESIDE IT
+
+**Budget every wait at 10 s and carry a hold line to 25 s.** The lines below are written to be
+said *over* the wait, starting as you press the key — not after. Each beat has an opener you
+always say, a second line for a normal wait, and a hold you only reach if it runs long. **Every
+line is true; none of them previews what the tutor is about to say** (see finding 8).
+
+**BEAT 0 · Case load — click `Start case →` → composer.** *Budget 10 s.*
+
+| | |
+|---|---|
+| **0–3 s** | *"This is the practice case — scenario and exhibits on the left, the requirement and the tutor on the right."* |
+| **3–10 s** | *"She's answering the same thing she'd answer in the exam. Nothing here is multiple choice."* |
+| **hold 10 s+** | *"It's pulling the scenario, five exhibits and the requirement in one go — that's the whole paper's worth of context, and it only does it once."* |
+
+**BEAT 1 · Turn 1, the hint.** *Budget 10 s. Measured 5.5–6.4 s of model time; 12.0 s on 09-08.*
+**Paste the answer, then press send and start talking immediately.**
+
+| | |
+|---|---|
+| **0–4 s** | *"That's a strong answer with one thing wrong in it — which is exactly what a reviewer writes."* |
+| **4–10 s** | *"Two calls go out on every turn. One reads her answer against the model answer and names the gap. The other decides what to say about it."* |
+| **hold 10–25 s** | *"The first of those is the only place in the product we reach for the bigger model — naming what's wrong is the judgement, so that's where the money goes."* |
+
+**BEAT 2 · Turn 2, the teach. 🔴 THIS IS THE LONG ONE — 39 s on 09-08.** *Budget 10 s, hold to
+40 s.* **Have all three lines ready; you may need the last one.**
+
+| | |
+|---|---|
+| **0–5 s** | *"She's pushed back — she's re-run it and she still makes it 6m."* |
+| **5–12 s** | *"It's re-reading her whole answer, not just her last line. That's a fix that went in this week, and it's the reason it won't tell her she hasn't shown working she's shown."* |
+| **hold 12–25 s** | *"It's carrying the previous turn as well now, so there's more to hold than there was a minute ago."* |
+| **hold 25–40 s** | *"I'll be honest — this is slower than it should be. Nothing is cached between turns yet, so it re-reads the whole scenario every time. That's a known one and it's on the list."* |
+
+⚠️ **Say the last line rather than standing in silence.** It is true, it is cheap, and a room that
+has been told a wait is a known engineering item forgives it. A room watching an unexplained
+spinner concludes the thing has frozen.
+
+**BEAT 3 · Turn 3, the earned reveal.** *Budget 10 s, hold to 30 s. Measured 4.7–6.6 s; 26.6 s on
+09-08.*
+
+| | |
+|---|---|
+| **0–4 s** | *"She's attempted twice and missed twice — that's what unlocks this. She can't ask for it cold."* |
+| **4–10 s** | *"This is the only turn where it stops withholding."* |
+| **hold 10–30 s** | *"What it's writing is the framing. The worked answer underneath it is authored — we wrote it, the model doesn't generate it, and it's the same one every time."* |
+
+**BEAT 4 · The expand click → the document.** *Budget 10 s. This is the one wait in the leg that
+is a PAGE, not a model call.*
+
+| | |
+|---|---|
+| **0–4 s** | *"Full width — the answer's a document, not a chat bubble."* |
+| **4–10 s** | *"And it re-checks she earned it before it will render. You can't get to that page by guessing the URL, even signed in as her."* |
+
+⚠️ **The expand's ~9–10 s was NOT re-measured today** and could not be: unauthenticated the route
+is turned back at middleware (307 in ~250 ms), so nothing reaches the server component. It is the
+one number in the 88 that might genuinely be a page. **Logged, not diagnosed.**
 
 ## 🔴 FINDING 3 — CHECK B, THE IDENTITY SNIPPET, IS BROKEN BY THE STEP DIRECTLY BEFORE IT
 
@@ -497,7 +683,7 @@ Do this **before the room sits down**, once per account. It is three minutes eac
 
 | Account | State | Keep? |
 |---|---|---|
-| `grant+demo1@gradd.ai` | **Virgin.** Entitled to 2026-12-31. | Leg 2 on the day |
+| `grant+demo1@gradd.ai` | **Virgin.** Entitled to 2026-12-31. **Coordinator of `demo-advisory` since 2026-09-08.** | **THE account for the whole hour — legs 1 and 2** |
 | `grant+demo2@gradd.ai` | **Virgin.** Entitled to 2026-12-31. | Spare |
 | `grant+demo3@gradd.ai` | **Virgin.** Entitled to 2026-12-31. | Spare |
 | `grant+demo4@live.ie` | **Carries the seeded AFM sit** (leg 1) **and Halvard Marine (i) is now spent on it** by the 2026-09-07 leg-2 walk. Entitlement extended from 2026-09-09 to 2026-12-31. | **Do not delete** |
@@ -1036,9 +1222,22 @@ branch HAS merged, Q2 (ii) is safe and reads correctly.
 ## THE COORDINATOR SECTION — FOUR SCREENS, IN THIS ORDER
 
 **✅ PHOTOGRAPHED 2026-09-08** (`docs/demo/screens/leg1_cohort_heatmap_sept26.jpg`,
-`…_dec26.jpg`). Signed in as `grant@live.ie`, which is the org coordinator. Both seeded
-heatmaps render **varied** — a real spread of miss-rates, thinly-populated columns, and one
+`…_dec26.jpg`). Photographed signed in as `grant@live.ie`, which is the org coordinator. Both
+seeded heatmaps render **varied** — a real spread of miss-rates, thinly-populated columns, and one
 never-started trainee — so this view is IN the hour.
+
+📌 **ON THE DAY THIS IS `grant+demo1@gradd.ai`, NOT `grant@live.ie`** — see *RESOLVED 2026-09-08*
+under finding 1. `demo1` was made a coordinator of `demo-advisory` so that one account carries
+both the coordinator view and leg 2's virgin case. `grant@live.ie` still works and is the
+fallback. **This section is now where LEG 1 OPENS** — the seeded AFM debrief at `/acca/results` is
+cut, because it is the one screen that would need a second account.
+
+⚠️ **NOT YET WALKED ON `demo1`.** The membership row is verified in the database and the guard
+reads it (`requireCoordinator` matches `user_id` OR `email`, `role='coordinator'`,
+`status='active'`, scoped to this org), but **nobody has yet loaded these four screens signed in
+as `demo1`**, because that account has never signed in and a sign-in needs the emailed link.
+**Do it before the room arrives, and confirm on screen — an unauthorised `/org/` load redirects
+to the marketing homepage rather than refusing, which is finding 1's whole hazard.**
 
 Aubrey's paper is shown **through this route, not by signing into her account.** The coordinator
 view de-identifies her to `trainee-04@cohort.demo`, and no ACCA surface renders an email address
