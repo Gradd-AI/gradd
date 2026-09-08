@@ -2,6 +2,61 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
+## 🔴 OPEN 2026-09-08 (r) — **DEMO-RELEVANT.** THE READINESS PANEL CONTRADICTS THE MARKED PAPER ON THE SAME PAGE. THE DECORATIVE GATE IS NOW A PRESENTATION PROBLEM, NOT ONLY A MEASUREMENT ONE.
+
+**Not a new defect. This is the 2026-09-02 correct-gate item (P-V4, and the trainee-page block
+below it) seen from the coordinator's chair, and the reason it is re-filed at the top is that
+it has acquired a second failure mode which the measurement framing does not cover.**
+
+Coverage is defined as **`>= 1 attempt with outcome='correct'`** (`buildInput`, `lib/org/queries.ts`),
+and **the correct-gate has never fired for any real student.** Measured again today against the
+live DB, real students only (excluding the two seeded demo cohorts): **890 `miss` against 25
+`correct`**, and the 25 belong to 2 accounts. For the one trainee a coordinator can actually open
+— the `Sept-26 APM — live` cohort — it is **14 servable attempts, 0 correct.**
+
+So coverage is **structurally 0.00**, its heatmap row is **1.0 in every touched cell**, and neither
+number is a statement about the student.
+
+### The presentation half — this is the new part
+
+On the trainee page those outputs are stacked directly above the marked paper:
+
+| the page, top to bottom | what it says |
+|---|---|
+| Readiness verdict panel | band **RED**, coverage **0.00**, `0/12 sub-areas` |
+| `Coverage — 0/12 sub-areas with a correct attempt` | a wall of misses |
+| Recent attempts | every row a miss |
+| **Mock Paper 1** | **45/100**, **COMPETENT** bands, per-requirement evidence quoted from the answer |
+
+**The two halves of one page disagree about the same student, and the lower half is the one with
+the evidence behind it.** The marking pass read the answer and quoted it; the readiness panel ran
+a regex over a model-authored sentence. A coordinator has no way to know which to believe, and the
+page offers no reason to prefer the correct one.
+
+⚠️ **The measurement framing understates this.** "Coverage is uncalibrated" is a caveat you can put
+in a footnote. "The page states two incompatible things about one trainee, six inches apart" is not
+— it discredits the marked paper, which is the strongest artefact the product has.
+
+### The disposition
+
+**THE READINESS PANEL SHOULD NOT BE SHOWN UNTIL THE GATE IS CALIBRATED.** That is the item: suppress
+the panel (and the `Coverage — 0/12` section it feeds), keep the heatmap, keep the marked paper.
+Showing a band computed from a component pinned at zero by a broken gate is worse than showing no
+band, because a band reads as a finding.
+
+⛔ **DO NOT FIX THE GATE (Grant-ruled 2026-09-08).** It needs a cohort of real attempts to calibrate
+against, not a patch. A threshold tuned against 15 students — 0 of whom have ever passed it — would
+be fitted to noise and would then carry the authority of having been "calibrated". **Any change to
+`outcome='correct'` is out of scope until there is a population to calibrate on.**
+
+📐 **The seeded cohorts do NOT have this problem, and the difference is the diagnosis.** `Sept-26
+APM` and `Dec-26 APM` render varied, informative heatmaps (spread 0.0/0.5/0.67/0.75/1.0; `Sept-26`
+carries a genuine cohort-wide D2 weakness at 0.9 and one never-started trainee) **because
+`seed-demo-org.ts` writes `outcome:'correct'` directly.** It never calls the gate. The seeded rows
+demonstrate what the screen is for; they are not evidence that it works.
+
+---
+
 ## 🔴 OPEN 2026-09-07 (p) — THE SERVED REVEAL IS PERSISTED NOWHERE. A REFRESH LOSES THE WORKED ANSWER **AND** THE CONVERSATION.
 
 **Found while designing the expand control; it is the constraint that shaped that design and it
