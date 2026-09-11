@@ -35,7 +35,8 @@ import { buildStudentAnswerBlock } from './student-answer-block';
 // the ONLY place the output shape is stated and `hintOpeningInstruction` the only place the
 // opening is, so the drill and case surfaces cannot drift about either. See `CASE_HINT_OPENING`.
 import {
-  GAP_VERDICT_FORMAT, parseGapVerdict, safeLabel, nothingCreditable, type GapVerdict,
+  parseGapVerdict, safeLabel, nothingCreditable, gapVerdictFormat, correctVerdictMode,
+  resolveCorrect, type GapVerdict,
 } from './gap-verdict';
 import { hintOpeningInstruction, type HintOpeningVariant } from './hint-opening';
 
@@ -205,6 +206,11 @@ function isTeachRequest(input: string): boolean {
 const REVEAL_ENABLED = process.env.APM_EARNED_REVEAL === '1';
 const COMPLETENESS_GATE_ENABLED = process.env.APM_COMPLETENESS_GATE === '1';
 
+// ── THE CORRECT VERDICT MOVES OFF THE PHRASE TABLE (2026-09-11) ──────────────
+// Read from the ONE env var both surfaces read, resolved by the ONE pure function. Default `off`:
+// the pre-change prompt bytes and the regex, exactly. See lib/acca/gap-verdict.ts.
+const CORRECT_MODE = correctVerdictMode(process.env.APM_CORRECT_VERDICT);
+
 // ── DIVERGENCE #2 — the CASE hint opening's arm, env-selected ────────────────
 // `conditional` (default) = the `creditable` arm is live. `shipped` = the praise-first opening
 // unconditionally, i.e. today's behaviour.
@@ -292,9 +298,10 @@ const EARN_REDIRECT =
   'exactly how a full-marks answer is built, step by step.';
 
 // ── Correct-answer detection ───────────────────────────────────────────────────
-function isCorrectVerdict(diagnosis: string): boolean {
-  return /\banswer correct\b/i.test(diagnosis.trim());
-}
+// Moved to lib/acca/gap-verdict.ts on 2026-09-11 and imported via `resolveCorrect`. It was a
+// byte-for-byte duplicate of the copy in app/api/acca/tutor/route.ts — the one predicate that
+// decides whether a student is told they got it right, written twice, on two surfaces that are
+// supposed to run the identical moat.
 
 // ── Ezra persona ──────────────────────────────────────────────────────────────
 
@@ -498,7 +505,8 @@ async function call2_diagnose(
       // describes the actual output shape. The "answer correct — convention differs from model
       // only" sentence above becomes the LABEL inside the object; `isCorrectVerdict` therefore
       // runs on `safeLabel(...)`, never on the raw body, or a correct answer reads as a miss.
-      GAP_VERDICT_FORMAT,
+      // `gapVerdictFormat` returns GAP_VERDICT_FORMAT's bytes unchanged at CORRECT_MODE 'off'.
+      gapVerdictFormat(CORRECT_MODE),
     messages: [
       {
         role: 'user',
@@ -537,7 +545,11 @@ async function call2_diagnose(
     parsed: verdict !== null,
     creditable: verdict?.creditable ?? null,
     derived: verdict?.derived ?? null,
-    correct: isCorrectVerdict(safeLabel(verdict, raw)),
+    correct: resolveCorrect(CORRECT_MODE, verdict, safeLabel(verdict, raw)).correct,
+    // The model's own field, kept raw beside the resolution — an override that hides what the
+    // model said hides the disagreement the measurement is looking for.
+    correct_field: verdict?.correct ?? null,
+    correct_mode: CORRECT_MODE,
     label: safeLabel(verdict, raw).slice(0, 160),
   }));
   return { label: safeLabel(verdict, raw), verdict };
@@ -1422,11 +1434,16 @@ export async function runTeachTurn(input: TeachTurnInput): Promise<TeachTurnResu
       // is parsed but deliberately NOT wired on this surface — see call3_hint's parameter doc.
       const gapNothingCreditable = nothingCreditable(gapVerdict);
 
+      // ── THE CORRECT VERDICT, RESOLVED ONCE (2026-09-11) ──────────────────────
+      // BOTH call sites on this surface read the SAME resolution — the completeness trigger below
+      // as well as `treatCorrect` — exactly as on the drill route. At CORRECT_MODE 'off'/'shadow'
+      // this IS the regex, byte-for-byte behaviour.
+      const correctRes = resolveCorrect(CORRECT_MODE, gapVerdict, diagnosis);
       let completenessGap: string | null = null;
-      if (COMPLETENESS_GATE_ENABLED && isCorrectVerdict(diagnosis)) {
+      if (COMPLETENESS_GATE_ENABLED && correctRes.correct) {
         completenessGap = await completenessCheck(question, context, modelAnswer, studentMessage, verbLevel);
       }
-      const treatCorrect = isCorrectVerdict(diagnosis) && !completenessGap;
+      const treatCorrect = correctRes.correct && !completenessGap;
 
       // ── DIVERGENCE #5 — update the session-sticky credit flag ────────────────
       // ⚠️ STICKY: once ANY attempt has earned credit the flag stays true for the rest of the
@@ -1453,7 +1470,7 @@ export async function runTeachTurn(input: TeachTurnInput): Promise<TeachTurnResu
         // earn-it moat is satisfied once the student has demonstrably produced the answer
         // (`revealDecision`'s own header states it). This surface confirmed the answer, wrote
         // `passed`, and left `resolved` false — so a student who GOT IT RIGHT was still refused
-        // the worked answer by the reveal gate above, while a student who missed twice was not.
+        // the worked answer by the reveal gate below, while a student who missed twice was not.
         newResolved        = true;
       } else {
         const gap        = completenessGap ?? diagnosis;

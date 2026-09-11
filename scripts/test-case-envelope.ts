@@ -144,8 +144,13 @@ ok('creditable=0 is the ONLY value that arms the suppression',
 {
   ok('call2_diagnose returns the envelope, not a bare string',
     /Promise<\{ label: string; verdict: GapVerdict \| null \}>/.test(engine));
+  // 2026-09-11: the engine now reaches the block through `gapVerdictFormat(mode)` rather than the
+  // bare constant, so that APM_CORRECT_VERDICT=off sends GAP_VERDICT_FORMAT's bytes unchanged.
+  // The property under test is UNCHANGED and is the one that matters: the shape is IMPORTED from
+  // the one module that states it, never transcribed into this file where it could drift.
   ok('the engine IMPORTS the format block rather than transcribing it',
-    /import \{[\s\S]{0,200}GAP_VERDICT_FORMAT[\s\S]{0,200}\} from '\.\/gap-verdict'/.test(engine)
+    /import \{[\s\S]{0,200}gapVerdictFormat[\s\S]{0,200}\} from '\.\/gap-verdict'/.test(engine)
+    && /system:\s*\n?[\s\S]{0,4000}gapVerdictFormat\(CORRECT_MODE\)/.test(engine)
     && !engine.includes(GAP_VERDICT_FORMAT.slice(0, 60)));
   ok('the hint leg is called with the creditable flag',
     /completenessGap \? false : gapNothingCreditable/.test(engine));

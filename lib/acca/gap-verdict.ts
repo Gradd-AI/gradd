@@ -59,6 +59,27 @@ export interface GapVerdict {
    * whatever the judgement does.
    */
   creditable?: 0 | 1;
+  /**
+   * "Is this answer, as written, a correct answer to this requirement?"
+   *
+   * ⚠️ THE FIELD THE CORRECT GATE HAS NEVER HAD. `isCorrectVerdict` matches ONE phrase —
+   * `/\banswer correct\b/i` — inside a 12–15 word model-authored label. Measured 2026-09-11 on the
+   * T34 Vesla run (n = 60 labels): 4 matched, and **6 more asserted the answer was correct in
+   * words the regex does not contain** ("Answer is correct — convention and emphasis differ from
+   * model only", "answer is substantively correct throughout", "no genuine error remains here").
+   * Every one of those six was scored a MISS. The regex is a phrase table and P-V4 already rules
+   * that it defends the STRING, not the judgement.
+   *
+   * ⚠️ OPTIONAL, STRICT, AND IT CANNOT FAIL THE PARSE — the same contract `creditable` carries and
+   * for the same reason: `derived` IS wired to production behaviour on the drill route, and a
+   * required field the model sometimes omits would fail `parseGapVerdict`, burn four calls through
+   * `withParseRetry`, and degrade a live guard in order to measure a new one.
+   *
+   * ⚠️ READ ONLY UNDER `APM_CORRECT_VERDICT=on`. Under `off` it is never asked for (the prompt
+   * bytes are unchanged) and under `shadow` it is asked for, parsed and logged while the REGEX
+   * still decides. See `resolveCorrect`.
+   */
+  correct?: 0 | 1;
 }
 
 /** The instruction appended to call2's system prompt. The ONLY place the output shape is stated. */
@@ -88,6 +109,116 @@ export const GAP_VERDICT_FORMAT =
   'parsed for meaning. The 12–15 word limit applies to "label" only. ';
 
 /**
+ * THE CORRECT FIELD (2026-09-11). APPENDED to `GAP_VERDICT_FORMAT`, never interleaved with it, so
+ * that `APM_CORRECT_VERDICT=off` sends the pre-change bytes EXACTLY — the same discipline the
+ * structured steer itself shipped under (P-T3(i)). A fixture pins the byte-identity.
+ *
+ * ⚠️ THE DEFINITION IS DELIBERATELY ASYMMETRIC, and that asymmetry is the whole safety argument.
+ * Telling a WRONG answer it is right is the dangerous failure — it ends the teaching, sets
+ * `resolved`, unlocks the worked answer and writes `outcome='correct'`, which is the column the
+ * org readiness panel reads. Missing a right answer costs one more turn of coaching. So `1` is
+ * defined by what must ALL be true and `0` collects every doubt, including the "true as far as it
+ * goes" case that is exactly what the six missed labels were arguing about in prose.
+ *
+ * Same ordinal contract as the rest of the envelope (P-M1): a NUMBER, never a word.
+ */
+export const CORRECT_VERDICT_FORMAT =
+  'Also return "correct": 0 or 1 — is the student\'s answer, AS WRITTEN, a correct and complete ' +
+  'answer to this requirement? ' +
+  'Score 1 only when ALL of these hold: every substantive point the requirement asks for is ' +
+  'present; nothing the student states is wrong; and any figure or conclusion the requirement ' +
+  'asks them to DERIVE has been derived rather than asserted. A different but equivalent ' +
+  'convention, wording, ordering or layout is still correct — judge the substance, not the format. ' +
+  'Score 0 whenever any required point is missing, any stated figure or claim is wrong, or the ' +
+  'answer is true as far as it goes but leaves out part of what was asked. ' +
+  'If you are unsure, score 0. ';
+
+/**
+ * Where the correct verdict came from. Recorded so a measurement can tell the two apart, and so a
+ * DISAGREEMENT between them is visible rather than silently resolved.
+ */
+export type CorrectSource = 'field' | 'phrase';
+
+export interface CorrectResolution {
+  /** The decision the caller acts on. */
+  correct: boolean;
+  source: CorrectSource;
+  /** What the OLD regex said, always, whatever decided. */
+  phrase: boolean;
+  /** What the model's field said, or null when absent / not asked for. */
+  field: 0 | 1 | null;
+  /** `field` was present and disagreed with `phrase`. Read by the logs; never by a branch. */
+  disagreed: boolean;
+}
+
+/** The three states of `APM_CORRECT_VERDICT`. */
+export type CorrectVerdictMode = 'off' | 'shadow' | 'on';
+
+/**
+ * Resolve the env var to a mode. Anything unrecognised — a typo, an empty string, `'1'` — is
+ * `off`, the state that changes nothing. A mode is not a boolean and must not be spelled as one:
+ * `shadow` sends DIFFERENT PROMPT BYTES from `off` while making the SAME decision as `off`, and a
+ * two-state flag would have to lie about one of those halves.
+ */
+export function correctVerdictMode(raw: string | undefined | null): CorrectVerdictMode {
+  return raw === 'on' || raw === 'shadow' ? raw : 'off';
+}
+
+/** Does the format block carry the `correct` field for this mode? `off` is the pre-change bytes. */
+export function gapVerdictFormat(mode: CorrectVerdictMode): string {
+  return mode === 'off' ? GAP_VERDICT_FORMAT : GAP_VERDICT_FORMAT + CORRECT_VERDICT_FORMAT;
+}
+
+/**
+ * THE CORRECT-ANSWER SENTINEL — one definition, both surfaces.
+ *
+ * `call2_diagnose` is instructed to emit the fixed sentinel "answer correct — convention differs
+ * from model only" when the answer is right. The word-boundary guard is deliberate: bare
+ * `answer correct` also matches `answer correctly`, which appears in WRONG-answer labels
+ * ("computes the answer correctly but omits evaluation") — telling a wrong answer it is right is
+ * the dangerous failure, so this anchors on the sentinel phrase only, never bare /correct/.
+ *
+ * ⚠️ THIS IS A PHRASE TABLE AND IT IS A FLOOR, NOT A MEASUREMENT (P-V4). It was duplicated
+ * byte-for-byte in `app/api/acca/tutor/route.ts` and `lib/acca/teach-engine.ts` until 2026-09-11;
+ * it lives here now so the two teaching surfaces cannot drift on the one predicate that decides
+ * whether a student is told they got it right.
+ */
+export function isCorrectVerdict(diagnosis: string): boolean {
+  return /\banswer correct\b/i.test(diagnosis.trim());
+}
+
+/**
+ * Did this turn produce a correct answer?
+ *
+ * `off` / `shadow` → the REGEX decides, exactly as it does today. Under `shadow` the field has
+ * been asked for and parsed, so the disagreement is in the log and can be read offline, but no
+ * branch moves. That is the only honest way to observe a prompt change: the bytes differ from
+ * `off` and the decision does not.
+ *
+ * `on` → THE FIELD DECIDES IN BOTH DIRECTIONS when it is present. A `correct: 0` alongside a label
+ * containing the sentinel is a DISAGREEMENT TO HAND-READ, not a reason to fall back to the regex:
+ * falling back on one side only would build a gate that can be talked into `true` by either
+ * channel and into `false` by neither, which is strictly more permissive than the regex it
+ * replaces — the wrong direction for the failure that matters.
+ *
+ * An ABSENT field falls back to the regex, which is the measured floor. `undefined` means the
+ * model did not answer, never that the answer was wrong.
+ */
+export function resolveCorrect(
+  mode: CorrectVerdictMode,
+  verdict: GapVerdict | null,
+  rawLabel: string,
+): CorrectResolution {
+  const phrase = isCorrectVerdict(rawLabel);
+  const field = verdict?.correct === 0 || verdict?.correct === 1 ? verdict.correct : null;
+  const disagreed = field !== null && (field === 1) !== phrase;
+  if (mode === 'on' && field !== null) {
+    return { correct: field === 1, source: 'field', phrase, field, disagreed };
+  }
+  return { correct: phrase, source: 'phrase', phrase, field, disagreed };
+}
+
+/**
  * Parse a gap-verdict response. Returns null when the payload is absent or malformed, which the
  * caller converts into `Error('parse')` so `withParseRetry` retries it.
  *
@@ -107,11 +238,16 @@ export function parseGapVerdict(raw: string): GapVerdict | null {
   // `creditable` is OPTIONAL and never fails the parse — see the field's doc comment. A malformed
   // or absent value is dropped, not coerced: a measurement must not invent the data it measures,
   // and it must not be able to break `derived`, which IS wired.
-  const { creditable } = obj as Record<string, unknown>;
+  const { creditable, correct } = obj as Record<string, unknown>;
   const c = creditable === 0 || creditable === 1 ? creditable : undefined;
-  return c === undefined
-    ? { derived, label: label.trim() }
-    : { derived, label: label.trim(), creditable: c };
+  // `correct` carries the identical contract, for the identical reason. NEVER COERCED: `true`,
+  // `"1"` and `2` are all dropped to undefined rather than read as 1. A coerced value here would
+  // be a guess about what the model meant on the one field that can tell a student they are done.
+  const k = correct === 0 || correct === 1 ? correct : undefined;
+  const out: GapVerdict = { derived, label: label.trim() };
+  if (c !== undefined) out.creditable = c;
+  if (k !== undefined) out.correct = k;
+  return out;
 }
 
 /**

@@ -37,12 +37,19 @@ import {
 } from '@/lib/acca/hint-opening';
 import { bareGuessGuardVetoed, computationDemandedButAbsent } from '@/lib/acca/bare-guess-veto';
 import {
-  parseGapVerdict, safeLabel, resolveNothingEstablished, nothingCreditable, GAP_VERDICT_FORMAT, type GapVerdict,
+  parseGapVerdict, safeLabel, resolveNothingEstablished, nothingCreditable,
+  gapVerdictFormat, correctVerdictMode, resolveCorrect, type GapVerdict,
 } from '@/lib/acca/gap-verdict';
 import { withParseRetry } from '@/lib/acca/case-marking';
 // THE STEER IS A FIELD, NOT A PHRASE (P-T3(i)). 'off' restores the pre-change prompt bytes and
 // the substring-match path exactly, with no deploy.
 const GAP_STRUCTURED = (process.env.TUTOR_GAP_STRUCTURED ?? 'on') !== 'off';
+
+// ── THE CORRECT VERDICT MOVES OFF THE PHRASE TABLE (2026-09-11) ──────────────
+// THREE states, and `shadow` is a real one that had to be named: it sends the SAME prompt bytes
+// as `on` and makes the SAME decision as `off`, so a two-state flag would have to lie about one
+// half of it. Default `off` — the pre-change bytes and the regex, exactly.
+const CORRECT_MODE = correctVerdictMode(process.env.APM_CORRECT_VERDICT);
 
 // ── MEASUREMENT SEAM (2026-08-22) ────────────────────────────────────────────
 // Two independent prompt changes, each selectable, so the harness can measure (a) alone and
@@ -269,18 +276,10 @@ const EARN_REDIRECT =
   'exactly how a full-marks answer is built, step by step.';
 
 // ── Correct-answer detection ───────────────────────────────────────────────────
-
-// call2_diagnose emits the fixed sentinel "answer correct — convention differs
-// from model only" when the student's answer is right (possibly in a different but
-// equivalent convention). The word-boundary guard is deliberate: bare 'answer
-// correct' also matches 'answer correctly', which could appear in a WRONG-answer gap
-// label ("computes the answer correctly but omits evaluation") — telling a wrong
-// answer it's right is the dangerous failure, so we anchor on the sentinel phrase
-// only, never bare /correct/. A miss here is safe: it falls through to the normal
-// hint/teach path (today's behaviour).
-function isCorrectVerdict(diagnosis: string): boolean {
-  return /\banswer correct\b/i.test(diagnosis.trim());
-}
+// `isCorrectVerdict` (via `resolveCorrect`) lives in lib/acca/gap-verdict.ts. It was
+// duplicated byte-for-byte here and in lib/acca/teach-engine.ts until 2026-09-11 — two copies of
+// the one predicate that decides whether a student is told they got it right, on two surfaces
+// that are supposed to run the identical moat.
 
 // ── Ezra persona ──────────────────────────────────────────────────────────────
 // Paper-scoped personas + the AFM earned-reveal assembly live in
@@ -431,8 +430,9 @@ async function call2_diagnose(
       '(3) Output ONLY the label — no prose, no prefix, no explanation. ' +
       'BAD (forbidden): any phrase that states the correct answer.' +
       // THE STEER MOVES OFF THE PROSE (P-T3(i)). Appended, never interleaved with the rules above,
-      // so the `off` variant is the pre-change bytes exactly.
-      (GAP_STRUCTURED ? ' ' + GAP_VERDICT_FORMAT : ''),
+      // so the `off` variant is the pre-change bytes exactly. `gapVerdictFormat` applies the same
+      // rule one level in: at CORRECT_MODE 'off' it returns GAP_VERDICT_FORMAT's bytes unchanged.
+      (GAP_STRUCTURED ? ' ' + gapVerdictFormat(CORRECT_MODE) : ''),
     ),
     messages: [
       {
@@ -486,6 +486,11 @@ async function call2_diagnose(
       derived: verdict ? verdict.derived : null,
       // MEASUREMENT ONLY — recorded, wired to nothing. See GapVerdict.creditable.
       creditable: verdict && verdict.creditable !== undefined ? verdict.creditable : null,
+      // Wired only at CORRECT_MODE 'on'; asked for and recorded at 'shadow'. Kept raw beside the
+      // resolution logged at the call site, for the same reason `derived` is: an override that
+      // hides the model's own answer hides the disagreement the measurement is looking for.
+      correct: verdict && verdict.correct !== undefined ? verdict.correct : null,
+      correctMode: CORRECT_MODE,
       // ⚠️ TWO DIFFERENT FACTS, AND THE FIRST VERSION LOGGED ONLY THE USELESS ONE. `hintOnRow` is
       // whether the drill HAS an authored hint (true for 154/154, so it never varies); `hintArm`
       // is whether that hint was actually INJECTED into the hint leg. A capture that records only
@@ -1763,11 +1768,26 @@ export async function POST(request: Request): Promise<Response> {
         // verifies every required component was attempted. Runs ONLY when call2 says correct, so
         // the wrong/convention paths stay byte-identical. A clearly-absent component demotes the
         // correct verdict to a miss whose gap NAMES the missing component (case 2).
+        // ── THE CORRECT VERDICT, RESOLVED ONCE (2026-09-11) ────────────────────
+        // BOTH call sites on this surface read the SAME resolution — the completeness trigger
+        // below as well as `treatCorrect`. They were two independent calls to the regex, and a
+        // gate that can be reached by one predicate and demoted by another is a gate nobody can
+        // state. At CORRECT_MODE 'off'/'shadow' this IS the regex, byte-for-byte behaviour.
+        const correctRes = resolveCorrect(CORRECT_MODE, gapVerdict, diagnosis);
+        // ⚠️ SERVER LOG ONLY (see call2's own note): the label is fullTrust content and never
+        // reaches the client. This line is how `shadow` is read — it records what the FIELD said,
+        // what the REGEX said, and which one decided, so a disagreement in EITHER direction is
+        // visible offline instead of being silently resolved.
+        if (CORRECT_MODE !== 'off') {
+          console.log('[CORRECTVERDICT]', JSON.stringify({
+            surface: 'drill', mode: CORRECT_MODE, ...correctRes, label: diagnosis.slice(0, 160),
+          }));
+        }
         let completenessGap: string | null = null;
-        if (COMPLETENESS_GATE_ENABLED && isCorrectVerdict(diagnosis)) {
+        if (COMPLETENESS_GATE_ENABLED && correctRes.correct) {
           completenessGap = await completenessCheck(question, context, modelAnswer, student_message, verbLevel, grounding);
         }
-        const treatCorrect = isCorrectVerdict(diagnosis) && !completenessGap;
+        const treatCorrect = correctRes.correct && !completenessGap;
 
         if (treatCorrect) {
           // Correct answer. Acknowledge it — do NOT score a miss, do NOT deliver a

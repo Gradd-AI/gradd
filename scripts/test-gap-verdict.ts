@@ -7,6 +7,7 @@
 import {
   parseGapVerdict, nothingEstablished, safeLabel, GAP_VERDICT_FORMAT,
   resolveNothingEstablished,
+  CORRECT_VERDICT_FORMAT, correctVerdictMode, gapVerdictFormat, isCorrectVerdict, resolveCorrect,
 } from '../lib/acca/gap-verdict';
 import { guardLabel, unsubstantiatedLabel } from '../lib/acca/hint-opening';
 
@@ -185,6 +186,154 @@ ok('an escaped quote inside a recovered label is unescaped',
     && resolveNothingEstablished(true, { derived: 1, label: 'x' }, 'x').nothingEstablished === true);
 }
 
+// ── 6b. THE CORRECT VERDICT — THE FIELD, THE MODE, THE RESOLVER ──────────────
+// P-G3: every case names the defect it would catch. The defect class here is the one P-V4 named
+// five times — a check that keys on a PHRASE when the question is a JUDGEMENT.
+{
+  // ── THE MODE. Three states, and anything unrecognised is the state that changes nothing.
+  ok('mode: "on" and "shadow" are recognised',
+    correctVerdictMode('on') === 'on' && correctVerdictMode('shadow') === 'shadow');
+  ok('mode: absent → off (the default is the pre-change behaviour)',
+    correctVerdictMode(undefined) === 'off' && correctVerdictMode(null) === 'off');
+  // Break mode: someone spells the flag like every OTHER flag in this repo (`=== '1'`) and gets a
+  // silent `on`. Unrecognised must fail toward the state that changes nothing, never toward the
+  // state that changes a verdict.
+  for (const bad of ['1', 'ON', 'true', 'Shadow', '', 'off ', 'yes']) {
+    ok(`mode: unrecognised ${JSON.stringify(bad)} → off`, correctVerdictMode(bad) === 'off');
+  }
+
+  // ── THE BYTES. `off` must be the pre-change prompt, exactly — this is the rollback property.
+  ok('format: off is GAP_VERDICT_FORMAT byte-for-byte',
+    gapVerdictFormat('off') === GAP_VERDICT_FORMAT);
+  ok('format: off carries no mention of a correct field at all',
+    !/"correct"/.test(gapVerdictFormat('off')));
+  // ⚠️ SHADOW SENDS THE SAME BYTES AS ON. That is the whole reason it is a named state rather
+  // than a boolean: it changes the prompt and does NOT change the decision, and a two-state flag
+  // would have to lie about one of those halves.
+  ok('format: shadow and on send IDENTICAL bytes',
+    gapVerdictFormat('shadow') === gapVerdictFormat('on'));
+  ok('format: on is off + the correct block, APPENDED not interleaved',
+    gapVerdictFormat('on') === GAP_VERDICT_FORMAT + CORRECT_VERDICT_FORMAT
+    && gapVerdictFormat('on').startsWith(GAP_VERDICT_FORMAT));
+  // The ordinal contract (P-M1), one level down: a NUMBER, never a word.
+  ok('correct block demands a NUMBER, 0 or 1', /"correct":\s*0 or 1/.test(CORRECT_VERDICT_FORMAT));
+  ok('correct block never asks for a word-coded verdict',
+    !/"(correct|incorrect|right|wrong|yes|no)"\s*(?:or|\/)/i.test(CORRECT_VERDICT_FORMAT));
+  // The asymmetry IS the safety argument: 1 is a conjunction, 0 collects every doubt.
+  ok('correct block scores 1 only on a conjunction of conditions',
+    /Score 1 only when ALL of these hold/.test(CORRECT_VERDICT_FORMAT));
+  ok('correct block sends the "true as far as it goes" case to 0 — the exact prose the six missed '
+    + 'labels were arguing about',
+    /true as far as it goes but leaves out part of what was asked/.test(CORRECT_VERDICT_FORMAT));
+  ok('correct block breaks ties toward 0', /If you are unsure, score 0/.test(CORRECT_VERDICT_FORMAT));
+  ok('correct block still exempts equivalent convention/wording (or it would fail every AFM '
+    + 'sign-convention answer)',
+    /equivalent\s+convention, wording, ordering or layout is still correct/.test(CORRECT_VERDICT_FORMAT));
+
+  // ── THE PARSER. Optional, strict, never coerced, CANNOT fail the parse.
+  for (const [name, raw, expected] of [
+    ['correct: 1', '{"derived":1,"label":"x","correct":1}', 1],
+    ['correct: 0', '{"derived":1,"label":"x","correct":0}', 0],
+    ['absent → undefined', '{"derived":1,"label":"x"}', undefined],
+    // Break mode: a coerced `true` would let the model's most natural JSON spelling decide the
+    // one field that can tell a student they are done.
+    ['true is NOT coerced to 1', '{"derived":1,"label":"x","correct":true}', undefined],
+    ['"1" is NOT coerced to 1', '{"derived":1,"label":"x","correct":"1"}', undefined],
+    ['2 is NOT coerced', '{"derived":1,"label":"x","correct":2}', undefined],
+    ['null is NOT coerced', '{"derived":1,"label":"x","correct":null}', undefined],
+  ] as const) {
+    const v = parseGapVerdict(raw);
+    ok(`correct parses: ${name}`, v !== null && v.correct === expected, JSON.stringify(v));
+  }
+  // ⚠️ THE LOAD-BEARING HALF: a malformed `correct` must never fail the parse, because `derived`
+  // IS wired to production behaviour on the drill route and a failure there burns four calls
+  // through withParseRetry and drops a live guard to measure a new one.
+  ok('a malformed correct NEVER fails the parse — derived survives it',
+    parseGapVerdict('{"derived":0,"label":"y","correct":"maybe"}')?.derived === 0);
+  ok('correct and creditable are independent fields, both carried',
+    (() => {
+      const v = parseGapVerdict('{"derived":1,"label":"x","creditable":0,"correct":1}');
+      return v?.creditable === 0 && v?.correct === 1;
+    })());
+
+  // ── THE RESOLVER.
+  const SENTINEL = 'answer correct — convention differs from model only';
+  const MISS     = 'confuses contribution with gross margin';
+  // THE SIX MISSED LABELS, verbatim from docs/rollbacks/case_t34_vesla_n20_20260911.json. Every
+  // one asserts the answer was correct; every one was scored a MISS by the shipped regex. They
+  // are the true-positive class the field exists to reach, and they are pinned here as data so
+  // the fixture states the defect rather than describing it.
+  const MISSED_SIX = [
+    'Answer is correct — convention and emphasis differ from model only',
+    'Student covers all key points adequately; answer is substantively correct throughout',
+    'Student correctly identified all key issues; no substantive error present here',
+    'Answer is substantively correct and comprehensive across all required assessment points',
+    "Student's rewritten paragraph correctly applied — no genuine error remains here",
+    "Student's latest answer is substantively correct and addresses the requirement fully",
+  ];
+  ok('the six missed labels all FAIL the shipped regex — the defect, restated as data',
+    MISSED_SIX.every((l) => !isCorrectVerdict(l)));
+  // The word-boundary guard that the regex DOES get right, kept under test so the move between
+  // files did not lose it.
+  ok('regex: matches the sentinel', isCorrectVerdict(SENTINEL));
+  ok('regex: does NOT match "answer correctly" inside a wrong-answer label',
+    !isCorrectVerdict('computes the answer correctly but omits evaluation'));
+  ok('regex: does NOT match bare "correct"', !isCorrectVerdict('the correct approach is different'));
+
+  // off / shadow — the REGEX decides, whatever the field says. This is the rollback property and
+  // the honesty property: shadow changes the bytes and must not change one decision.
+  for (const mode of ['off', 'shadow'] as const) {
+    ok(`${mode}: sentinel + no field → correct (today's behaviour)`,
+      resolveCorrect(mode, { derived: 1, label: SENTINEL }, SENTINEL).correct === true);
+    ok(`${mode}: a missed label + field 1 → still NOT correct (the field is inert)`,
+      resolveCorrect(mode, { derived: 1, label: MISSED_SIX[0], correct: 1 }, MISSED_SIX[0]).correct === false);
+    ok(`${mode}: sentinel + field 0 → still correct (the field is inert in BOTH directions)`,
+      resolveCorrect(mode, { derived: 1, label: SENTINEL, correct: 0 }, SENTINEL).correct === true);
+    ok(`${mode}: source is always phrase`,
+      resolveCorrect(mode, { derived: 1, label: SENTINEL, correct: 0 }, SENTINEL).source === 'phrase');
+  }
+  // ⚠️ SHADOW STILL RECORDS THE DISAGREEMENT. A shadow that decided nothing AND observed nothing
+  // would be an off with extra tokens; the point of the state is that the arm is readable offline.
+  ok('shadow: the disagreement is still reported even though nothing moved',
+    (() => {
+      const r = resolveCorrect('shadow', { derived: 1, label: MISSED_SIX[0], correct: 1 }, MISSED_SIX[0]);
+      return r.correct === false && r.field === 1 && r.phrase === false && r.disagreed === true;
+    })());
+
+  // on — THE FIELD DECIDES, IN BOTH DIRECTIONS.
+  ok('on: a missed label + field 1 → CORRECT (the six are reached)',
+    MISSED_SIX.every((l) => resolveCorrect('on', { derived: 1, label: l, correct: 1 }, l).correct === true));
+  // ⚠️ THE DIRECTION THAT MATTERS. A field 0 beside a sentinel label must REFUSE, not fall back.
+  // Break mode: an `||` implementation ("field says yes OR the regex says yes") is strictly more
+  // permissive than the regex it replaces — talked into true by either channel and into false by
+  // neither — which is the wrong direction for the failure that ends the teaching.
+  ok('on: sentinel + field 0 → NOT correct (a disagreement to hand-read, NOT a fallback)',
+    resolveCorrect('on', { derived: 1, label: SENTINEL, correct: 0 }, SENTINEL).correct === false);
+  ok('on: that refusal is sourced to the FIELD and flagged as a disagreement',
+    (() => {
+      const r = resolveCorrect('on', { derived: 1, label: SENTINEL, correct: 0 }, SENTINEL);
+      return r.source === 'field' && r.phrase === true && r.field === 0 && r.disagreed === true;
+    })());
+  // An ABSENT field is the measured floor, not a verdict. `undefined` means the model did not
+  // answer, never that the answer was wrong.
+  ok('on: field absent → falls back to the regex, both ways',
+    resolveCorrect('on', { derived: 1, label: SENTINEL }, SENTINEL).correct === true
+    && resolveCorrect('on', { derived: 1, label: MISS }, MISS).correct === false);
+  ok('on: an UNPARSED envelope (verdict null) → the regex floor',
+    resolveCorrect('on', null, SENTINEL).correct === true
+    && resolveCorrect('on', null, MISS).correct === false
+    && resolveCorrect('on', null, SENTINEL).source === 'phrase');
+  ok('on: field 0 on a miss label → not correct, and NOT a disagreement',
+    (() => {
+      const r = resolveCorrect('on', { derived: 1, label: MISS, correct: 0 }, MISS);
+      return r.correct === false && r.disagreed === false;
+    })());
+  // `correct` is not computed from either of the other two fields, and must never become so.
+  ok('correct is INDEPENDENT of derived and creditable',
+    resolveCorrect('on', { derived: 0, label: MISS, creditable: 0, correct: 1 }, MISS).correct === true
+    && resolveCorrect('on', { derived: 1, label: SENTINEL, creditable: 1, correct: 0 }, SENTINEL).correct === false);
+}
+
 // ── 7. THE WIRING, PINNED ────────────────────────────────────────────────────
 // The unit tests prove the rule is right and cannot prove it is REACHED — the defect class this
 // whole thread has been about. Same static sweep as test:paper-link-sweep.
@@ -211,7 +360,39 @@ ok('an escaped quote inside a recovered label is unescaped',
   ok('structured is ON by default and reversible by env',
     /TUTOR_GAP_STRUCTURED \?\? 'on'\) !== 'off'/.test(src));
   ok('the format block is APPENDED, so the off-variant keeps the pre-change bytes',
-    /GAP_STRUCTURED \? ' ' \+ GAP_VERDICT_FORMAT : ''/.test(src));
+    /GAP_STRUCTURED \? ' ' \+ gapVerdictFormat\(CORRECT_MODE\) : ''/.test(src));
+
+  // ── THE CORRECT VERDICT'S WIRING, ON BOTH SURFACES (2026-09-11) ────────────
+  // The resolver being right is section 6b. THIS is the half every defect in this class has
+  // actually been: is it REACHED, on BOTH surfaces, at EVERY call site?
+  const engine = require('fs').readFileSync(
+    require('path').join(__dirname, '..', 'lib', 'acca', 'teach-engine.ts'), 'utf8');
+
+  for (const [surface, s] of [['drill route', src], ['case engine', engine]] as const) {
+    ok(`${surface}: imports the resolver from gap-verdict.ts`,
+      /resolveCorrect/.test(s) && /correctVerdictMode/.test(s));
+    // ⚠️ THE DUPLICATE IS GONE AND MUST STAY GONE. Two byte-identical copies of this predicate
+    // lived in these two files; a local redefinition is how they drift again.
+    ok(`${surface}: does NOT define its own isCorrectVerdict`,
+      !/function isCorrectVerdict\s*\(/.test(s));
+    ok(`${surface}: carries no transcribed copy of the regex`,
+      !/\/\\banswer correct\\b\/i/.test(s));
+    // BOTH call sites, the completeness trigger included — the ruling was explicit about it. A
+    // gate reachable by one predicate and demoted by another is a gate nobody can state.
+    ok(`${surface}: resolves ONCE and both call sites read that resolution`,
+      /const correctRes = resolveCorrect\(CORRECT_MODE, gapVerdict, diagnosis\)/.test(s)
+      && /COMPLETENESS_GATE_ENABLED && correctRes\.correct/.test(s)
+      && /treatCorrect = correctRes\.correct && !completenessGap/.test(s));
+    ok(`${surface}: reads the ONE env var, through the ONE pure resolver`,
+      /correctVerdictMode\(process\.env\.APM_CORRECT_VERDICT\)/.test(s));
+    // Break mode: a future edit spells the flag inline as `=== 'on'`, which silently drops the
+    // shadow state and the unrecognised-value rule with it.
+    ok(`${surface}: never tests the flag inline`,
+      !/APM_CORRECT_VERDICT\s*===/.test(s));
+    // The format goes through the mode-aware builder, so `off` sends the pre-change bytes.
+    ok(`${surface}: builds the format through gapVerdictFormat(CORRECT_MODE)`,
+      /gapVerdictFormat\(CORRECT_MODE\)/.test(s));
+  }
 }
 
 console.log(`\n${fail === 0 ? 'PASS' : 'FAIL'} gap verdict: ${pass} passed, ${fail} failed\n`);
