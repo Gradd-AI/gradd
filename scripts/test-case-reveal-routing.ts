@@ -20,6 +20,10 @@ import {
   CASE_REVEAL_CREDIT_CLAUSE_FOR_TEST, CASE_REVEAL_CONDITIONED_CLAUSE_FOR_TEST,
   assembleAfmReveal,
   revealArtefactSections, wrapperNamesAListedSection, buildRevealWrapperUserPrompt,
+  // ITEM 2 (2026-09-11): the gate the case surface must agree with. IMPORTED, never transcribed —
+  // a fixture that restates the rule passes while the two copies drift apart, which is the exact
+  // defect the item is about.
+  revealDecision,
 } from '../lib/acca/tutor-personas';
 import { caseRevealSystem } from '../lib/acca/teach-engine';
 // Imported, never transcribed: divergence #5's whole design argument is that the hint leg's (c)
@@ -593,6 +597,95 @@ ok('AFM does NOT adopt the drill route design "B" (no verbatim-append instructio
     ok('#5 false IS written, so "adjudicated, nothing creditable" survives the round trip',
       JSON.stringify({ answer: 'a', counted: true, everCreditable: false }).includes('"everCreditable":false'));
   }
+}
+
+// ── ITEM 2 (2026-09-11) — THE CASE REVEAL GATE STOPS BEING A LOCKOUT ─────────
+// The gate was `wantsReveal && missCount >= 2`. `revealDecision` — the single source of truth for
+// who reaches the model answer — has always had TWO doors: struggle (two misses) OR solved. This
+// surface implemented the first and dropped the second, so a student who PRODUCED A CORRECT
+// ANSWER was refused the worked answer that a student who failed twice was handed.
+//
+// ⚠️ THE AGREEMENT IS ASSERTED AGAINST THE REAL FUNCTION, NEVER RESTATED. A fixture that
+// transcribed `missCount >= 2 || resolved` a second time would pass while the two drifted, which
+// is the defect this whole item is about.
+{
+  // The gate as the engine now spells it, extracted from the source so the fixture cannot claim
+  // agreement with a rule the file does not contain.
+  ok('the engine gate is the DISJUNCTION, not the miss count alone',
+    /if \(wantsReveal && \(missCount >= 2 \|\| resolved\)\) \{/.test(engine));
+  // MUST-FAIL, P-G3: the shipped lockout, transcribed, pinned as the thing that must not return.
+  ok('MUST-FAIL: the bare miss-count gate is gone',
+    !/if \(wantsReveal && missCount >= 2\) \{/.test(engine));
+
+  const gateNow = (missCount: number, resolved: boolean) => missCount >= 2 || resolved;
+  let agree = 0, disagree: string[] = [];
+  for (const missCount of [0, 1, 2, 3, 7]) {
+    for (const resolved of [false, true]) {
+      // `paid: true` is the right comparison and is not a convenience. The case surface has no
+      // `paid` input and never had one — the BURN arm (free + struggle → sell the artefact) is the
+      // drill funnel's monetisation and is deliberately not in this engine. So the question this
+      // gate answers is "has it been EARNED", which is exactly revealDecision's paid arm.
+      const theirs = revealDecision({ wantsReveal: true, missCount, resolved, paid: true }) === 'reveal';
+      if (gateNow(missCount, resolved) === theirs) agree++;
+      else disagree.push(`miss=${missCount} resolved=${resolved}: engine=${gateNow(missCount, resolved)} revealDecision=${theirs}`);
+    }
+  }
+  ok(`the gate agrees with revealDecision(..., paid: true) on all ${agree} (missCount, resolved) pairs`,
+    disagree.length === 0, disagree.join('\n       '));
+  // And the pre-change gate did NOT — the defect, as data, so "they agree" is a finding rather
+  // than a tautology about two ways of writing the same expression.
+  ok('MUST-FAIL: the SHIPPED gate disagreed with revealDecision on exactly the solved-and-unstuck '
+    + 'pairs (miss 0/1 + resolved) — that was the lockout',
+    [0, 1].every((m) =>
+      (m >= 2) === false
+      && revealDecision({ wantsReveal: true, missCount: m, resolved: true, paid: true }) === 'reveal'));
+
+  // ── EVERY REFUSAL STAYS A REFUSAL ────────────────────────────────────────────
+  // The widening must admit the solved student and NOBODY ELSE. Each row is a refusal the moat
+  // depends on; all of them must still refuse.
+  for (const [name, missCount, resolved] of [
+    ['no attempt at all (miss 0, unsolved) — the earn-it moat proper', 0, false],
+    ['one miss, unsolved — below the struggle threshold', 1, false],
+  ] as const) {
+    ok(`still REFUSED: ${name}`,
+      gateNow(missCount, resolved) === false
+      && revealDecision({ wantsReveal: true, missCount, resolved, paid: true }) !== 'reveal');
+  }
+  // ⚠️ `wantsReveal` IS UNTOUCHED AND IS THE OUTER GATE. Widening the inner disjunction cannot
+  // turn a non-reveal turn into a reveal: an attempt, a question, a stop signal and a teach
+  // request all arrive with wantsReveal false and never reach this branch at all.
+  ok('still REFUSED: a turn that is not a reveal request, however earned',
+    revealDecision({ wantsReveal: false, missCount: 9, resolved: true, paid: true }) === 'none');
+  ok('the outer wantsReveal gate is unchanged (REVEAL_ENABLED && isRevealRequest)',
+    /const wantsReveal = REVEAL_ENABLED && isRevealRequest\(studentMessage\);/.test(engine));
+  // The sub-threshold arm still exists and still serves the static refusal — the widening must
+  // not have collapsed the else-if into a grant.
+  ok('the sub-threshold arm still serves EARN_REDIRECT, not a reveal',
+    /\} else if \(wantsReveal\) \{[\s\S]{0,200}messageKind = 'reveal_locked';[\s\S]{0,120}ezraResponse = EARN_REDIRECT;/.test(engine));
+
+  // ── SUCCESS-SOLVED, PORTED FROM THE DRILL ROUTE ──────────────────────────────
+  // The gate above is inert on this surface unless something sets `resolved` without two misses,
+  // and confirming a correct answer is that something. The drill route has done it since item 1;
+  // this engine confirmed the answer, wrote `passed`, and left `resolved` false.
+  ok('the correct branch now sets newResolved',
+    /passed\s+= true;[\s\S]{0,1200}newResolved\s+= true;/.test(engine));
+  ok('and it is INSIDE the treatCorrect branch, not the miss branch',
+    /if \(treatCorrect\) \{[\s\S]{0,1400}newResolved\s+= true;[\s\S]{0,40}\} else \{/.test(engine));
+  // The drill route's copy, pinned, so the port cannot be described as a port after one of them
+  // moves. Break mode: someone "tidies" the drill route's correct branch and the two surfaces
+  // silently disagree again about what solving a requirement earns.
+  {
+    const route = require('fs').readFileSync(
+      require('path').join(__dirname, '..', 'app', 'api', 'acca', 'tutor', 'route.ts'), 'utf8');
+    ok('the drill route still sets newResolved on its correct branch (the ruling being ported)',
+      /if \(treatCorrect\) \{[\s\S]{0,1600}newResolved\s+= true;/.test(route));
+  }
+  // The reveal branch reads `resolved` (the PRE-turn value) for reachedFrom, and sets newResolved
+  // itself — a correct answer on turn N makes the reveal reachable on turn N+1, which is the
+  // shape the drill route has. Pinned so a refactor cannot make it read newResolved and serve a
+  // 'solved' reveal in the same turn the answer was confirmed.
+  ok('reachedFrom still reads the PRE-turn resolved, not the value this turn just wrote',
+    /resolved \? 'solved' : 'struggle'/.test(engine));
 }
 
 console.log(`

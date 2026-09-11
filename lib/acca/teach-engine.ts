@@ -1342,7 +1342,23 @@ export async function runTeachTurn(input: TeachTurnInput): Promise<TeachTurnResu
   const wantsReveal = REVEAL_ENABLED && isRevealRequest(studentMessage);
   const fastTeach   = INTENT_LAYER_ENABLED ? isTeachRequest(studentMessage) : isStopSignal(studentMessage);
 
-  if (wantsReveal && missCount >= 2) {
+  // ── ITEM 2 (2026-09-11): THE GATE ADMITS THE STUDENT WHO SOLVED IT ──────────
+  // WAS `missCount >= 2` ALONE, WHICH IS A LOCKOUT. `revealDecision` — the single source of truth
+  // for who reaches the model answer — has always had TWO doors: struggle (two misses) OR solved
+  // (`resolved`). This surface implemented the first and dropped the second, so the student who
+  // produced a correct answer was refused the worked answer that the student who failed twice was
+  // handed. Widened to the disjunction, which is EXACTLY `revealDecision(..., paid: true)` over
+  // every (missCount, resolved) pair — fixture-asserted against the real function, not restated.
+  //
+  // ⚠️ NOT `paid: hasActiveAccess`, and that is not an oversight. The case surface has no `paid`
+  // input and never had one; the BURN arm (free + struggle → sell the artefact) is the drill
+  // funnel's monetisation and is deliberately not in this engine (see the orchestrator header on
+  // cap accounting). Widening the gate here changes WHO has earned it, not who has paid.
+  //
+  // ⚠️ UNFLAGGED, DELIBERATELY. A commit whose default preserves a lockout is the wrong default.
+  // The blast radius is governed by how often `resolved` becomes true without two misses, which is
+  // governed by the correct gate firing at all — and THAT is what `APM_CORRECT_VERDICT` flags.
+  if (wantsReveal && (missCount >= 2 || resolved)) {
     intent = 'reveal';
     messageKind = 'reveal';
     // `attempt` falls back to `studentMessage` when there is no stored attempt.
@@ -1431,6 +1447,14 @@ export async function runTeachTurn(input: TeachTurnInput): Promise<TeachTurnResu
         newLastRealAttempt = studentMessage;
         passed             = true;             // completeness gate cleared → requirement complete
         acceptedAnswer     = studentMessage;
+        // ── ITEM 2 (2026-09-11): SUCCESS-SOLVED, PORTED FROM THE DRILL ROUTE ────
+        // A port of a SHIPPED ruling, not a new one: `app/api/acca/tutor/route.ts` has set
+        // `newResolved = true` on its correct branch since item 1, on the rationale that the
+        // earn-it moat is satisfied once the student has demonstrably produced the answer
+        // (`revealDecision`'s own header states it). This surface confirmed the answer, wrote
+        // `passed`, and left `resolved` false — so a student who GOT IT RIGHT was still refused
+        // the worked answer by the reveal gate above, while a student who missed twice was not.
+        newResolved        = true;
       } else {
         const gap        = completenessGap ?? diagnosis;
         newMissCount     = missCount + 1;
