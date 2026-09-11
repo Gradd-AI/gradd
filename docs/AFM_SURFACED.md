@@ -150,7 +150,9 @@ be capable of producing it.**
 `APM_CORRECT_VERDICT=off`, 28 seeds / 37 turns, paid harness account, local dev at a server whose
 arm was verified SERVER-SIDE (the route logs `[CORRECTVERDICT]` on every turn where the mode is not
 `off`; **0 such lines across the whole run**). Capture:
-`docs/rollbacks/arm_b_false_positive_20260911.json`; harness `scripts/_arm_b_false_positive.ts`.
+`docs/rollbacks/arm_b_false_positive_20260911.json`; harness **`scripts/redteam-correct-gate.ts`**
+— COMMITTED rather than left a `scripts/_*` throwaway, because (e) runs through it and a gitignored
+harness would have to be rebuilt from this document.
 
 | class | n | `correct` |
 |---|---|---|
@@ -228,6 +230,11 @@ something missing"* belongs; anything obviously wrong does not.
 (~25% on a firing input) ten repeats has ~94% power to see at least one; against a 3% rate the same
 ten repeats would see one only about a quarter of the time — which is precisely why the gate is
 100 turns and not 10.
+
+**IT RUNS THROUGH `scripts/redteam-correct-gate.ts`**, which is committed for this reason. Arm (b)
+is the `repeat: 1` case of the same harness; the powered arm is the same file with the seed list
+above and `repeat: 10`. The seed-selection rules for both are stated in its header, and the
+server-arm verification (`[CORRECTVERDICT]` must appear ZERO times) is stated there too.
 
 **Running it is the precondition on the FLAG.** Item 1 (`d58c5ea`) is merged and `off`; item 2
 (`09e6299`) is merged and unflagged on arm (b)'s evidence. Nothing here blocks either. This runs
