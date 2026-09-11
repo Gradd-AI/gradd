@@ -2,6 +2,239 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
+## 🔴 OPEN 2026-09-11 (a) — **DEMO-RELEVANT.** NO TEACHING LEG, ON EITHER SURFACE, IS SHOWN THE TEXT OF THE PREVIOUS TUTOR TURN. THE TUTOR CAN ASK A NARROWING QUESTION AND THEN MARK THE ANSWER AGAINST THE WHOLE REQUIREMENT.
+
+**Sighted 2026-09-11, real three-turn drill walk (A1d, Corvan Energy).** `call3_hint` told the
+student to name which stakeholder's objectives should shape measurement, on named grounds, and not
+to hedge it. The student did exactly that. `call3_teach` called it reasoning backwards.
+
+**THE PREVIOUS TUTOR MESSAGE REACHES THE SERVER AND IS SPENT ON A 10-TOKEN CALL.** Both clients
+send it — `TutorChat.tsx:146` and `CaseSession.tsx:363`, each `last_ezra_message: lastEzra`, taken
+off the full in-memory message array. Both routes read it (`route.ts:1234`,
+`case/turn/route.ts:83`). It is passed to **exactly one** function on each surface:
+`call0_classify` (`route.ts:1708`/`:1719`, `teach-engine.ts:1385`) — `max_tokens: 10`, returns one
+of four intent labels. **No other leg receives it.** Not `call2_diagnose`, not `call3_hint`, not
+`call3_teach`, not `call3_confirm`, not `call4_reveal`, not `call_burn`. The system prompt
+(`systemFor(paper)`) carries no transcript either; every leg is a single-shot user message.
+
+⚠️ **THE CONTRADICTION ORIGINATES IN `call2_diagnose`, NOT IN THE TEACH LEG.** call2 is what
+produces the `Gap diagnosis:` line the teach leg leads on, and it too sees only the student's last
+two messages against the FULL `model_answer`. So a message that is a complete, correct answer to
+the narrowing question the tutor just asked is scored as an incomplete answer to the whole
+requirement — and it is *correctly* scored that way, against the only referent it was given.
+Giving `call3_teach` the previous turn without giving it to `call2_diagnose` would leave the teach
+leg contradicting the gap label it was handed.
+
+⚠️ Note also that on a standard attempt turn the STORED prior gap (`last_diagnosis`) is not in the
+prompt either — `route.ts:1831` passes the CURRENT turn's `gap`. `lastDiagnosis` reaches only the
+reveal / burn / fast-teach legs (`:1655`, `:1667`, `:1699`). There is no channel of any kind
+carrying "what happened last turn" into the marking or teaching legs.
+
+**Report only, this session. Not fixed.** See 2026-09-07 (r) for the second half of the same
+mechanism (the depth-1 attempt window) and for the cost of widening it.
+
+---
+
+## 🔴 OPEN 2026-09-11 (b) — **DEMO-RELEVANT.** THE DRILL ROUTE HAS NO ARRIVAL. THREE IMPROVING ATTEMPTS END WITH THE SAME "SHOW ME THE FULL ANSWER" OFFER AND NO ACKNOWLEDGEMENT.
+
+**There is exactly ONE path on the drill route where the tutor says the student has got it, and it
+is the correct gate.** `treatCorrect` (`route.ts:1772`) = `isCorrectVerdict(diagnosis) &&
+!completenessGap`, and `isCorrectVerdict` matches the single sentinel `/\banswer correct\b/i`
+emitted by `call2_diagnose`. It fires `call3_confirm`, sets `messageKind = 'correct'` (the only
+input to the client's `'Correct'` badge, `TutorChat.tsx:37`), sets `newResolved = true`, and
+appends `revealOfferLine('solved')` — *"You've earned this one."* Note the completeness half is
+inert in production: `APM_COMPLETENESS_GATE` is unset, so the gate is the sentinel alone.
+
+**Nothing else acknowledges progress. The exhaustive list of what the other legs do:**
+
+- `call3_hint` (miss 1, and every capped miss) — leads with what the student got right ONLY when
+  the gap label establishes something correct; on the `nothingCreditable` / `NOT verified` branch
+  that opening is deliberately REPLACED, not softened (`lib/acca/hint-opening.ts`).
+- `call3_teach` (miss 2+) — **the credit demand was DELETED 2026-09-06** (`route.ts:712`, Grant-
+  ruled, to match the case engine). It is now instructed to *"name the ONE gap that matters most
+  … and the single next move"* and nothing about what is working.
+- Both teaching legs close with the identical `revealOfferLine('struggle')`: *"Whenever you want
+  it, say … and I'll show you exactly how a full-marks answer is built."* **The same string on
+  miss 2 and on miss 5**, regardless of whether the answer improved.
+- `call4_reveal` sets `resolved = true` (`route.ts:1656`) — but that is "the answer has been
+  shown", not "you got there", and **P-V4** already rules that counting it as success is the
+  miss-rate-proxy error.
+
+**So the ladder has no top rung short of the sentinel.** An answer that goes from weak to nearly
+complete over three turns produces three gap labels and three offers to be shown the answer. There
+is no "that's it" that is not binary, and no partial-arrival state at all.
+
+**Report only. Nothing built.** ⚠️ The claim *"the correct gate has never fired for a real
+student"* was NOT verified this session — the DB check was declined at the permission prompt.
+Treat it as unverified, not as measured.
+
+---
+
+## 🟠 OPEN 2026-09-11 (c) — THE CASE SURFACE HAS THE SAME DEPTH-1 WINDOW, AND THE DEMO RUNS ON IT AT A DEPTH WE HAVE NEVER MEASURED.
+
+`runTeachTurn` (`lib/acca/teach-engine.ts:1320`) carries **one** prior attempt, by the same
+mechanism as the drill route: `lastRealAttempt` is read from the single
+`acca_case_progress.last_real_attempt` column (`case/turn/route.ts:505`) and overwritten with
+`studentMessage` on every attempt-classified turn (`teach-engine.ts:1435`/`:1440`, persisted at
+`case/turn/route.ts:566`/`:579`). It is passed to `call2_diagnose` (`:1404`) and `call3_teach`
+(`:1452`), both as the PRE-turn value, which is correct and is commented as such.
+
+**On a third turn it therefore carries the SECOND attempt, not the first.** If turn 2 was a short
+follow-up, turn 1's working is out of the prompt entirely.
+
+⚠️ **EVERY CASE-SURFACE MEASUREMENT WE HAVE IS A TWO-TURN MEASUREMENT.** The n = 30 / n = 40 runs
+behind (o), (g) and (r) use one seeded attempt plus one frozen canned second message. **Turn 3+ on
+the case surface is unmeasured in every respect** — false absence, credit inversion, and the
+teach leg's behaviour alike.
+
+⚠️ **AND THE CASE SIDE IS THE HARDER ONE TO WIDEN.** The drill route can reconstruct any depth from
+`acca_drill_messages`, which already stores every turn. The case surface writes **no transcript
+table at all** — `case/turn/route.ts` touches only `acca_cases`, `acca_case_requirements`,
+`acca_case_exhibits` and `acca_case_progress`. Widening the window there needs a column, a new
+table, or a client-supplied history.
+
+**Report only.**
+
+---
+
+## 🟠 MEASURED 2026-09-11 (d) — THE KNOWN FALSE POSITIVE IS **NOT A PROPERTY OF THE INPUT**. THE CORRECT GATE'S FALSE-POSITIVE RATE IS A PER-CALL PROBABILITY, SO NO FIXTURE CAN REGRESSION-LOCK IT AND NO ONE-SAMPLE-PER-SEED ARM CAN MEASURE IT.
+
+**This is the better finding out of arm (b), and it is a finding about the SHAPE of the defect, not
+a caveat on a result.**
+
+### The measurement
+
+The product's only non-harness `correct` outcome — `bedewa5090@ezimb.com`, AFM `B2a`, drill
+`b66fbf05` (Helveta Medtech), the answer that ends mid-word at *"Step 1 — The five drivers
+(identific"* — was replayed against its own drill from fresh progress, **n = 10**, at
+`APM_CORRECT_VERDICT=off` (the shipped regex).
+
+**0 of 10 fired.** All ten returned `message_kind='hint'`, `resolved=false`, reveal locked, and all
+ten produced the same gap label: *"asserts a conclusion without deriving it — the claim itself is
+NOT verified, so it cannot be credited."*
+
+**And the production history says the same thing, which is what makes it a finding rather than a
+failed reproduction.** The IDENTICAL 432 bytes were submitted to the IDENTICAL drill **four times**
+by that account:
+
+| stored | call_type | outcome |
+|---|---|---|
+| `2026-07-15 16:15:39` | `correct` | **correct** |
+| `2026-07-16 09:21:23` | `hint` | miss |
+| `2026-07-21 14:15:57` | `hint` | miss |
+| `2026-07-21 14:22:24` | `hint` | miss |
+
+**1 of 4 in production, 0 of 10 on replay — 1 in 14 on the one input in the entire corpus known to
+be capable of producing it.**
+
+### The consequence, stated
+
+- **The gate's false-positive rate is a PER-CALL PROBABILITY, not a set of bad inputs.** The same
+  bytes through the same prompt at the same temperature draw a correctness assertion from
+  `call2_diagnose` some fraction of the time. There is no input to blacklist and no input that is
+  safe.
+- **It therefore CANNOT BE REGRESSION-LOCKED BY A FIXTURE.** Every other gate in this repo is
+  pinned by a deterministic fixture — `test:gap-verdict` pins the six missed labels as data, and
+  that is exactly right for the PARSE and exactly useless for the RATE. A fixture that fires this
+  input once and asserts `miss` passes 13 times in 14 **on a build where the defect is present.**
+- **Any arm that samples each seed ONCE is underpowered against it BY CONSTRUCTION.** At the
+  observed order of magnitude (~1 in 4 on a firing input) a single sample misses a live defect
+  about three times in four. Arm (b)'s `0/32` is therefore a correct result at its stated gate and
+  **must never be quoted as "the regex has no false positives."**
+- ⚠️ **This is the shape of the defect, not a limitation of the measurement.** A reader who treats
+  it as a caveat will reach for a bigger seed list; the thing that moves the needle is REPEATS on
+  the seeds most likely to fire, which is why (e) is specified the way it is.
+
+### Arm (b) itself — 0 at the gate, controls live
+
+`APM_CORRECT_VERDICT=off`, 28 seeds / 37 turns, paid harness account, local dev at a server whose
+arm was verified SERVER-SIDE (the route logs `[CORRECTVERDICT]` on every turn where the mode is not
+`off`; **0 such lines across the whole run**). Capture:
+`docs/rollbacks/arm_b_false_positive_20260911.json`; harness `scripts/_arm_b_false_positive.ts`.
+
+| class | n | `correct` |
+|---|---|---|
+| polarity (wrong-verdict seeds from `POLARITY_TARGETS`) | 7 | 0 |
+| red-team wrong (`PROBES` entries asserting a wrong answer) | 5 | 0 |
+| junk (incl. the production FP ×10, and a sentinel injection) | 17 | 0 |
+| `golden_bad` (six drills' own authored BAD answers) | 6 | 0 |
+| **positive control** | 2 | **2 — both fired** |
+
+**The controls are what make the zero readable.** PC1 (drill, the PH5 fully-correct answer) and PC2
+(case, the Vesla correct-discursive seed) each returned `correct`, set `resolved = true`, and a
+following `show me the full answer` **served the worked answer — 2,944 and 3,387 chars.** That is
+item 2 (`09e6299`) working end to end on both surfaces, and it is also the blast radius stated as a
+fact: **one `call2_diagnose` label, zero misses, worked answer handed over.**
+
+Zero of the 35 gap labels matched the sentinel regex, and none asserted correctness in other words
+either — so this run adds no instances to the six that motivated the `correct` field.
+
+### ⚠️ THE DENOMINATOR IS 32, NOT 35
+
+**Three of the 35 class-1–4 turns never reached the correct gate.** `RTW4` (*"the call is 51m — I
+just took 25% of the underlying as a rule of thumb"*), `RTW5` (*"the fair value is 481, which in
+kronor is 481 kronor"*) and `JNK7` (*"The answer is 51 million."*) all returned
+`message_kind='confirm_number_locked'` in ~250–375 ms — the X5 structural gate in
+`app/api/acca/tutor/route.ts`, a DETERMINISTIC frozen refusal that fires **before**
+`call2_diagnose` and explicitly sets no miss, no cap and no `resolved`.
+
+**Safe, and stricter than the gate — but not evidence ABOUT the gate.** They were never diagnosed,
+so no label was produced and nothing was there for the regex to match. **The correct gate was
+consulted on 32 turns.** Record the 32.
+
+### Correction to the record
+
+**`7e638ed7-7886-4e25-b703-d46c5dd16d41` is an `acca_drill_attempts` row, not a message** — the
+2026-09-02 block below calls it *"attempt"*, correctly, and it has been read since as a message id.
+The student's message is **`d92dd87d-dbb5-4719-9f6a-f3b1c6625cc7`** (432 bytes, `role='user'`,
+`2026-07-15T16:15:39.908658+00`). The assistant row stamped `call_type='correct'` is
+`d84ab9d3-75e8-4f2e-87bc-9aaaa1c693ce`. Anything replaying this incident must read the message row;
+the attempt row carries no `content`.
+
+---
+
+## 🔵 OWED 2026-09-11 (e) — THE POWERED ARM. A PRECONDITION OF TURNING `APM_CORRECT_VERDICT` ON, NOT OF MERGING ANYTHING. **DO NOT RUN IT BEFORE THE DEMO.**
+
+Specified here so it is not re-derived. It exists because of (d): the defect is a per-call rate, so
+the arm that can see it is **REPEATS on the seeds most likely to fire**, never breadth.
+
+**Design: 10 seeds × 10 repeats = 100 turns.** Fresh progress per turn, one turn per repeat, paid
+account, both surfaces. Endpoint unchanged from arm (b): does `message_kind` come back `correct`,
+and does `resolved` go true (the reveal is reachable iff `resolved || missCount >= 2`, and on a
+turn-1 seed only `resolved` can move).
+
+**SELECTION CRITERION — the shapes most likely to draw a SPURIOUS `correct`, explicitly NOT
+coverage.** Arm (b) already established breadth. Anything that reads to a marker as *"right, with
+something missing"* belongs; anything obviously wrong does not.
+
+| # | seed | why it is a firing shape |
+|---|---|---|
+| 1 | the production FP — `d92dd87d`'s 432 bytes on `b66fbf05` | the only input in the corpus with a demonstrated non-zero rate |
+| 2 | `POL3` Takeda DERIVED (`4f981dbf`) | **correct arithmetic on the page**, only the verdict inverted |
+| 3 | `POL5` NorthStar DERIVED (`716f69f8`) | a full page of plausible arithmetic, wrong tax treatment, wrong sign |
+| 4 | the sentinel injection | asks `call2` for the gate phrase's exact bytes — the direct attack on a phrase table |
+| 5 | a PARTIAL — `PH1` on `cdef61d5` (B4c Siam Bloom) | numerically EXACT, omits the whole advice requirement: the canonical "true as far as it goes" |
+| 6 | `PH4` convention-softening on `3a2e2d1d` | correct figure plus a wrong alternative offered — and the sentinel is *about conventions* |
+| 7 | `PC1` minus one required point (`cb9b411c`) | the near-complete correct answer; the exact case `CORRECT_VERDICT_FORMAT` was written to score 0 |
+| 8 | `PC2` minus its closing commitment (case, `04d353dd`) | the same shape on the surface where item 2 now hands over the artefact |
+| 9 | a correct answer to a DIFFERENT requirement of the same case | reads well, answers the wrong question |
+| 10 | a strong answer truncated mid-word on a SECOND drill | tests whether truncation is the mechanism, or incidental to #1 |
+
+**GATE: 0/100.**
+
+⚠️ **AND STATE WHAT `0/100` BOUNDS, BECAUSE IT IS NOT ZERO.** By the rule of three, zero events in
+100 trials puts the 95% upper bound on the per-call rate at about **3%**. So a clean run licenses
+*"below roughly 3 in 100"* and **never** *"it does not happen"*. At the historically observed order
+(~25% on a firing input) ten repeats has ~94% power to see at least one; against a 3% rate the same
+ten repeats would see one only about a quarter of the time — which is precisely why the gate is
+100 turns and not 10.
+
+**Running it is the precondition on the FLAG.** Item 1 (`d58c5ea`) is merged and `off`; item 2
+(`09e6299`) is merged and unflagged on arm (b)'s evidence. Nothing here blocks either. This runs
+when we want `APM_CORRECT_VERDICT` moved off `off`, which is **post-demo**.
+
+---
+
 ## 🔴 OPEN 2026-09-08 (r) — **DEMO-RELEVANT.** THE READINESS PANEL CONTRADICTS THE MARKED PAPER ON THE SAME PAGE. THE DECORATIVE GATE IS NOW A PRESENTATION PROBLEM, NOT ONLY A MEASUREMENT ONE.
 
 **Not a new defect. This is the 2026-09-02 correct-gate item (P-V4, and the trainee-page block
@@ -387,6 +620,43 @@ the case fix does not wait on it.
 
 ⚠️ **Until it runs, do not quote the drill route as a zero anywhere.** Quote the interval or say
 it is unmeasured.
+
+### 📐 UPDATED 2026-09-11 — THE MECHANISM IS NOW READ OFF THE CODE, AND IT REFRAMES WHAT THE PROBE CAN MEASURE
+
+**The window is DEPTH 1, on both surfaces.** `acca_tutor_progress.last_real_attempt` (drill) and
+`acca_case_progress.last_real_attempt` (case) are each a SINGLE column, OVERWRITTEN on every
+attempt-classified turn (`newLastRealAttempt = student_message`, `app/api/acca/tutor/route.ts:1783`
+and `:1793`; `lib/acca/teach-engine.ts:1435`/`:1440`). `buildStudentAnswerBlock(attempt,
+priorAttempt)` takes exactly ONE prior. So the prompt carries **turn N and turn N−1 and nothing
+else**.
+
+**On turn 3 the first attempt is genuinely NOT IN THE PROMPT.** If turn 2 was a short follow-up —
+which is the natural shape after a hint — then on turn 3 the model sees that one sentence as "the
+student's most recent full attempt" and the turn-1 working is gone. **A tutor absence claim on
+turn 3 is then TRUE about the prompt and FALSE about the conversation**, and the grader, which
+scores against the full student answer, calls it a false absence. It is a different defect wearing
+the same name.
+
+⚠️ **THE n = 30 PROBE CANNOT SEE THIS AT ALL.** `scripts/_false_absence_n30.ts` runs exactly TWO
+turns (`TURN_2` is a single frozen sentence), so every measured reply is a turn-2 reply, where the
+depth-1 window still holds the seed. **Both the `0/10` and the `2/10` were taken inside the one
+regime where the window is sufficient.** The deferred n = 30 long-seed run inherits that limit —
+it would settle the turn-2 rate and say nothing about turn 3+.
+
+🔴 **AND THE DEMO IS A TURN-3+ CONDITION.** A KPMG reviewer will go three or four turns. The
+regime nobody has measured is the regime the demo runs in. Sighted live 2026-09-11 on a real
+three-turn A1d walk (Corvan Energy): the tutor called for a Mendelow placement that turn 1
+contained.
+
+**What it would take to carry turn 1 as well:** no migration. `acca_drill_messages` already stores
+every user and assistant row with `turn_id`, `call_type` and `outcome`, and is read at serve time
+only for the reveal-velocity count (`route.ts:1883`). The case surface has **no transcript table
+at all** — `acca_case_progress` is the only store, so that side needs a column or a client-supplied
+history. Cost: the answer block sits in the UNCACHED remainder of `cachePrefix` by construction
+(the cached prefix is context+question only), so a second attempt is full-price input on BOTH legs
+that take it — `call2_diagnose` and `call3_teach`. At the probe's own drill seed (~1,400 chars,
+~330 tokens) that is **~660 input tokens per teach turn**, Haiku 4.5, uncached, and it does not
+compound (still depth 2, just a wider one).
 
 ---
 
