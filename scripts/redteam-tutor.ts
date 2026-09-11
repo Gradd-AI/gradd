@@ -992,6 +992,20 @@ const ARM_VARS = [
   // that run are therefore recorded in the capture's `arm` object with no further change here —
   // which is the point of having listed it in advance.
   'TUTOR_CASE_REVEAL',
+  // ── IT HAPPENED A THIRD TIME, AND THE FIX CAUGHT IT ONE COMMIT LATE (2026-09-11) ──
+  // `APM_CORRECT_VERDICT` (off | shadow | on) selects whether call2's format block asks for the
+  // `correct` field, on BOTH surfaces. `off` sends the pre-change bytes; `shadow` and `on` send
+  // the same, longer bytes and differ only in whether the field DECIDES. So a capture that cannot
+  // name this variable cannot distinguish the three, and two of the three are prompt-identical —
+  // the one case where reading the reply cannot recover the arm.
+  'APM_CORRECT_VERDICT',
+  // ⚠️ PRE-EXISTING, AND THE SAME DEFECT — added here when the above was. `TUTOR_GAP_STRUCTURED`
+  // has selected call2's prompt bytes on the drill route since 2026-08-23 (`off` restores the
+  // pre-envelope prompt AND drops max_tokens 200 → 40) and has never been in this list, so every
+  // capture taken since has been silent about it. It defaults `on`, so the silence has been
+  // harmless rather than wrong; it would stop being harmless the first time anyone ran the `off`
+  // arm.
+  'TUTOR_GAP_STRUCTURED',
 ] as const;
 
 function armEnv(): Record<string, string> {
